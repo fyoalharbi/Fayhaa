@@ -1,0 +1,480 @@
+/* ─────────────────────────────────────────────
+   RESET & BASE
+───────────────────────────────────────────── */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background-color: #f4f4f4;
+  color: #1a1a1a;
+  font-family: 'JetBrains Mono', monospace;
+  padding: 32px 40px;
+  min-height: 100vh;
+}
+
+/* ─────────────────────────────────────────────
+   SPEC SHEET CONTAINER
+───────────────────────────────────────────── */
+.spec-sheet {
+  max-width: 1280px;
+  margin: 0 auto;
+  border: 1px solid #ccc;
+}
+
+/* ─────────────────────────────────────────────
+   GRID
+───────────────────────────────────────────── */
+.grid-row {
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  align-items: center;
+}
+
+.col-2  { grid-column: span 2; }
+.col-3  { grid-column: span 3; }
+.col-6  { grid-column: span 6; }
+.col-8  { grid-column: span 8; }
+.col-12 { grid-column: span 12; }
+
+/* ─────────────────────────────────────────────
+   BORDERS / RULES
+───────────────────────────────────────────── */
+.border-bottom { border-bottom: 1px solid #ccc; }
+.border-top    { border-top:    1px solid #ccc; }
+.border-right  { border-right:  1px solid #ccc; }
+.border-left   { border-left:   1px solid #ccc; }
+
+/* ─────────────────────────────────────────────
+   HEADER & SUB-HEADER
+───────────────────────────────────────────── */
+header.grid-row,
+.subheader {
+  padding: 10px 16px;
+}
+
+header.grid-row {
+  padding: 14px 16px;
+}
+
+.meta {
+  font-size: 0.65rem;
+  letter-spacing: 0.12em;
+  color: #888;
+}
+
+.title-center {
+  text-align: center;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  color: #1a1a1a;
+}
+
+.text-right  { text-align: right; }
+.text-center { text-align: center; }
+
+.subheader .col-3,
+.subheader .col-6 {
+  padding: 6px 0;
+}
+
+/* ─────────────────────────────────────────────
+   MAIN CONTENT ROW
+───────────────────────────────────────────── */
+.main-content {
+  align-items: stretch;
+}
+
+/* ─────────────────────────────────────────────
+   LEFT: NAV COLUMN
+───────────────────────────────────────────── */
+.nav-col {
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+}
+
+.nav-btn {
+  display: grid;
+  grid-template-columns: 14px 26px 1fr;
+  align-items: start;
+  column-gap: 8px;
+  background: none;
+  border: none;
+  border-bottom: 1px solid #e4e4e4;
+  padding: 18px 16px;
+  cursor: pointer;
+  text-align: left;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.7rem;
+  color: #999;
+  letter-spacing: 0.06em;
+  line-height: 1;
+  transition: background-color 0.1s, color 0.1s;
+  width: 100%;
+}
+
+.nav-btn:hover {
+  background-color: #ececec;
+  color: #1a1a1a;
+}
+
+.nav-btn.active {
+  color: #1a1a1a;
+  background-color: #efefef;
+}
+
+.btn-indicator {
+  font-size: 0.55rem;
+  margin-top: 3px;
+  color: #ccc;
+  line-height: 1;
+}
+
+.nav-btn.active .btn-indicator { color: #1a1a1a; }
+
+.btn-index {
+  font-size: 0.62rem;
+  color: #bbb;
+  margin-top: 1px;
+}
+
+.nav-btn.active .btn-index { color: #777; }
+
+.btn-label {
+  font-size: 0.7rem;
+  font-weight: 400;
+  line-height: 1.7;
+}
+
+.nav-btn.active .btn-label { font-weight: 700; }
+
+.arabic {
+  font-size: 0.82rem;
+  letter-spacing: 0.01em;
+  direction: rtl;
+  display: inline-block;
+}
+
+.nav-status {
+  margin-top: auto;
+  padding: 14px 16px;
+  font-size: 0.58rem;
+  color: #bbb;
+  letter-spacing: 0.1em;
+  border-top: 1px solid #e4e4e4;
+}
+
+/* ─────────────────────────────────────────────
+   CENTER: CANVAS COLUMN
+───────────────────────────────────────────── */
+.canvas-col {
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #f4f4f4;
+  overflow: hidden;
+}
+
+/* Force p5 canvas to fill the column */
+.canvas-col canvas {
+  display: block !important;
+  width: 100% !important;
+  height: auto !important;
+  aspect-ratio: 1 / 1;
+}
+
+/* ─────────────────────────────────────────────
+   RIGHT: DATA OUTPUT COLUMN
+───────────────────────────────────────────── */
+.data-col {
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+}
+
+.data-output {
+  flex: 1;
+  padding: 20px 16px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.95rem;
+  line-height: 1.9;
+  letter-spacing: 0.04em;
+  color: #1a1a1a;
+  white-space: pre-wrap;
+  word-break: break-word;
+  min-height: 300px;
+}
+
+/* Blinking block cursor appended after content */
+.data-output::after {
+  content: '▮';
+  animation: blink 1s step-end infinite;
+}
+
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0; }
+}
+
+.data-meta {
+  padding: 12px 16px;
+  border-top: 1px solid #e4e4e4;
+  font-size: 0.58rem;
+  color: #aaa;
+  letter-spacing: 0.1em;
+  line-height: 2;
+}
+
+/* ─────────────────────────────────────────────
+   DATA OUTPUT — LINKS & INLINE ELEMENTS
+───────────────────────────────────────────── */
+
+/* Links typed by the typewriter */
+.data-output a {
+  color: inherit;
+  font-family: inherit;
+  text-decoration: none;
+  border-bottom: 1px dashed currentColor;
+  transition: background-color 0.12s, color 0.12s, border-color 0.12s;
+}
+
+.data-output a:hover {
+  background-color: #1a1a1a;
+  color: #f4f4f4;
+  border-bottom-color: transparent;
+  cursor: crosshair;
+  padding: 0 2px;
+}
+
+/* Arabic output inherits Noto Sans Arabic on links too */
+.data-output.lang-ar a {
+  font-family: 'Noto Sans Arabic', sans-serif;
+}
+
+/* Inline status badge */
+.status-active {
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+
+/* Dimmed code-comment lines (lines starting with //) */
+.data-output .comment {
+  color: #aaa;
+  font-style: italic;
+}
+
+/* ─────────────────────────────────────────────
+   LANGUAGE SWITCHER
+───────────────────────────────────────────── */
+.lang-switcher {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 5px;
+}
+
+.lang-prefix {
+  font-size: 0.58rem;
+  letter-spacing: 0.1em;
+  color: #bbb;
+}
+
+.lang-sep {
+  font-size: 0.55rem;
+  color: #ccc;
+  letter-spacing: 0;
+}
+
+.lang-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.62rem;
+  letter-spacing: 0.1em;
+  color: #bbb;
+  padding: 2px 3px;
+  transition: color 0.1s;
+  line-height: 1;
+}
+
+.lang-btn::before {
+  content: '□ ';
+  font-size: 0.48rem;
+  vertical-align: middle;
+}
+
+.lang-btn:hover { color: #555; }
+
+.lang-btn.active {
+  color: #1a1a1a;
+  font-weight: 700;
+}
+
+.lang-btn.active::before { content: '■ '; }
+
+/* ─────────────────────────────────────────────
+   ARABIC / RTL DATA OUTPUT
+───────────────────────────────────────────── */
+
+/* Applied to #data-output when AR is active */
+.data-output.lang-ar {
+  font-family: 'Noto Sans Arabic', sans-serif;
+  font-size: 0.95rem;   /* Noto Sans Arabic runs slightly large vs JetBrains Mono */
+  line-height: 2.1;
+  direction: rtl;
+  text-align: right;
+  letter-spacing: 0;    /* Arabic text doesn't use letter-spacing */
+}
+
+/* Applied to #data-meta-wrap when AR is active */
+.data-meta.lang-ar-meta {
+  direction: rtl;
+  text-align: right;
+  font-family: 'Noto Sans Arabic', sans-serif;
+  font-size: 0.58rem;
+  letter-spacing: 0;
+}
+
+/* ─────────────────────────────────────────────
+   FOOTER
+───────────────────────────────────────────── */
+footer.grid-row {
+  padding: 12px 16px;
+}
+
+/* Header role — wraps gracefully at col-2 width */
+#header-role {
+  line-height: 1.5;
+}
+
+/* Uplink monitor strip in footer */
+.uplink-monitor {
+  padding: 5px 0;
+  font-size: 0.58rem;
+  letter-spacing: 0.1em;
+  color: #555;
+  border-top: 1px solid #e4e4e4;
+  animation: uplink-pulse 2s ease-in-out infinite;
+  text-align: center;
+}
+
+.uplink-monitor.lang-ar-status {
+  direction: rtl;
+  font-family: 'Noto Sans Arabic', sans-serif;
+  letter-spacing: 0;
+  font-size: 0.62rem;
+}
+
+@keyframes uplink-pulse {
+  0%, 100% { opacity: 1;    }
+  50%       { opacity: 0.35; }
+}
+
+/* Data probe tooltip drawn in p5 — no CSS needed (canvas element) */
+
+.erase-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.58rem;
+  letter-spacing: 0.1em;
+  color: #bbb;
+  padding: 0;
+  transition: color 0.15s;
+}
+
+.erase-btn:hover { color: #1a1a1a; }
+
+/* ─────────────────────────────────────────────
+   REMOTE STATUS BAR
+───────────────────────────────────────────── */
+.status-bar {
+  padding: 5px 16px;
+  background-color: #f0f0f0;
+}
+
+.status-line {
+  font-size: 0.58rem;
+  letter-spacing: 0.14em;
+  color: #555;
+}
+
+/* The blinking [SIGNAL_ACTIVE] part */
+.signal-blink {
+  animation: blink 1.6s step-end infinite;
+}
+
+/* Arabic variant: applied via JS */
+.status-line.lang-ar-status {
+  direction: rtl;
+  text-align: right;
+  font-family: 'Noto Sans Arabic', sans-serif;
+  letter-spacing: 0;
+  font-size: 0.62rem;
+}
+
+/* ─────────────────────────────────────────────
+   SCANNING SIGNAL LINE
+───────────────────────────────────────────── */
+#scan-line {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 1px;
+  background: linear-gradient(
+    to right,
+    transparent 0%,
+    rgba(26, 26, 26, 0.1) 15%,
+    rgba(26, 26, 26, 0.2) 50%,
+    rgba(26, 26, 26, 0.1) 85%,
+    transparent 100%
+  );
+  pointer-events: none;
+  z-index: 400;
+  animation: scan-sweep 13s linear infinite;
+  animation-delay: 4s; /* pause before first sweep */
+}
+
+@keyframes scan-sweep {
+  /* Sweep down over the first 50% of the cycle */
+  0%    { transform: translateY(0);     opacity: 0; }
+  4%    { opacity: 1; }
+  46%   { opacity: 1; }
+  50%   { transform: translateY(100vh); opacity: 0; }
+  /* Snap back to top silently for the second 50% (pause) */
+  50.1% { transform: translateY(0);     opacity: 0; }
+  100%  { transform: translateY(0);     opacity: 0; }
+}
+
+/* ─────────────────────────────────────────────
+   EASTER EGGS
+───────────────────────────────────────────── */
+
+/* Full-page ballpoint pen overlay — sits above everything,
+   pointer-events: none so links and canvas clicks pass through */
+#pen-layer {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 500;
+}
+
+/* ASCII rain particles */
+.rain-char {
+  position: fixed;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.75rem;
+  color: #1a1a1a;
+  pointer-events: none;
+  user-select: none;
+  z-index: 490;
+  will-change: top;
+}

@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Portfolio // Spec Sheet V1</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,400;0,700;1,400&family=Noto+Sans+Arabic:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/p5.js"></script>
+</head>
+<body>
+
+    <main class="spec-sheet">
+
+        <!-- ── HEADER ── -->
+        <header class="grid-row border-bottom">
+            <div class="col-2 meta" id="header-role">ROLE: BI_DATA_ARCHITECT // VIZ_ENGINEER</div>
+            <div class="col-8 title-center">PAPILLON_MORPHOLOGY // SPEC_SHEET_2026</div>
+            <div class="col-2 lang-switcher">
+                <span class="lang-prefix">LANG:</span>
+                <button class="lang-btn active" id="lang-en" onclick="switchLanguage('EN')">EN</button>
+                <span class="lang-sep">//</span>
+                <button class="lang-btn" id="lang-ar" onclick="switchLanguage('AR')">AR</button>
+            </div>
+        </header>
+
+        <!-- ── REMOTE STATUS BAR ── -->
+        <div class="grid-row status-bar border-bottom">
+            <div class="col-12 status-line" id="remote-status">
+                STATUS: OPEN_FOR_REMOTE_HIRE // <span class="signal-blink">[SIGNAL_ACTIVE]</span>
+            </div>
+        </div>
+
+        <!-- ── SUB-HEADER ── -->
+        <div class="grid-row subheader border-bottom">
+            <div class="col-3 meta border-right">SYS_NAV // INPUT</div>
+            <div class="col-6 meta text-center">ASCII_RENDER // LIVE_FEED</div>
+            <div class="col-3 meta border-left text-right">DATA_OUT // OUTPUT</div>
+        </div>
+
+        <!-- ── MAIN CONTENT ── -->
+        <section class="grid-row main-content">
+
+            <!-- LEFT: Navigation -->
+            <nav class="col-3 nav-col border-right">
+                <button class="nav-btn active" id="btn-01" onclick="updateMode('about')">
+                    <span class="btn-indicator">■</span>
+                    <span class="btn-index">01</span>
+                    <span class="btn-label">WHO_AM_I<br><span class="arabic">مين انا</span></span>
+                </button>
+                <button class="nav-btn" id="btn-02" onclick="updateMode('projects')">
+                    <span class="btn-indicator">□</span>
+                    <span class="btn-index">02</span>
+                    <span class="btn-label">MY_PROJECTS<br><span class="arabic">مشاريعي</span></span>
+                </button>
+                <button class="nav-btn" id="btn-03" onclick="updateMode('philosophy')">
+                    <span class="btn-indicator">□</span>
+                    <span class="btn-index">03</span>
+                    <span class="btn-label">MY_PHILOSOPHY<br><span class="arabic">فلسفتي</span></span>
+                </button>
+                <button class="nav-btn" id="btn-04" onclick="updateMode('contact')">
+                    <span class="btn-indicator">□</span>
+                    <span class="btn-index">04</span>
+                    <span class="btn-label">SEND_SIGNAL<br><span class="arabic">اتصل بي</span></span>
+                </button>
+                <div class="nav-status">SYS: READY_▮</div>
+            </nav>
+
+            <!-- CENTER: p5.js Canvas -->
+            <div class="col-6 canvas-col" id="video-holder"></div>
+
+            <!-- RIGHT: Data Output -->
+            <aside class="col-3 data-col border-left">
+                <pre id="data-output" class="data-output"></pre>
+                <div class="data-meta" id="data-meta-wrap">
+                    <div id="mode-label">MODE: WHO_AM_I</div>
+                    <div id="data-status">STATUS: LOADING</div>
+                </div>
+            </aside>
+
+        </section>
+
+        <!-- ── FOOTER ── -->
+        <footer class="grid-row border-top">
+            <div class="col-6 meta">FAYHAA ALHARBI // EST.2002</div>
+            <div class="col-6 meta text-right">
+                <button class="erase-btn" onclick="eraseMarkings()">[ERASE_MARKINGS]</button>
+                &nbsp;//&nbsp; v0.0.67
+            </div>
+            <div class="col-12 uplink-monitor" id="uplink-status">
+                UPLINK: [REMOTE_READY] // LATENCY: [0ms] // PACKETS: <span class="signal-blink">[SYNCED]</span>
+            </div>
+        </footer>
+
+    </main>
+
+    <!-- Scanning signal line — sits over everything, pointer-events: none -->
+    <div id="scan-line"></div>
+
+    <script src="p5.js"></script>
+    <script src="ui.js"></script>
+    <script src="easter.js"></script>
+</body>
+</html>
