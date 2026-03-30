@@ -318,12 +318,12 @@ function _updateHeaderRole(lang) {
   const el = document.getElementById('header-role');
   if (!el) return;
   if (lang === 'AR') {
-    el.textContent = 'الدور: مهندس بيانات ذكاء أعمال // خبير تصور بيانات';
+    el.textContent = 'الدور: محلل بيانات وذكاء الأعمال';
     el.style.direction  = 'rtl';
     el.style.fontFamily = "'Noto Sans Arabic', sans-serif";
     el.style.letterSpacing = '0';
   } else {
-    el.textContent = 'ROLE: BI_DATA_ARCHITECT // VIZ_ENGINEER';
+    el.textContent = 'ROLE: DATA ANALYST & BUSINESS INTELLIGENCE';
     el.style.direction  = '';
     el.style.fontFamily = '';
     el.style.letterSpacing = '';
