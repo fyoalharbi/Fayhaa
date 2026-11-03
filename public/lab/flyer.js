@@ -7,12 +7,12 @@
 //    • eye-spots in the accent colour; underside shows on the upstroke
 //    • ink flips automatically over dark sections
 //
-//    const bf = new AsciiFlyer(canvas);
+//    const bf = new AsciiFlyer(canvas, { cols: 25, rows: 17, cell: 4 });
 //    bf.frame(dt, { landed, speed, climb });   // call every animation frame
 // ─────────────────────────────────────────────
 (function () {
-  const COLS = 31, ROWS = 21, CELL = 6;          // grid + CSS px per cell
-  const HALF_C = (COLS - 1) / 2, HALF_R = (ROWS - 1) / 2;
+  // Grid size is per instance (see constructor); these are set per draw.
+  let HALF_C = 15, HALF_R = 10;
 
   // Wing-local coords: x = outward from body (0..1), y = down (-1..1)
   const WINGS = [
@@ -92,11 +92,12 @@
   }
 
   class AsciiFlyer {
-    constructor(canvas) {
+    constructor(canvas, { cols = 31, rows = 21, cell = 6 } = {}) {
       this.canvas = canvas;
       this.ctx = canvas.getContext('2d');
-      this.width = COLS * CELL;
-      this.height = ROWS * CELL;
+      this.cols = cols; this.rows = rows; this.cell = cell;
+      this.width = cols * cell;
+      this.height = rows * cell;
       const d = Math.min(window.devicePixelRatio || 1, 2);
       canvas.width = this.width * d;
       canvas.height = this.height * d;
@@ -152,6 +153,8 @@
       if (this.frameN++ % 12 === 0) this.sampleBackground();
 
       const ctx = this.ctx;
+      const { cols: COLS, rows: ROWS, cell: CELL } = this;
+      HALF_C = (COLS - 1) / 2; HALF_R = (ROWS - 1) / 2;
       ctx.clearRect(0, 0, this.width, this.height);
       ctx.font = `700 ${CELL * 1.3}px "JetBrains Mono", ui-monospace, monospace`;
       ctx.textAlign = 'center';

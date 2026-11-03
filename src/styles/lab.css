@@ -169,3 +169,27 @@
 .lab-chips a:hover { border-color: var(--paper); }
 .lab-chips a[aria-current] { background: var(--paper); color: var(--ink); border-color: var(--paper); }
 .lab-how { margin: 10px 0 0; color: #cfcfcf; line-height: 1.5; }
+
+/* ── ASCII flowers growing out of project cards ── */
+.card.has-flower { overflow: visible; }
+.ascii-flower {
+  position: absolute; bottom: 100%; inset-inline-end: 22px; margin: 0 0 -2px;
+  font-family: var(--font-mono); font-size: 13px; line-height: 1.1; font-weight: 700;
+  color: var(--muted); pointer-events: none;
+  transform-origin: 50% 100%;
+  animation: flower-sway 5s ease-in-out infinite alternate;
+  animation-delay: var(--sway-delay, 0s);
+}
+.ascii-flower .flower-line { display: block; white-space: pre; }
+.ascii-flower .flower-head { color: var(--ink); transition: color .4s; }
+.ascii-flower .perch { color: var(--accent); font-weight: 700; }
+.ascii-flower.is-perched { animation-play-state: paused; }
+.ascii-flower.is-perched .flower-head { color: var(--accent); }
+.card.has-flower:hover .ascii-flower { animation-duration: 1.2s; }
+@keyframes flower-sway {
+  from { transform: rotate(-3deg); }
+  to   { transform: rotate(3deg); }
+}
+/* Room for the flowers above each card */
+.cards:has(.has-flower) { row-gap: 84px; margin-top: 56px; }
+@media (prefers-reduced-motion: reduce) { .ascii-flower { animation: none; } }

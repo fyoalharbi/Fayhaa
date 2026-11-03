@@ -192,8 +192,10 @@
 
   // ══ SECRET 2: FLYING BUTTERFLY (the original idea) ════════
   // Once you scroll past the hero, a small butterfly keeps you company.
-  // It slows down near the cursor so you can catch it; hovering it
-  // makes it land and the philosophy starts.
+  // It visits the ASCII flowers on the project cards: flies to one on
+  // screen, perches on its centre, rests, then moves on. With no
+  // flowers in view it wanders. It slows down near the cursor so you
+  // can catch it; hovering it starts the philosophy.
   function flyer() {
     const el = document.createElement('button');
     el.type = 'button';
@@ -202,46 +204,77 @@
     el.innerHTML = '<canvas></canvas>';
     document.body.appendChild(el);
 
-    const bf = new window.AsciiFlyer(el.firstChild);
+    const bf = new window.AsciiFlyer(el.firstChild, { cols: 25, rows: 17, cell: 4 });
     const W = bf.width, H = bf.height;
-    let x = innerWidth - W - 40, y = -H, vx = 0, vy = 0, tx = 0, ty = 0;
-    let heading = 0;                       // degrees, 0 = head up
-    let landed = false, shown = false, lastScroll = scrollY, last = performance.now();
-    let trailClock = 0;
-    const px = { x: -1e4, y: -1e4 };
+    // Point of the butterfly that sits on the flower (just below the thorax)
+    const SEAT_X = W / 2, SEAT_Y = H * 0.52;
 
-    const pick = () => {
-      tx = 20 + Math.random() * (innerWidth - W - 40);
-      ty = 70 + Math.random() * (innerHeight - H - 110);
+    let x = innerWidth - W - 40, y = -H, vx = 0, vy = 0, tx = 0, ty = 0;
+    let heading = 0;
+    let mode = 'wander';                   // wander | toFlower | perched
+    let flower = null, lastFlower = null, until = 0;
+    let noteOpen = false, shown = false;
+    let lastScroll = scrollY, last = performance.now(), trailClock = 0;
+    const px = { x: -1e4, y: -1e4 };
+    const flowers = [...document.querySelectorAll('.ascii-flower')];
+
+    const perchPoint = (f) => {
+      const r = f.querySelector('.perch').getBoundingClientRect();
+      return { x: r.left + r.width / 2 - SEAT_X, y: r.top + r.height / 2 - SEAT_Y };
     };
-    pick();
+    const onScreen = (f) => {
+      const r = f.getBoundingClientRect();
+      return r.top > 70 && r.bottom < innerHeight - 10 && r.left > 0 && r.right < innerWidth;
+    };
+    const wander = (now) => {
+      mode = 'wander';
+      tx = 20 + Math.random() * (innerWidth - W - 40);
+      ty = 80 + Math.random() * (innerHeight - H - 120);
+      until = now + 2500 + Math.random() * 2500;
+    };
+    function chooseNext(now) {
+      if (flower) flower.classList.remove('is-perched');
+      const options = flowers.filter((f) => f !== lastFlower && onScreen(f));
+      if (options.length && Math.random() < 0.8) {
+        flower = options[(Math.random() * options.length) | 0];
+        mode = 'toFlower';
+      } else {
+        flower = null;
+        wander(now);
+      }
+    }
 
     const heroEl = document.querySelector('.lab-hero');
     new IntersectionObserver(([e]) => {
       shown = e.intersectionRatio < 0.35;
       el.classList.toggle('is-shown', shown);
-      if (shown && y < 0) { y = -H; x = innerWidth * (0.3 + Math.random() * 0.5); }
+      if (shown && y < 0) { y = -H; x = innerWidth * (0.3 + Math.random() * 0.5); chooseNext(performance.now()); }
     }, { threshold: [0, 0.35, 0.6, 1] }).observe(heroEl);
 
-    const land = () => {
-      if (landed || !shown) return;
-      landed = true;
+    const openNote = () => {
+      if (noteOpen || !shown) return;
+      noteOpen = true;
       el.classList.add('is-landed');
-      Note.show({ anchor: el, onClose: () => { landed = false; el.classList.remove('is-landed'); pick(); } });
+      Note.show({
+        anchor: el,
+        onClose: () => {
+          noteOpen = false;
+          el.classList.remove('is-landed');
+          until = Math.max(until, performance.now() + 1200);
+        },
+      });
     };
-    el.addEventListener('pointerenter', (e) => { if (e.pointerType === 'mouse') land(); });
-    el.addEventListener('click', land);
+    el.addEventListener('pointerenter', (e) => { if (e.pointerType === 'mouse') openNote(); });
+    el.addEventListener('click', openNote);
     window.addEventListener('pointermove', (e) => { px.x = e.clientX; px.y = e.clientY; }, { passive: true });
-    addEventListener('resize', pick);
 
-    // Pollen trail: a few dots that drift down and fade behind it
     function pollen(ink) {
       const d = document.createElement('span');
       d.className = 'lab-pollen';
       d.textContent = Math.random() < 0.15 ? '✿' : '·';
       d.style.color = ink;
-      d.style.left = (x + W / 2 + (Math.random() - 0.5) * 14) + 'px';
-      d.style.top = (y + H * 0.7) + 'px';
+      d.style.left = (x + W / 2 + (Math.random() - 0.5) * 8) + 'px';
+      d.style.top = (y + H * 0.75) + 'px';
       document.body.appendChild(d);
       setTimeout(() => d.remove(), 1400);
     }
@@ -255,37 +288,67 @@
       if (!shown) return;
 
       let climb = 0;
-      if (!landed && !REDUCED) {
-        // Scrolling gives it a little lift, like air moving past
-        vy -= scrollDelta * 0.035;
-        const near = Math.hypot(px.x - (x + W / 2), px.y - (y + H / 2)) < 170;
-        const pace = near ? 0.2 : 1;
-        vx = (vx + (tx - x) * 0.0016) * 0.97;
-        vy = (vy + (ty - y) * 0.0016) * 0.97;
-        const sp = Math.hypot(vx, vy), max = 2.6;
-        if (sp > max) { vx *= max / sp; vy *= max / sp; }
-        climb = Math.max(0, Math.min(1, -vy / 2));
-        x += vx * pace * dt * 60;
-        y += vy * pace * dt * 60;
-        if (Math.hypot(tx - x, ty - y) < 40) pick();
-        x = Math.max(4, Math.min(innerWidth - W - 4, x));
-        y = Math.max(-H, Math.min(innerHeight - H - 4, y));
+      const resting = mode === 'perched' || noteOpen;
 
-        // Turn the head toward where it's going (smoothed, max ±50°)
-        const want = Math.max(-50, Math.min(50, Math.atan2(vx, -vy) * 180 / Math.PI));
-        heading += (want - heading) * Math.min(1, dt * 3);
+      if (REDUCED) {
+        // No flight: sit on the first visible flower, or in the corner
+        const f = flowers.find(onScreen);
+        const p = f ? perchPoint(f) : { x: innerWidth - W - 24, y: innerHeight - H - 24 };
+        x = p.x; y = p.y; heading = 0;
+      } else if (mode === 'perched') {
+        // Stay on the flower as the page scrolls; leave when rested or it goes off screen
+        const p = perchPoint(flower);
+        x = p.x; y = p.y;
+        heading += (0 - heading) * Math.min(1, dt * 5);
+        if (!onScreen(flower) || (now > until && !noteOpen)) {
+          lastFlower = flower;
+          vy = -2.2; vx = (Math.random() - 0.5) * 3;
+          chooseNext(now);
+        }
+      } else if (noteOpen) {
+        heading += (0 - heading) * Math.min(1, dt * 4);   // hover in place while you read
+      } else {
+        if (mode === 'toFlower') {
+          if (!onScreen(flower)) chooseNext(now);
+          else { const p = perchPoint(flower); tx = p.x; ty = p.y; }
+        } else if (now > until || Math.hypot(tx - x, ty - y) < 30) {
+          chooseNext(now);
+        }
+
+        // Scrolling gives it a little lift, like air moving past
+        vy -= scrollDelta * 0.03;
+
+        // Steer with "arrival": full speed far away, easing in close
+        const dx = tx - x, dy = ty - y, dist = Math.hypot(dx, dy) || 1;
+        const near = Math.hypot(px.x - (x + W / 2), px.y - (y + H / 2)) < 140;
+        const max = (near ? 0.6 : 2.8);
+        const want = Math.min(max, dist * 0.045);
+        vx += ((dx / dist) * want - vx) * 0.06;
+        vy += ((dy / dist) * want - vy) * 0.06;
+        x += vx * dt * 60;
+        y += vy * dt * 60 + Math.sin(now * 0.006) * 0.25;
+        climb = Math.max(0, Math.min(1, -vy / 2));
+
+        if (mode === 'toFlower' && dist < 4) {
+          mode = 'perched';
+          x = tx; y = ty; vx = vy = 0;
+          flower.classList.add('is-perched');
+          until = now + 2800 + Math.random() * 3200;
+        }
+
+        x = Math.max(-W / 2, Math.min(innerWidth - W / 2, x));
+        y = Math.max(-H, Math.min(innerHeight - H / 2, y));
+
+        const sp = Math.hypot(vx, vy);
+        const aim = sp > 0.3 ? Math.max(-55, Math.min(55, Math.atan2(vx, -vy) * 180 / Math.PI)) : 0;
+        heading += (aim - heading) * Math.min(1, dt * 3);
 
         trailClock += dt;
-        if (trailClock > 0.12 && sp > 0.6) { trailClock = 0; pollen(bf.ink); }
-      } else if (REDUCED) {
-        x = innerWidth - W - 24; y = innerHeight - H - 24; heading = 0;
-      } else {
-        heading += (0 - heading) * Math.min(1, dt * 4);   // settle upright when landed
+        if (trailClock > 0.14 && sp > 0.8) { trailClock = 0; pollen(bf.ink); }
       }
 
-      const { open } = bf.frame(dt, { landed, climb });
-      // Body lifts a touch on each downstroke
-      const bob = landed ? 0 : (open - 0.5) * -3;
+      const { open } = bf.frame(dt, { landed: resting, climb });
+      const bob = resting ? 0 : (open - 0.5) * -2;
       el.style.transform = `translate(${x}px, ${y + bob}px) rotate(${heading}deg)`;
     }
     requestAnimationFrame(step);

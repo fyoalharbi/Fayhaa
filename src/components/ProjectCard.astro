@@ -1,14 +1,33 @@
 ---
 import { type Lang } from '../data/profile';
 import { ui, langUrl, projectHref, skillLabel, formatDate, type Project } from '../lib/site';
+import { flowers } from '../data/flowers';
 
-interface Props { project: Project; lang: Lang; index?: number }
-const { project, lang, index } = Astro.props;
+interface Props {
+  project: Project;
+  lang: Lang;
+  index?: number;
+  /** /lab/: grow an ASCII flower out of the card (the butterfly perches on it) */
+  flower?: boolean;
+}
+const { project, lang, index, flower = false } = Astro.props;
+// Split each flower line around '@' so the perch point gets its own element
+const art = flowers[(index ?? 0) % flowers.length].map((line, i) => {
+  const [before, after] = line.includes('@') ? line.split('@') : [line, null];
+  return { head: i < 3, before, after };
+});
 const t = ui[lang];
 const { href, external } = projectHref(project);
 const d = project.data;
 ---
-<article class="card">
+<article class={flower ? 'card has-flower' : 'card'}>
+  {flower && (
+    <div class="ascii-flower" aria-hidden="true" style={`--sway-delay:${-(index ?? 0) * 1.7}s`}>
+      {art.map((l) => (
+        <span class={l.head ? 'flower-line flower-head' : 'flower-line flower-stem'}>{l.before}{l.after !== null && <b class="perch">@</b>}{l.after}</span>
+      ))}
+    </div>
+  )}
   <div class="card-meta mono">
     {index !== undefined && <span>{String(index + 1).padStart(2, '0')}</span>}
     <time datetime={d.date.toISOString()}>{formatDate(d.date, lang)}</time>
