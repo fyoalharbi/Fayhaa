@@ -2,7 +2,7 @@
 import { render } from 'astro:content';
 import Base from '../layouts/Base.astro';
 import { type Lang } from '../data/profile';
-import { ui, url, langUrl, projectSlug, skillLabel, formatDate, type Project } from '../lib/site';
+import { ui, url, langUrl, projectSlug, skillLabel, formatDate, getProjects, hasPage, type Project } from '../lib/site';
 
 interface Props { project: Project; lang: Lang }
 const { project, lang } = Astro.props;
@@ -10,10 +10,13 @@ const t = ui[lang];
 const d = project.data;
 const slug = projectSlug(project);
 const { Content } = await render(project);
+// The EN/AR switch points at this post's translation, or the project list if there isn't one
+const other: Lang = lang === 'en' ? 'ar' : 'en';
+const translated = (await getProjects(other)).some((p) => projectSlug(p) === slug && hasPage(p));
 const linkEntries = (Object.entries(d.links) as [keyof typeof t.links, string | undefined][])
   .filter(([, v]) => v);
 ---
-<Base lang={lang} title={d.title} description={d.summary} path={`projects/${slug}/`}>
+<Base lang={lang} title={d.title} description={d.summary} path={translated ? `projects/${slug}/` : 'projects/'}>
   <article class="post wrap">
     <a class="back mono" href={langUrl(lang, 'projects/')}>{t.back}</a>
 
@@ -31,14 +34,12 @@ const linkEntries = (Object.entries(d.links) as [keyof typeof t.links, string | 
       ))}
     </dl>
 
-    {linkEntries.length > 0 && (
-      <div class="actions">
-        {linkEntries.map(([k, v]) => <a class="btn" href={v} target="_blank" rel="noopener">{t.links[k]} ↗</a>)}
-        <a class="btn" href={`${url('terminal/')}?cmd=${encodeURIComponent(`cat ${slug}`)}${lang === 'ar' ? '&lang=ar' : ''}`} data-view="terminal">
-          <span aria-hidden="true">&gt;_</span> {t.openInTerminal}
-        </a>
-      </div>
-    )}
+    <div class="actions">
+      {linkEntries.map(([k, v]) => <a class="btn" href={v} target="_blank" rel="noopener">{t.links[k]} ↗</a>)}
+      <a class="btn" href={`${url('terminal/')}?cmd=${encodeURIComponent(`cat ${slug}`)}${lang === 'ar' ? '&lang=ar' : ''}`}>
+        <span aria-hidden="true">&gt;_</span> {t.openInTerminal}
+      </a>
+    </div>
 
     {d.embed && (
       <div class="embed">

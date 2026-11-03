@@ -575,10 +575,12 @@ function _initInput() {
     runCommand(a.dataset.cmd, { echo: true });
   });
 
-  // Typing anywhere (outside other inputs) focuses the prompt
+  // Typing anywhere focuses the prompt, but never steal keys from a focused
+  // button/link (space activates them) or another field
   document.addEventListener('keydown', (e) => {
-    if (e.ctrlKey || e.metaKey || e.altKey || e.key.length !== 1) return;
-    if (document.activeElement === input) return;
+    if (e.ctrlKey || e.metaKey || e.altKey || e.key.length !== 1 || e.key === ' ') return;
+    const a = document.activeElement;
+    if (a === input || (a && a.closest('button, a, input, textarea, select'))) return;
     input.focus();
   });
 }

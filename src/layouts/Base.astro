@@ -47,10 +47,16 @@ const terminalHref = url('terminal/') + (lang === 'ar' ? '?lang=ar' : '');
 
   {homeRedirect && (
     <script is:inline define:vars={{ terminalHref }}>
-      // Respect a visitor's earlier choice of the terminal view (unless ?view=normal).
+      // Respect a visitor's earlier choice of the terminal view, but only when
+      // they arrive from outside the site, once per session, and never with
+      // ?view=… — so Home links and the back button always work.
       try {
+        const fromInside = document.referrer && new URL(document.referrer).origin === location.origin;
         if (localStorage.getItem('fayhaa:view') === 'terminal' &&
+            !fromInside &&
+            !sessionStorage.getItem('fayhaa:redirected') &&
             !new URLSearchParams(location.search).has('view')) {
+          sessionStorage.setItem('fayhaa:redirected', '1');
           location.replace(terminalHref);
         }
       } catch (e) {}

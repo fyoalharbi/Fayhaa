@@ -9,7 +9,7 @@
 }
 .hero-stage-inner {
   display: grid; gap: 24px; align-items: center;
-  min-height: calc(100svh - 61px);
+  min-height: calc(100svh - var(--header-h, 61px));
   padding-block: 40px 24px;
 }
 @media (min-width: 900px) {
@@ -44,9 +44,9 @@
 .stage-text p { margin: 0 0 0.25em; }
 .stage-text p.is-last { color: #ff8a8a; margin-top: 0.5em; }
 
-/* ── Flying butterfly ── */
+/* ── Flying butterfly (below the sticky header, z 50, so it never blocks nav) ── */
 .flyer {
-  position: fixed; top: 0; left: 0; z-index: 60;
+  position: fixed; top: 0; left: 0; z-index: 40;
   padding: 0; border: 0; background: none; cursor: pointer;
   opacity: 0; pointer-events: none; transition: opacity .6s;
   will-change: transform;
@@ -57,7 +57,7 @@
 
 /* Bits that drop from it */
 .bit {
-  position: fixed; top: 0; left: 0; z-index: 59; pointer-events: none;
+  position: fixed; top: 0; left: 0; z-index: 39; pointer-events: none;
   font-family: var(--font-mono); font-size: 10px; font-weight: 700; line-height: 1;
 }
 

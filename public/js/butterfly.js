@@ -57,6 +57,10 @@
       document.body.appendChild(el);
       el.querySelector('.philo-close').addEventListener('click', () => hide());
       document.addEventListener('keydown', (e) => { if (e.key === 'Escape') hide(); });
+      // Clicking/tapping anywhere else closes it, so it never blocks the page
+      document.addEventListener('pointerdown', (e) => {
+        if (!el.hidden && !el.contains(e.target) && !e.target.closest('.flyer')) hide();
+      });
     }
     function place(anchor) {
       const a = anchor.getBoundingClientRect();
@@ -81,6 +85,7 @@
       place(anchor);
       body.style.minHeight = body.offsetHeight + 'px';
       requestAnimationFrame(() => el.classList.add('is-open'));
+      el.querySelector('.philo-close').focus({ preventScroll: true });
       cancel = typeLines(body, CFG.lines);
     }
     function hide() {
@@ -157,12 +162,9 @@
     if (landed && !e.target.closest('.stage')) releaseHero();
   }, { passive: true });
 
-  // Secret channel (from the original site): click → glitch → email
-  heroCanvas.addEventListener('click', () => {
-    if (landed) return;
-    hero.triggerGlitch(18);
-    setTimeout(() => { location.href = `mailto:${CFG.email}`; }, 600);
-  });
+  // Clicking it just glitches (the click → email secret lives in the terminal,
+  // so nobody gets their mail app opened by accident here)
+  heroCanvas.addEventListener('click', () => { if (!landed) hero.triggerGlitch(18); });
 
   // ══ 2. FLYING BUTTERFLY ═══════════════════════════════════
   (function flyer() {
@@ -171,6 +173,7 @@
     el.className = 'flyer';
     el.setAttribute('aria-label', CFG.title);
     el.innerHTML = '<canvas></canvas>';
+    el.tabIndex = -1;
     document.body.appendChild(el);
 
     const bf = new window.AsciiFlyer(el.firstChild, { cols: 23, rows: 17, cell: 4 });
@@ -216,6 +219,7 @@
     new IntersectionObserver(([e]) => {
       shown = e.intersectionRatio < 0.35;
       el.classList.toggle('is-shown', shown);
+      el.tabIndex = shown ? 0 : -1;
       if (shown && y < 0) { y = -H; x = innerWidth * (0.3 + Math.random() * 0.5); chooseNext(performance.now()); }
     }, { threshold: [0, 0.35, 0.6, 1] }).observe(document.querySelector('.hero-stage'));
 

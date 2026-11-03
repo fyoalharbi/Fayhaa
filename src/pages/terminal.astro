@@ -48,7 +48,6 @@ const asset = (f: string) => url(`terminal/${f}`);
   <script is:inline define:vars={{ PORTFOLIO }}>
     window.PORTFOLIO = PORTFOLIO;
     window.BUTTERFLY_SRC = PORTFOLIO.videoSrc;
-    try { localStorage.setItem('fayhaa:view', 'terminal'); } catch (e) {}
   </script>
   <script is:inline src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/p5.min.js"></script>
 </head>
