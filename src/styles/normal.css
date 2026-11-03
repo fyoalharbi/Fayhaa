@@ -283,7 +283,10 @@ html[lang='ar'] .mx-core { letter-spacing: 0; font-size: 0.7rem; }
 
 /* Phones: each category is one swipeable row; receipts show the newest 3 */
 @media (max-width: 719px) {
-  .chip-group + .chip-group { margin-top: 12px; }
+  .chip-group + .chip-group { margin-top: 8px; }
+  .chip-group h3 { margin-bottom: 4px; }
+  .skills-explorer { gap: 16px; }
+  .receipt-list a { padding: 7px 0; }
   .chips {
     flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none;
     margin-inline: calc(var(--gutter) * -1); padding: 2px var(--gutter);

@@ -35,6 +35,14 @@ export const skills = [
   { key: 'python',           group: 'data',     core: true,  label: { en: 'Python',             ar: 'Python' } },
   { key: 'data-cleaning',    group: 'data',     core: false, label: { en: 'Data cleaning',      ar: 'تنظيف البيانات' } },
   { key: 'streamlit',        group: 'data',     core: false, label: { en: 'Streamlit',          ar: 'Streamlit' } },
+  { key: 'web-scraping',     group: 'data',     core: false, label: { en: 'Web scraping',       ar: 'استخراج بيانات الويب' } },
+  { key: 'airflow',          group: 'eng',      core: false, label: { en: 'Airflow',            ar: 'Airflow' } },
+  { key: 'dbt',              group: 'eng',      core: false, label: { en: 'dbt',                ar: 'dbt' } },
+  { key: 'snowflake',        group: 'eng',      core: false, label: { en: 'Snowflake',          ar: 'Snowflake' } },
+  { key: 'data-modeling',    group: 'eng',      core: false, label: { en: 'Data modeling',      ar: 'نمذجة البيانات' } },
+  { key: 'docker',           group: 'eng',      core: false, label: { en: 'Docker',             ar: 'Docker' } },
+  { key: 'ci-cd',            group: 'eng',      core: false, label: { en: 'CI/CD',              ar: 'CI/CD' } },
+  { key: 'azure',            group: 'eng',      core: false, label: { en: 'Azure',              ar: 'Azure' } },
   { key: 'power-bi',         group: 'bi',       core: true,  label: { en: 'Power BI',           ar: 'Power BI' } },
   { key: 'dashboard-design', group: 'bi',       core: false, label: { en: 'Dashboard design',   ar: 'تصميم اللوحات' } },
   { key: 'p5js',             group: 'creative', core: true,  label: { en: 'p5.js',              ar: 'p5.js' } },
@@ -47,6 +55,7 @@ export const skillKeys = skills.map((s) => s.key) as [SkillKey, ...SkillKey[]];
 
 export const skillGroups: Record<string, T> = {
   data:     { en: 'Data & analysis',       ar: 'البيانات والتحليل' },
+  eng:      { en: 'Data engineering',      ar: 'هندسة البيانات' },
   bi:       { en: 'Business intelligence', ar: 'ذكاء الأعمال' },
   creative: { en: 'Creative coding',       ar: 'البرمجة الإبداعية' },
 };
