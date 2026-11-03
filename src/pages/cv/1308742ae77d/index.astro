@@ -1,0 +1,37 @@
+---
+// Unlisted CV page: shareable by direct link only. Nothing on the site links
+// here, and search engines are asked not to index it. To rotate the link,
+// rename this folder and public/cv/<folder> to a new random name.
+import Base from '../../../layouts/Base.astro';
+import { profile } from '../../../data/profile';
+import { url } from '../../../lib/site';
+
+const folder = Astro.url.pathname.split('/').filter(Boolean).pop();
+const pdf = url(`cv/${folder}/Fayhaa-Alharbi-CV.pdf`);
+---
+<Base lang="en" title="CV" noindex>
+  <section class="cv-page wrap">
+    <div class="cv-head">
+      <div>
+        <p class="kicker mono">{profile.role.en} · {profile.availability.en}</p>
+        <h1>{profile.name.en} — CV</h1>
+      </div>
+      <div class="actions">
+        <a class="btn btn-primary" href={pdf} download="Fayhaa-Alharbi-CV.pdf">Download PDF</a>
+        <a class="btn" href={pdf} target="_blank" rel="noopener">Open in new tab ↗</a>
+        <a class="btn" href={`mailto:${profile.email}`}>Email me</a>
+      </div>
+    </div>
+    <object class="cv-frame" data={pdf} type="application/pdf" aria-label="CV (PDF)">
+      <p>Your browser can't show the PDF here. <a href={pdf}>Download it instead.</a></p>
+    </object>
+  </section>
+</Base>
+
+<style>
+  .cv-page { padding-block: 32px 48px; }
+  .cv-head { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 8px 24px; margin-bottom: 20px; }
+  .cv-head h1 { font-size: clamp(1.6rem, 4vw, 2.4rem); margin: 0; }
+  .cv-head .actions { margin: 0; }
+  .cv-frame { display: block; width: 100%; height: calc(100svh - var(--header-h) - 200px); min-height: 520px; border: 1px solid var(--rule); background: var(--surface); }
+</style>

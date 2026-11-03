@@ -11,9 +11,11 @@ interface Props {
   path?: string;
   /** Only the home pages honour a saved "terminal" preference. */
   homeRedirect?: boolean;
+  /** Keep unlisted pages (e.g. the shareable CV) out of search results. */
+  noindex?: boolean;
 }
 
-const { lang, title, description = profile.intro[lang], path = '', homeRedirect = false } = Astro.props;
+const { lang, title, description = profile.intro[lang], path = '', homeRedirect = false, noindex = false } = Astro.props;
 const t = ui[lang];
 const other: Lang = lang === 'en' ? 'ar' : 'en';
 const fullTitle = title ? `${title} · ${profile.name[lang]}` : `${profile.name[lang]} · ${profile.role[lang]}`;
@@ -28,6 +30,7 @@ const terminalHref = url('terminal/') + (lang === 'ar' ? '?lang=ar' : '');
   <title>{fullTitle}</title>
   <meta name="description" content={description} />
   <link rel="canonical" href={canonical} />
+  {noindex && <meta name="robots" content="noindex, nofollow" />}
   <link rel="alternate" hreflang="en" href={new URL(langUrl('en', path), Astro.site)} />
   <link rel="alternate" hreflang="ar" href={new URL(langUrl('ar', path), Astro.site)} />
   <link rel="icon" href={url('favicon.svg')} type="image/svg+xml" />
