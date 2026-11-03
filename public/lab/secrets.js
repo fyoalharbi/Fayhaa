@@ -192,9 +192,9 @@
 
   // ══ SECRET 2: FLYING BUTTERFLY (the original idea) ════════
   // Once you scroll past the hero, a small butterfly keeps you company.
-  // It visits the ASCII flowers on the project cards: flies to one on
-  // screen, perches on its centre, rests, then moves on. With no
-  // flowers in view it wanders. It slows down near the cursor so you
+  // It drops bits (0/1 and the odd letter) as it flies, lands sideways
+  // on the top edge of a project card on screen, rests, then moves on.
+  // With no cards in view it wanders. It slows down near the cursor so you
   // can catch it; hovering it starts the philosophy.
   function flyer() {
     const el = document.createElement('button');
@@ -206,26 +206,27 @@
 
     const bf = new window.AsciiFlyer(el.firstChild, { cols: 23, rows: 17, cell: 4 });
     const W = bf.width, H = bf.height;
-    // Point of the butterfly that touches the flower (its legs, in side view)
+    // Point of the butterfly that touches the card (its legs, in side view)
     const SEAT = bf.seat(true);
     let facing = 1;
 
     let x = innerWidth - W - 40, y = -H, vx = 0, vy = 0, tx = 0, ty = 0;
     let heading = 0;
-    let mode = 'wander';                   // wander | toFlower | perched
-    let flower = null, lastFlower = null, until = 0;
+    let mode = 'wander';                   // wander | toCard | perched
+    let spot = null, lastCard = null, until = 0;   // spot = { el, fx } on a card's top edge
     let noteOpen = false, shown = false;
-    let lastScroll = scrollY, last = performance.now(), trailClock = 0;
+    let lastScroll = scrollY, last = performance.now(), dropClock = 0;
     const px = { x: -1e4, y: -1e4 };
-    const flowers = [...document.querySelectorAll('.ascii-flower')];
+    const cards = [...document.querySelectorAll('#projects .card')];
 
-    const perchPoint = (f) => {
-      const r = f.querySelector('.perch').getBoundingClientRect();
-      return { x: r.left + r.width / 2 - SEAT.x, y: r.top + r.height / 2 - SEAT.y };
+    // Legs sit on the card's top border, at fraction fx along it
+    const perchPoint = (s) => {
+      const r = s.el.getBoundingClientRect();
+      return { x: r.left + r.width * s.fx - SEAT.x, y: r.top + 1 - SEAT.y };
     };
-    const onScreen = (f) => {
-      const r = f.getBoundingClientRect();
-      return r.top > 70 && r.bottom < innerHeight - 10 && r.left > 0 && r.right < innerWidth;
+    const onScreen = (s) => {
+      const r = (s.el || s).getBoundingClientRect();
+      return r.top > 90 && r.top < innerHeight - 60 && r.left >= 0 && r.right <= innerWidth;
     };
     const wander = (now) => {
       mode = 'wander';
@@ -234,13 +235,13 @@
       until = now + 2500 + Math.random() * 2500;
     };
     function chooseNext(now) {
-      if (flower) flower.classList.remove('is-perched');
-      const options = flowers.filter((f) => f !== lastFlower && onScreen(f));
+      if (spot) spot.el.classList.remove('is-perched');
+      const options = cards.filter((c) => c !== lastCard && onScreen(c));
       if (options.length && Math.random() < 0.8) {
-        flower = options[(Math.random() * options.length) | 0];
-        mode = 'toFlower';
+        spot = { el: options[(Math.random() * options.length) | 0], fx: 0.15 + Math.random() * 0.7 };
+        mode = 'toCard';
       } else {
-        flower = null;
+        spot = null;
         wander(now);
       }
     }
@@ -269,15 +270,24 @@
     el.addEventListener('click', openNote);
     window.addEventListener('pointermove', (e) => { px.x = e.clientX; px.y = e.clientY; }, { passive: true });
 
-    function pollen(ink) {
+    // Bits fall off the wings: mostly 0/1, sometimes a letter, sometimes red
+    const LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+    function dropBit(slow) {
+      if (REDUCED) return;
       const d = document.createElement('span');
-      d.className = 'lab-pollen';
-      d.textContent = Math.random() < 0.15 ? '✿' : '·';
-      d.style.color = ink;
-      d.style.left = (x + W / 2 + (Math.random() - 0.5) * 8) + 'px';
-      d.style.top = (y + H * 0.75) + 'px';
+      d.className = 'lab-bit';
+      d.textContent = Math.random() < 0.85 ? (Math.random() < 0.5 ? '0' : '1')
+                                            : LETTERS[(Math.random() * LETTERS.length) | 0];
+      d.style.color = Math.random() < 0.18 ? bf.accent : bf.ink;
+      const sx = x + W * (0.25 + Math.random() * 0.5), sy = y + H * (0.35 + Math.random() * 0.3);
+      const fall = 70 + Math.random() * 90, drift = (Math.random() - 0.5) * 30 - vx * 6;
       document.body.appendChild(d);
-      setTimeout(() => d.remove(), 1400);
+      d.animate([
+        { transform: `translate(${sx}px, ${sy}px)`, opacity: 0.95 },
+        { transform: `translate(${sx + drift * 0.4}px, ${sy + fall * 0.35}px)`, opacity: 0.8, offset: 0.4 },
+        { transform: `translate(${sx + drift}px, ${sy + fall}px) rotate(${(Math.random() - 0.5) * 120}deg)`, opacity: 0 },
+      ], { duration: (slow ? 1800 : 1200) + Math.random() * 600, easing: 'cubic-bezier(.4,0,.8,.6)' })
+        .onfinish = () => d.remove();
     }
 
     function step(now) {
@@ -292,26 +302,28 @@
       const resting = mode === 'perched' || noteOpen;
 
       if (REDUCED) {
-        // No flight: sit on the first visible flower, or in the corner
-        const f = flowers.find(onScreen);
-        const p = f ? perchPoint(f) : { x: innerWidth - W - 24, y: innerHeight - H - 24 };
+        // No flight: sit on the first visible card, or in the corner
+        const c = cards.find(onScreen);
+        const p = c ? perchPoint({ el: c, fx: 0.8 }) : { x: innerWidth - W - 24, y: innerHeight - H - 24 };
         x = p.x; y = p.y; heading = 0;
       } else if (mode === 'perched') {
-        // Stay on the flower as the page scrolls; leave when rested or it goes off screen
-        const p = perchPoint(flower);
+        // Stay on the card as the page scrolls; leave when rested or it goes off screen
+        const p = perchPoint(spot);
         x = p.x; y = p.y;
         heading += (0 - heading) * Math.min(1, dt * 5);
-        if (!onScreen(flower) || (now > until && !noteOpen)) {
-          lastFlower = flower;
+        dropClock += dt;
+        if (dropClock > 0.7) { dropClock = 0; dropBit(true); }   // the odd bit while resting
+        if (!onScreen(spot) || (now > until && !noteOpen)) {
+          lastCard = spot.el;
           vy = -2.2; vx = (Math.random() - 0.5) * 3;
           chooseNext(now);
         }
       } else if (noteOpen) {
         heading += (0 - heading) * Math.min(1, dt * 4);   // hover in place while you read
       } else {
-        if (mode === 'toFlower') {
-          if (!onScreen(flower)) chooseNext(now);
-          else { const p = perchPoint(flower); tx = p.x; ty = p.y; }
+        if (mode === 'toCard') {
+          if (!onScreen(spot)) chooseNext(now);
+          else { const p = perchPoint(spot); tx = p.x; ty = p.y; }
         } else if (now > until || Math.hypot(tx - x, ty - y) < 30) {
           chooseNext(now);
         }
@@ -330,10 +342,10 @@
         y += vy * dt * 60 + Math.sin(now * 0.006) * 0.25;
         climb = Math.max(0, Math.min(1, -vy / 2));
 
-        if (mode === 'toFlower' && dist < 4) {
+        if (mode === 'toCard' && dist < 4) {
           mode = 'perched';
           x = tx; y = ty; vx = vy = 0;
-          flower.classList.add('is-perched');
+          spot.el.classList.add('is-perched');
           until = now + 2800 + Math.random() * 3200;
         }
 
@@ -345,11 +357,11 @@
         const aim = sp > 0.3 ? Math.max(-55, Math.min(55, Math.atan2(vx, -vy) * 180 / Math.PI)) : 0;
         heading += (aim - heading) * Math.min(1, dt * 3);
 
-        trailClock += dt;
-        if (trailClock > 0.14 && sp > 0.8) { trailClock = 0; pollen(bf.ink); }
+        dropClock += dt;
+        if (dropClock > 0.09 && sp > 0.6) { dropClock = 0; dropBit(false); }
       }
 
-      const { open } = bf.frame(dt, { landed: resting, climb, perched: mode === 'perched' || (REDUCED && !!flowers.find(onScreen)), facing });
+      const { open } = bf.frame(dt, { landed: resting, climb, perched: mode === 'perched' || (REDUCED && !!cards.find(onScreen)), facing });
       const bob = resting ? 0 : (open - 0.5) * -2;
       el.style.transform = `translate(${x}px, ${y + bob}px) rotate(${heading}deg)`;
     }
