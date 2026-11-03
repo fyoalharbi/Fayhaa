@@ -65,6 +65,37 @@ export const education: { title: T; org: T; period: string }[] = [];
 // ── PHILOSOPHY (the butterfly) ───────────────
 export const philosophy = {
   title: { en: 'Why butterflies?', ar: 'ليش فراشات؟' } as T,
+  // Line-by-line version, used by the hidden/typed reveals
+  lines: {
+    en: [
+      'Ever asked why butterflies?',
+      'Their lifespan is short.',
+      'Their main task is to move pollen between flowers.',
+      'Maybe you thought about bees!',
+      'They have the same task.',
+      'But butterflies visit flowers more often…',
+      '…and yet, bees are better at pollination.',
+      "Butterflies don't do their main job better than anyone else,",
+      'but they complement it by flying around and visiting flowers anyway.',
+      'This is my creative engine.',
+      "I'm not the best, but…",
+      "I'll keep visiting flowers, and I don't care about the bees.",
+    ],
+    ar: [
+      'ما قد تساءلت؟ ليش فيه فراشات؟',
+      'حياتها قصيرة.',
+      'مهمتها الأساسية نقل لقاح الأزهار.',
+      'ممكن جاء على بالك النحلة!',
+      'كلهم لهم نفس المهمة.',
+      'لكن الفراشة تزور الزهور أكثر…',
+      '…ورغم ذلك، النحلة أحسن منها بالتلقيح.',
+      'الفراشة ما قامت بدورها الرئيسي أحسن شيء،',
+      'لكنها مكملة، تطير وتزور الزهور ولا عليها!',
+      'هذا هو محركي الإبداعي.',
+      'أنا مو أحسن وحدة، لكن…',
+      'بكمل أزور الزهور ولا علي من النحلة.',
+    ],
+  },
   paragraphs: {
     en: [
       "Butterflies have a short lifespan, and their main job is moving pollen between flowers. Bees have the same job, and they're better at it. Butterflies visit flowers more often anyway.",

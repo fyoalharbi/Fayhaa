@@ -1,0 +1,44 @@
+---
+// Floating switcher for /lab/. Links keep the other setting and reload.
+const layouts = [
+  { id: 'a', label: 'A · Dark stage' },
+  { id: 'b', label: 'B · Centered' },
+  { id: 'c', label: 'C · Background' },
+  { id: 'd', label: 'D · Wide split' },
+  { id: 'current', label: 'Current' },
+];
+const secrets = [
+  { id: 'fly',     label: '★ Flying butterfly', how: "Scroll past the top. A small butterfly follows you around while you read. It slows down near your cursor. Hover it (or tap it) and it lands, and the philosophy starts." },
+  { id: 'land',    label: 'Land & speak',       how: "Hold your cursor still on the big butterfly's body for ~1.5s (long-press on phones). Its characters rearrange into the philosophy. Move off the canvas and it flies back." },
+  { id: 'flowers', label: 'Flower hunt',        how: 'Five small ✿ are hidden on the page: in the top section, the butterfly caption, and section corners. Visit them all to open the philosophy.' },
+  { id: 'bee',     label: 'Shoo the bee',       how: 'A little ASCII bee buzzes past the butterfly every few seconds. Click it to shoo it away.' },
+  { id: 'note',    label: 'Short-lived note',   how: 'Type "why" anywhere (or triple-click the butterfly). The note lives for 30 seconds, then flies away.' },
+];
+---
+<details class="lab-panel" open>
+  <summary>LAB // pick a variant</summary>
+  <p class="lab-panel-h">Butterfly layout</p>
+  <div class="lab-chips">
+    {layouts.map((l) => <a href="#" data-set="layout" data-val={l.id}>{l.label}</a>)}
+  </div>
+  <p class="lab-panel-h">Hidden philosophy</p>
+  <div class="lab-chips">
+    {secrets.map((s) => <a href="#" data-set="secret" data-val={s.id}>{s.label}</a>)}
+  </div>
+  {secrets.map((s) => <p class="lab-how" data-how={s.id}>{s.how}</p>)}
+</details>
+
+<script is:inline>
+  (function () {
+    const root = document.documentElement;
+    document.querySelectorAll('.lab-panel [data-set]').forEach((a) => {
+      const p = new URLSearchParams({ layout: root.dataset.layout, secret: root.dataset.secret });
+      p.set(a.dataset.set, a.dataset.val);
+      a.href = '?' + p.toString();
+      if (root.dataset[a.dataset.set] === a.dataset.val) a.setAttribute('aria-current', 'true');
+    });
+    document.querySelectorAll('.lab-how').forEach((p) => { p.hidden = p.dataset.how !== root.dataset.secret; });
+    // Start collapsed on small screens so it doesn't cover the page
+    if (innerWidth < 700) document.querySelector('.lab-panel').open = false;
+  })();
+</script>
