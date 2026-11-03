@@ -53,7 +53,10 @@ const tone = (id: string) => (num(id) % 2 ? 'surface' : 'paper') as 'surface' | 
                 <li>
                   <a href={langUrl(lang, `skills/${s.key}/`)}>
                     <span>{s.label[lang]}</span>
-                    <span class="mono muted">{n ? t.projectsUsing(n) : '—'}</span>
+                    <span class="mono muted skill-count">
+                      <span class="count-full">{n ? t.projectsUsing(n) : '—'}</span>
+                      <span class="count-num" aria-hidden="true">{n || '—'}</span>
+                    </span>
                   </a>
                 </li>
               );

@@ -102,6 +102,21 @@ const terminalHref = url('terminal/') + (lang === 'ar' ? '?lang=ar' : '');
   </footer>
 
   <script is:inline>
+    // Keep --header-h / --footer-h equal to the real header and footer heights,
+    // so one-screen sections and anchor jumps line up exactly (EN and AR differ).
+    (function () {
+      const root = document.documentElement.style;
+      const watch = (sel, prop) => {
+        const el = document.querySelector(sel);
+        if (!el) return;
+        const set = () => root.setProperty(prop, el.offsetHeight + 'px');
+        set();
+        new ResizeObserver(set).observe(el);
+      };
+      watch('.site-header', '--header-h');
+      watch('.site-footer', '--footer-h');
+    })();
+
     // Remember which view the visitor picked.
     document.addEventListener('click', (e) => {
       const a = e.target.closest && e.target.closest('[data-view]');

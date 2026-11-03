@@ -4,6 +4,7 @@
 ───────────────────────────────────────────── */
 :root {
   --header-h: 104px;           /* sticky header height on phones (two rows) */
+  --footer-h: 150px;           /* footer height on phones (wraps to three rows) */
   --paper: #f4f4f4;
   --surface: #ffffff;
   --ink: #1a1a1a;
@@ -20,7 +21,10 @@
 }
 
 *, *::before, *::after { box-sizing: border-box; }
-html { scroll-behavior: smooth; }
+/* Anchor jumps (and snapping) land below the sticky header */
+html { scroll-behavior: smooth; scroll-padding-top: var(--header-h); }
+/* Home: each section is one screen; settle gently onto the nearest one */
+html:has(.hero-stage) { scroll-snap-type: y proximity; }
 body {
   margin: 0;
   background: var(--paper);
@@ -42,7 +46,7 @@ p { margin: 0 0 1em; }
 
 .wrap { max-width: var(--wrap); margin: 0 auto; padding: 0 var(--gutter); }
 @media (min-width: 720px) { :root { --gutter: 32px; } }
-@media (min-width: 820px) { :root { --header-h: 64px; } }
+@media (min-width: 820px) { :root { --header-h: 64px; --footer-h: 74px; } }
 
 .mono { font-family: var(--font-mono); font-size: 0.78rem; letter-spacing: 0.04em; }
 .muted { color: var(--muted); }
@@ -123,13 +127,19 @@ html[dir='rtl'] .workflow li + li::before { content: '←'; }
 .back:hover { color: var(--ink); }
 
 /* ── HOME BANDS ──
-   Full-width, alternating backgrounds + numbered labels so each section
-   reads as its own block. Contact closes the page on an inverted band. */
+   Each section fills one screen under the sticky header, content centred,
+   with alternating backgrounds + numbered labels so none blend together.
+   Contact closes the page on an inverted band and shares its screen with
+   the footer. Taller content (e.g. stacked cards on phones) just grows. */
 .band {
-  padding-block: clamp(56px, 8vw, 96px);
+  display: flex; align-items: center;
+  min-height: calc(100svh - var(--header-h));
+  padding-block: clamp(40px, 6vh, 72px);
   border-top: 1px solid var(--rule);
-  scroll-margin-top: var(--header-h, 60px);   /* clear the sticky header on anchor jumps */
+  scroll-snap-align: start;
 }
+.band > .wrap { width: 100%; }
+.band:last-of-type { min-height: calc(100svh - var(--header-h) - var(--footer-h)); }
 .band-surface { background: var(--surface); }
 .band-paper   { background: var(--paper); }
 .band-ink {
@@ -186,6 +196,19 @@ html[dir='rtl'] .workflow li + li::before { content: '←'; }
 .card-cta { margin-top: 4px; }
 .card .tags { position: relative; z-index: 1; }
 
+/* Phones: home project cards become a swipeable row so the section fits one screen */
+@media (max-width: 719px) {
+  .band .cards {
+    display: flex; gap: 12px;
+    overflow-x: auto; scroll-snap-type: x mandatory; overscroll-behavior-x: contain;
+    margin-inline: calc(var(--gutter) * -1); padding: 4px var(--gutter) 12px;
+    scrollbar-width: none;
+  }
+  .band .cards::-webkit-scrollbar { display: none; }
+  .band .card { flex: 0 0 86%; scroll-snap-align: center; }
+  .band .card:hover { transform: none; }
+}
+
 .tags { display: flex; flex-wrap: wrap; gap: 6px; list-style: none; padding: 0; margin: 0; }
 .tags a {
   display: inline-block; font-family: var(--font-mono); font-size: 0.7rem;
@@ -195,8 +218,14 @@ html[dir='rtl'] .workflow li + li::before { content: '←'; }
 .tags a:hover { border-color: var(--ink); color: var(--ink); }
 
 /* ── SKILLS ── */
-.skill-groups { display: grid; gap: 24px; }
-@media (min-width: 720px) { .skill-groups { grid-template-columns: repeat(2, 1fr); } }
+.skill-groups { display: grid; gap: 20px 16px; grid-template-columns: repeat(2, 1fr); }
+.count-num { display: none; }
+/* Phones: two compact columns; just the project count number beside each skill */
+@media (max-width: 719px) {
+  .skill-group li a { padding: 7px 0; font-size: 0.9rem; align-items: baseline; }
+  .count-full { display: none; }
+  .count-num { display: inline; }
+}
 @media (min-width: 1000px) { .skill-groups { grid-template-columns: repeat(4, 1fr); } }
 .skill-group h3 { text-transform: uppercase; color: var(--muted); font-weight: 400; margin-bottom: 8px; }
 .skill-group ul { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--rule); }
@@ -262,5 +291,6 @@ html[dir='rtl'] .workflow li + li::before { content: '←'; }
 
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
+  html:has(.hero-stage) { scroll-snap-type: none; }
   *, *::before, *::after { animation: none !important; transition: none !important; }
 }
