@@ -204,10 +204,11 @@
     el.innerHTML = '<canvas></canvas>';
     document.body.appendChild(el);
 
-    const bf = new window.AsciiFlyer(el.firstChild, { cols: 25, rows: 17, cell: 4 });
+    const bf = new window.AsciiFlyer(el.firstChild, { cols: 23, rows: 17, cell: 4 });
     const W = bf.width, H = bf.height;
-    // Point of the butterfly that sits on the flower (just below the thorax)
-    const SEAT_X = W / 2, SEAT_Y = H * 0.52;
+    // Point of the butterfly that touches the flower (its legs, in side view)
+    const SEAT = bf.seat(true);
+    let facing = 1;
 
     let x = innerWidth - W - 40, y = -H, vx = 0, vy = 0, tx = 0, ty = 0;
     let heading = 0;
@@ -220,7 +221,7 @@
 
     const perchPoint = (f) => {
       const r = f.querySelector('.perch').getBoundingClientRect();
-      return { x: r.left + r.width / 2 - SEAT_X, y: r.top + r.height / 2 - SEAT_Y };
+      return { x: r.left + r.width / 2 - SEAT.x, y: r.top + r.height / 2 - SEAT.y };
     };
     const onScreen = (f) => {
       const r = f.getBoundingClientRect();
@@ -340,6 +341,7 @@
         y = Math.max(-H, Math.min(innerHeight - H / 2, y));
 
         const sp = Math.hypot(vx, vy);
+        if (Math.abs(vx) > 0.35) facing = vx > 0 ? 1 : -1;
         const aim = sp > 0.3 ? Math.max(-55, Math.min(55, Math.atan2(vx, -vy) * 180 / Math.PI)) : 0;
         heading += (aim - heading) * Math.min(1, dt * 3);
 
@@ -347,7 +349,7 @@
         if (trailClock > 0.14 && sp > 0.8) { trailClock = 0; pollen(bf.ink); }
       }
 
-      const { open } = bf.frame(dt, { landed: resting, climb });
+      const { open } = bf.frame(dt, { landed: resting, climb, perched: mode === 'perched' || (REDUCED && !!flowers.find(onScreen)), facing });
       const bob = resting ? 0 : (open - 0.5) * -2;
       el.style.transform = `translate(${x}px, ${y + bob}px) rotate(${heading}deg)`;
     }
