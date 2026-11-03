@@ -202,13 +202,14 @@
     el.innerHTML = '<canvas></canvas>';
     document.body.appendChild(el);
 
-    new window.AsciiView(el.firstChild, {
-      grid: 26, crop: [0.2, 0.1, 0.6, 0.78], skipAbove: 120, drift: 0, hearts: false, bold: true,
-    });
-
-    const W = 112, H = Math.round(112 * 0.78 / 0.6);
+    const bf = new window.AsciiFlyer(el.firstChild);
+    const W = bf.width, H = bf.height;
     let x = innerWidth - W - 40, y = -H, vx = 0, vy = 0, tx = 0, ty = 0;
-    let landed = false, shown = false, lastScroll = scrollY, t = 0;
+    let heading = 0;                       // degrees, 0 = head up
+    let landed = false, shown = false, lastScroll = scrollY, last = performance.now();
+    let trailClock = 0;
+    const px = { x: -1e4, y: -1e4 };
+
     const pick = () => {
       tx = 20 + Math.random() * (innerWidth - W - 40);
       ty = 70 + Math.random() * (innerHeight - H - 110);
@@ -230,36 +231,64 @@
     };
     el.addEventListener('pointerenter', (e) => { if (e.pointerType === 'mouse') land(); });
     el.addEventListener('click', land);
+    window.addEventListener('pointermove', (e) => { px.x = e.clientX; px.y = e.clientY; }, { passive: true });
+    addEventListener('resize', pick);
 
-    function step() {
+    // Pollen trail: a few dots that drift down and fade behind it
+    function pollen(ink) {
+      const d = document.createElement('span');
+      d.className = 'lab-pollen';
+      d.textContent = Math.random() < 0.15 ? '✿' : '·';
+      d.style.color = ink;
+      d.style.left = (x + W / 2 + (Math.random() - 0.5) * 14) + 'px';
+      d.style.top = (y + H * 0.7) + 'px';
+      document.body.appendChild(d);
+      setTimeout(() => d.remove(), 1400);
+    }
+
+    function step(now) {
       requestAnimationFrame(step);
-      t++;
+      const dt = Math.min(0.05, (now - last) / 1000);
+      last = now;
       const scrollDelta = scrollY - lastScroll;
       lastScroll = scrollY;
-      if (!shown || landed) return;
+      if (!shown) return;
 
-      if (REDUCED) { x = innerWidth - W - 24; y = innerHeight - H - 24; }
-      else {
+      let climb = 0;
+      if (!landed && !REDUCED) {
         // Scrolling gives it a little lift, like air moving past
         vy -= scrollDelta * 0.035;
-        const near = Math.hypot(window.__px - (x + W / 2), window.__py - (y + H / 2)) < 170;
-        const pace = near ? 0.18 : 1;
+        const near = Math.hypot(px.x - (x + W / 2), px.y - (y + H / 2)) < 170;
+        const pace = near ? 0.2 : 1;
         vx = (vx + (tx - x) * 0.0016) * 0.97;
         vy = (vy + (ty - y) * 0.0016) * 0.97;
         const sp = Math.hypot(vx, vy), max = 2.6;
         if (sp > max) { vx *= max / sp; vy *= max / sp; }
-        x += vx * pace;
-        y += vy * pace + Math.sin(t * 0.09) * 0.5 * pace;
+        climb = Math.max(0, Math.min(1, -vy / 2));
+        x += vx * pace * dt * 60;
+        y += vy * pace * dt * 60;
         if (Math.hypot(tx - x, ty - y) < 40) pick();
         x = Math.max(4, Math.min(innerWidth - W - 4, x));
         y = Math.max(-H, Math.min(innerHeight - H - 4, y));
+
+        // Turn the head toward where it's going (smoothed, max ±50°)
+        const want = Math.max(-50, Math.min(50, Math.atan2(vx, -vy) * 180 / Math.PI));
+        heading += (want - heading) * Math.min(1, dt * 3);
+
+        trailClock += dt;
+        if (trailClock > 0.12 && sp > 0.6) { trailClock = 0; pollen(bf.ink); }
+      } else if (REDUCED) {
+        x = innerWidth - W - 24; y = innerHeight - H - 24; heading = 0;
+      } else {
+        heading += (0 - heading) * Math.min(1, dt * 4);   // settle upright when landed
       }
-      el.style.transform = `translate(${x}px, ${y}px) rotate(${Math.max(-18, Math.min(18, vx * 6))}deg)`;
+
+      const { open } = bf.frame(dt, { landed, climb });
+      // Body lifts a touch on each downstroke
+      const bob = landed ? 0 : (open - 0.5) * -3;
+      el.style.transform = `translate(${x}px, ${y + bob}px) rotate(${heading}deg)`;
     }
-    window.__px = window.__py = -1e4;
-    window.addEventListener('pointermove', (e) => { window.__px = e.clientX; window.__py = e.clientY; }, { passive: true });
-    addEventListener('resize', pick);
-    step();
+    requestAnimationFrame(step);
   }
 
   // ══ SECRET 3: FLOWER HUNT ═════════════════════════════════
