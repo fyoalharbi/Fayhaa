@@ -4,7 +4,7 @@ import Hero from './Hero.astro';
 import ProjectCard from './ProjectCard.astro';
 import Section from './Section.astro';
 import { profile, skills, skillGroups, experience, education, type Lang } from '../data/profile';
-import { ui, url, langUrl, hasResume, getProjects } from '../lib/site';
+import { ui, url, langUrl, hasResume, getProjects, projectHref } from '../lib/site';
 
 interface Props { lang: Lang }
 const { lang } = Astro.props;
@@ -12,11 +12,22 @@ const t = ui[lang];
 
 const projects = await getProjects(lang);
 const featured = projects.filter((p) => p.data.featured).slice(0, 3);
-const usage = (key: string) => projects.filter((p) => (p.data.skills as string[]).includes(key)).length;
+// Skills × projects matrix: rows grouped by category (core skills first),
+// one column per project (numbered like the project cards above).
+const uses = (p: (typeof projects)[number], key: string) => (p.data.skills as string[]).includes(key);
+const columns = projects.map((p, i) => ({
+  n: String(i + 1).padStart(2, '0'),
+  short: p.data.title.split(' — ')[0],
+  ...projectHref(p),
+  p,
+}));
 const groups = Object.keys(skillGroups).map((g) => ({
   key: g,
   label: skillGroups[g][lang],
-  items: skills.filter((s) => s.group === g),
+  items: skills
+    .filter((s) => s.group === g)
+    .map((s) => ({ ...s, count: projects.filter((p) => uses(p, s.key)).length }))
+    .sort((a, b) => Number(b.core) - Number(a.core) || b.count - a.count),
 }));
 
 // Sections are numbered in order and alternate white / paper backgrounds;
@@ -42,29 +53,50 @@ const tone = (id: string) => (num(id) % 2 ? 'surface' : 'paper') as 'surface' | 
   <!-- ── SKILLS ── -->
   <Section id="skills" index={num('skills')} tone={tone('skills')} label={t.nav.skills} title={t.skillsTitle}>
     <p slot="aside" class="muted">{t.skillsLead}</p>
-    <div class="skill-groups">
-      {groups.map((g) => (
-        <div class="skill-group">
-          <h3 class="mono">{g.label}</h3>
-          <ul>
-            {g.items.map((s) => {
-              const n = usage(s.key);
-              return (
-                <li>
-                  <a href={langUrl(lang, `skills/${s.key}/`)}>
-                    <span>{s.label[lang]}</span>
-                    <span class="mono muted skill-count">
-                      <span class="count-full">{n ? t.projectsUsing(n) : '—'}</span>
-                      <span class="count-num" aria-hidden="true">{n || '—'}</span>
-                    </span>
-                  </a>
-                </li>
-              );
-            })}
-          </ul>
-        </div>
-      ))}
+    <div class="matrix-wrap">
+      <table class="skill-matrix" style={`--cols:${columns.length}`}>
+        <thead>
+          <tr>
+            <th scope="col" class="mono">{t.skillCol}</th>
+            {columns.map((c) => (
+              <th scope="col">
+                <a href={c.href} {...(c.external ? { target: '_blank', rel: 'noopener' } : {})} title={c.p.data.title}>
+                  <span class="mx-num mono">{c.n}</span>
+                  <span class="mx-name">{c.short}</span>
+                </a>
+              </th>
+            ))}
+          </tr>
+        </thead>
+        {groups.map((g) => (
+          <tbody>
+            <tr class="mx-group">
+              <th scope="colgroup" colspan={columns.length + 1} class="mono">{g.label}</th>
+            </tr>
+            {g.items.map((s) => (
+              <tr class={s.core ? 'is-core' : ''}>
+                <th scope="row">
+                  <a href={langUrl(lang, `skills/${s.key}/`)}>{s.label[lang]}</a>
+                  {s.core && <span class="mx-core mono">{t.core}</span>}
+                  {s.count === 0 && <span class="mx-soon mono">{t.noReceipt}</span>}
+                </th>
+                {columns.map((c) => (
+                  <td>
+                    {uses(c.p, s.key)
+                      ? <a href={c.href} {...(c.external ? { target: '_blank', rel: 'noopener' } : {})}
+                           aria-label={`${s.label[lang]}: ${c.p.data.title}`} class="mx-hit">■</a>
+                      : <span class="mx-miss" aria-hidden="true">·</span>}
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        ))}
+      </table>
     </div>
+    <p class="mx-legend mono" aria-hidden="true">
+      {columns.map((c) => <span><b>{c.n}</b> {c.short}</span>)}
+    </p>
   </Section>
 
   <!-- ── EXPERIENCE / EDUCATION (hidden until filled in profile.ts) ── -->

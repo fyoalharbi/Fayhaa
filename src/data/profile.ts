@@ -28,26 +28,27 @@ export const profile = {
 // ── SKILLS ───────────────────────────────────
 // `key` is what project frontmatter references in `skills: [...]`.
 // Each skill gets its own page at /skills/<key>/ listing the projects that use it.
+// `core: true` = headline skills (matches CORE_INTEL in the terminal intro);
+// they're marked and listed first on the home page.
 export const skills = [
-  { key: 'sql',            group: 'data',     label: { en: 'SQL',               ar: 'SQL' } },
-  { key: 'python',         group: 'data',     label: { en: 'Python',            ar: 'Python' } },
-  { key: 'data-cleaning',  group: 'data',     label: { en: 'Data cleaning',     ar: 'تنظيف البيانات' } },
-  { key: 'power-bi',       group: 'bi',       label: { en: 'Power BI',          ar: 'Power BI' } },
-  { key: 'dashboard-design', group: 'bi',     label: { en: 'Dashboard design',  ar: 'تصميم اللوحات' } },
-  { key: 'streamlit',      group: 'apps',     label: { en: 'Streamlit',         ar: 'Streamlit' } },
-  { key: 'p5js',           group: 'creative', label: { en: 'p5.js',             ar: 'p5.js' } },
-  { key: 'javascript',     group: 'creative', label: { en: 'JavaScript',        ar: 'JavaScript' } },
-  { key: 'generative-viz', group: 'creative', label: { en: 'Generative visuals', ar: 'رسوميات توليدية' } },
+  { key: 'sql',              group: 'data',     core: true,  label: { en: 'SQL',                ar: 'SQL' } },
+  { key: 'python',           group: 'data',     core: true,  label: { en: 'Python',             ar: 'Python' } },
+  { key: 'data-cleaning',    group: 'data',     core: false, label: { en: 'Data cleaning',      ar: 'تنظيف البيانات' } },
+  { key: 'streamlit',        group: 'data',     core: false, label: { en: 'Streamlit',          ar: 'Streamlit' } },
+  { key: 'power-bi',         group: 'bi',       core: true,  label: { en: 'Power BI',           ar: 'Power BI' } },
+  { key: 'dashboard-design', group: 'bi',       core: false, label: { en: 'Dashboard design',   ar: 'تصميم اللوحات' } },
+  { key: 'p5js',             group: 'creative', core: true,  label: { en: 'p5.js',              ar: 'p5.js' } },
+  { key: 'javascript',       group: 'creative', core: false, label: { en: 'JavaScript',         ar: 'JavaScript' } },
+  { key: 'generative-viz',   group: 'creative', core: false, label: { en: 'Generative visuals', ar: 'رسوميات توليدية' } },
 ] as const;
 
 export type SkillKey = (typeof skills)[number]['key'];
 export const skillKeys = skills.map((s) => s.key) as [SkillKey, ...SkillKey[]];
 
 export const skillGroups: Record<string, T> = {
-  data:     { en: 'Data & analysis',     ar: 'البيانات والتحليل' },
+  data:     { en: 'Data & analysis',       ar: 'البيانات والتحليل' },
   bi:       { en: 'Business intelligence', ar: 'ذكاء الأعمال' },
-  apps:     { en: 'Data apps',           ar: 'تطبيقات البيانات' },
-  creative: { en: 'Creative coding',     ar: 'البرمجة الإبداعية' },
+  creative: { en: 'Creative coding',       ar: 'البرمجة الإبداعية' },
 };
 
 // ── EXPERIENCE & EDUCATION ───────────────────

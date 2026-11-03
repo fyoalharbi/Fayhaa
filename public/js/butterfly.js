@@ -237,14 +237,15 @@
     el.addEventListener('click', openNote);
     window.addEventListener('pointermove', (e) => { px.x = e.clientX; px.y = e.clientY; }, { passive: true });
 
-    // Bits fall off the wings: mostly 0/1, sometimes a letter, sometimes red
+    // Digits fall off the wings: mostly 6/7 (the site's v0.0.67), sometimes a
+    // letter, sometimes red
     const LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
     function dropBit(slow) {
       if (REDUCED) return;
       const d = document.createElement('span');
       d.className = 'bit';
       d.setAttribute('aria-hidden', 'true');
-      d.textContent = Math.random() < 0.85 ? (Math.random() < 0.5 ? '0' : '1')
+      d.textContent = Math.random() < 0.85 ? (Math.random() < 0.5 ? '6' : '7')
                                             : LETTERS[(Math.random() * LETTERS.length) | 0];
       d.style.color = Math.random() < 0.18 ? bf.accent : bf.ink;
       const sx = x + W * (0.25 + Math.random() * 0.5), sy = y + H * (0.35 + Math.random() * 0.3);
