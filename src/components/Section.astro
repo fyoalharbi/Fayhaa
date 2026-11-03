@@ -1,0 +1,26 @@
+---
+// A full-width home-page band: numbered label, title, optional aside, content.
+// Tones alternate in HomePage so neighbouring sections never blend together.
+interface Props {
+  id: string;
+  index: number;
+  label: string;
+  title: string;
+  tone?: 'paper' | 'surface' | 'ink';
+}
+const { id, index, label, title, tone = 'paper' } = Astro.props;
+---
+<section id={id} class={`band band-${tone}`} aria-labelledby={`${id}-title`}>
+  <div class="wrap">
+    <div class="band-label mono" aria-hidden="true">
+      <span class="band-index">{String(index).padStart(2, '0')}</span>
+      <span class="band-rule"></span>
+      <span>{label}</span>
+    </div>
+    <div class="band-head">
+      <h2 id={`${id}-title`}>{title}</h2>
+      <slot name="aside" />
+    </div>
+    <slot />
+  </div>
+</section>

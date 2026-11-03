@@ -1,0 +1,104 @@
+/* ─────────────────────────────────────────────
+   HERO — dark stage + live ASCII butterfly
+───────────────────────────────────────────── */
+.hero-stage {
+  scroll-snap-align: start;
+  --muted: #a3a3a3;
+  --rule: #3a3a3a;
+  position: relative; overflow: hidden;
+  background: var(--ink); color: var(--paper);
+}
+.hero-stage-inner {
+  display: grid; gap: 24px; align-items: center;
+  min-height: calc(100svh - var(--header-h));
+  padding-block: 40px 24px;
+}
+@media (min-width: 900px) {
+  .hero-stage-inner { grid-template-columns: 0.9fr 1.3fr; padding-block: 24px; }
+  .stage { margin-inline-end: calc(var(--gutter) * -1 - 40px); }
+  /* Never taller than the screen: shrink the square on short displays */
+  .hero-stage .stage canvas { width: min(100%, calc(100svh - var(--header-h) - 100px)); margin-inline: auto; }
+}
+.hero-stage .lead { color: #cfcfcf; }
+.hero-stage .btn { border-color: var(--paper); color: var(--paper); }
+.hero-stage .btn:hover,
+.hero-stage .btn-primary { background: var(--paper); color: var(--ink); }
+.hero-stage .btn-primary:hover { background: #ff8a8a; border-color: #ff8a8a; }
+.hero-stage :focus-visible { outline-color: #ff8a8a; }
+
+.stage { margin: 0; position: relative; }
+.stage canvas { display: block; width: 100%; aspect-ratio: 1 / 1; cursor: crosshair; touch-action: pan-y; }
+.stage figcaption {
+  display: flex; flex-wrap: wrap; gap: 4px 16px; justify-content: space-between;
+  padding: 8px 2px; color: var(--muted); font-size: 0.7rem;
+}
+#hero-probe { font-variant-numeric: tabular-nums; }
+/* Phones/tablets: text on top, butterfly takes exactly the space that's left */
+@media (max-width: 899px) {
+  .hero-stage-inner {
+    display: flex; flex-direction: column; align-items: stretch; gap: 12px;
+    height: calc(100svh - var(--header-h)); min-height: 0;
+    padding-block: 24px 8px;
+  }
+  .hero-stage .lead { font-size: 1.02rem; margin-bottom: 0.5em; }
+  .hero-stage .workflow { margin-top: 0.5rem; }
+  .hero-stage .actions { margin: 1rem 0 0; }
+  .stage {
+    flex: 1 1 0; min-height: 0;
+    display: flex; flex-direction: column; align-items: center;
+    margin-inline: calc(var(--gutter) * -1);
+  }
+  .hero-stage .stage canvas { flex: 1 1 0; min-height: 140px; width: auto; max-width: 100%; aspect-ratio: 1 / 1; }
+  .stage figcaption { align-self: stretch; padding-inline: var(--gutter); }
+}
+
+/* Arabic land & speak: real text over the dissolved butterfly */
+.stage-text {
+  position: absolute; inset: 0 0 32px; display: flex; flex-direction: column; justify-content: center;
+  padding: 8% 12%; text-align: center;
+  font-family: var(--font-ar); font-size: clamp(0.95rem, 1.6vw, 1.15rem); line-height: 1.7; color: var(--paper);
+}
+.stage-text p { margin: 0 0 0.25em; }
+.stage-text p.is-last { color: #ff8a8a; margin-top: 0.5em; }
+
+/* ── Flying butterfly (below the sticky header, z 50, so it never blocks nav) ── */
+.flyer {
+  position: fixed; top: 0; left: 0; z-index: 40;
+  padding: 0; border: 0; background: none; cursor: pointer;
+  opacity: 0; pointer-events: none; transition: opacity .6s;
+  will-change: transform;
+}
+.flyer canvas { display: block; }
+.flyer.is-shown { opacity: 1; pointer-events: auto; }
+.flyer.is-landed { filter: drop-shadow(0 0 8px rgba(180, 20, 30, .3)); }
+
+/* Bits that drop from it */
+.bit {
+  position: fixed; top: 0; left: 0; z-index: 39; pointer-events: none;
+  font-family: var(--font-mono); font-size: 10px; font-weight: 700; line-height: 1;
+}
+
+/* A project card it's sitting on */
+.card.is-perched { border-color: var(--ink); }
+
+/* ── Philosophy note ── */
+.philo-note {
+  position: fixed; z-index: 90;
+  width: min(380px, calc(100vw - 24px));
+  background: var(--ink); color: var(--paper); border: 1px solid #444;
+  padding: 18px 20px 16px; border-radius: 4px;
+  box-shadow: 0 18px 50px rgba(0, 0, 0, .25);
+  font-family: var(--font-mono); font-size: 0.82rem; line-height: 1.6;
+  opacity: 0; transition: opacity .25s;
+}
+.philo-note[lang='ar'] { font-family: var(--font-ar); font-size: 0.95rem; line-height: 1.8; }
+.philo-note.is-open { opacity: 1; }
+.philo-head { color: #ff8a8a; margin: 0 0 10px; letter-spacing: 0.06em; }
+.philo-note[lang='ar'] .philo-head { letter-spacing: 0; }
+.philo-body p { margin: 0 0 4px; }
+.philo-body p.is-last { color: #ff8a8a; margin-top: 8px; }
+.philo-close {
+  position: absolute; top: 6px; inset-inline-end: 8px;
+  background: none; border: 0; color: #a3a3a3; font-size: 1.2rem; cursor: pointer; line-height: 1;
+}
+.philo-close:hover { color: var(--paper); }

@@ -1,0 +1,32 @@
+---
+import { type Lang } from '../data/profile';
+import { ui, langUrl, projectHref, skillLabel, formatDate, type Project } from '../lib/site';
+
+interface Props {
+  project: Project;
+  lang: Lang;
+  index?: number;
+}
+const { project, lang, index } = Astro.props;
+const t = ui[lang];
+const { href, external } = projectHref(project);
+const d = project.data;
+---
+<article class="card">
+  <div class="card-meta mono">
+    {index !== undefined && <span>{String(index + 1).padStart(2, '0')}</span>}
+    <time datetime={d.date.toISOString()}>{formatDate(d.date, lang)}</time>
+  </div>
+  <h3 class="card-title">
+    <a href={href} {...(external ? { target: '_blank', rel: 'noopener' } : {})} class="stretched">
+      {d.title}
+    </a>
+  </h3>
+  <p class="card-summary">{d.summary}</p>
+  <ul class="tags" aria-label="Skills">
+    {d.skills.map((s) => <li><a href={langUrl(lang, `skills/${s}/`)}>{skillLabel(s, lang)}</a></li>)}
+  </ul>
+  <span class="card-cta mono" aria-hidden="true">
+    {external ? `${t.viewOutside} ↗` : `${t.readCase} ${lang === 'ar' ? '←' : '→'}`}
+  </span>
+</article>

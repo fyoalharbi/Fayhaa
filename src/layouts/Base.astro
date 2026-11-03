@@ -1,0 +1,132 @@
+---
+import '../styles/normal.css';
+import { profile, experience, education, type Lang } from '../data/profile';
+import { ui, url, langUrl, hasOgImage } from '../lib/site';
+
+interface Props {
+  lang: Lang;
+  title?: string;
+  description?: string;
+  /** Path of this page relative to the language root, used for the EN/AR switch. */
+  path?: string;
+  /** Only the home pages honour a saved "terminal" preference. */
+  homeRedirect?: boolean;
+  /** Keep unlisted pages (e.g. the shareable CV) out of search results. */
+  noindex?: boolean;
+}
+
+const { lang, title, description = profile.intro[lang], path = '', homeRedirect = false, noindex = false } = Astro.props;
+const t = ui[lang];
+const other: Lang = lang === 'en' ? 'ar' : 'en';
+const fullTitle = title ? `${title} · ${profile.name[lang]}` : `${profile.name[lang]} · ${profile.role[lang]}`;
+const canonical = new URL(Astro.url.pathname, Astro.site);
+const terminalHref = url('terminal/') + (lang === 'ar' ? '?lang=ar' : '');
+---
+<!doctype html>
+<html lang={lang} dir={lang === 'ar' ? 'rtl' : 'ltr'}>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>{fullTitle}</title>
+  <meta name="description" content={description} />
+  <link rel="canonical" href={canonical} />
+  {noindex && <meta name="robots" content="noindex, nofollow" />}
+  <link rel="alternate" hreflang="en" href={new URL(langUrl('en', path), Astro.site)} />
+  <link rel="alternate" hreflang="ar" href={new URL(langUrl('ar', path), Astro.site)} />
+  <link rel="icon" href={url('favicon.svg')} type="image/svg+xml" />
+
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content={fullTitle} />
+  <meta property="og:description" content={description} />
+  <meta property="og:url" content={canonical} />
+  {hasOgImage && <meta property="og:image" content={new URL(url('og.png'), Astro.site)} />}
+  <meta name="twitter:card" content={hasOgImage ? 'summary_large_image' : 'summary'} />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Sans+Arabic:wght@400;500;600&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet" />
+
+  <slot name="head" />
+
+  {homeRedirect && (
+    <script is:inline define:vars={{ terminalHref }}>
+      // Respect a visitor's earlier choice of the terminal view, but only when
+      // they arrive from outside the site, once per session, and never with
+      // ?view=… — so Home links and the back button always work.
+      try {
+        const fromInside = document.referrer && new URL(document.referrer).origin === location.origin;
+        if (localStorage.getItem('fayhaa:view') === 'terminal' &&
+            !fromInside &&
+            !sessionStorage.getItem('fayhaa:redirected') &&
+            !new URLSearchParams(location.search).has('view')) {
+          sessionStorage.setItem('fayhaa:redirected', '1');
+          location.replace(terminalHref);
+        }
+      } catch (e) {}
+    </script>
+  )}
+</head>
+<body>
+  <a class="skip" href="#main">Skip to content</a>
+
+  <header class="site-header">
+    <div class="wrap header-inner">
+      <a class="brand" href={langUrl(lang)}>
+        <span class="brand-mark" aria-hidden="true">▮</span>{profile.name[lang]}
+      </a>
+      <nav class="site-nav" aria-label="Main">
+        <a href={langUrl(lang, '#projects')}>{t.nav.projects}</a>
+        <a href={langUrl(lang, '#skills')}>{t.nav.skills}</a>
+        {(experience.length > 0 || education.length > 0) && <a href={langUrl(lang, '#experience')}>{t.experience}</a>}
+        <a href={langUrl(lang, '#contact')}>{t.nav.contact}</a>
+      </nav>
+      <div class="header-tools">
+        <a class="lang-link" href={langUrl(other, path)} hreflang={other} lang={other}>{t.otherLang}</a>
+        <a class="term-toggle" href={terminalHref} data-view="terminal">
+          <span aria-hidden="true">&gt;_</span> {t.terminal}
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <main id="main">
+    <slot />
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap footer-inner">
+      <span class="mono">{profile.name[lang]} // EST.2002</span>
+      <span class="footer-links">
+        <a href={`mailto:${profile.email}`}>Email</a>
+        <a href={profile.links.linkedin} target="_blank" rel="noopener">LinkedIn</a>
+        <a href={profile.links.github} target="_blank" rel="noopener">GitHub</a>
+      </span>
+      <span class="mono muted">{t.footer}</span>
+    </div>
+  </footer>
+
+  <script is:inline>
+    // Keep --header-h / --footer-h equal to the real header and footer heights,
+    // so one-screen sections and anchor jumps line up exactly (EN and AR differ).
+    (function () {
+      const root = document.documentElement.style;
+      const watch = (sel, prop) => {
+        const el = document.querySelector(sel);
+        if (!el) return;
+        const set = () => root.setProperty(prop, el.offsetHeight + 'px');
+        set();
+        new ResizeObserver(set).observe(el);
+      };
+      watch('.site-header', '--header-h');
+      watch('.site-footer', '--footer-h');
+    })();
+
+    // Remember which view the visitor picked.
+    document.addEventListener('click', (e) => {
+      const a = e.target.closest && e.target.closest('[data-view]');
+      if (!a) return;
+      try { localStorage.setItem('fayhaa:view', a.dataset.view); } catch (err) {}
+    });
+  </script>
+</body>
+</html>

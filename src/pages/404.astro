@@ -1,0 +1,14 @@
+---
+import Base from '../layouts/Base.astro';
+import { langUrl, url } from '../lib/site';
+---
+<Base lang="en" title="Not found">
+  <section class="section wrap">
+    <p class="kicker mono">ERR_404 // SIGNAL_LOST</p>
+    <h1>This page flew away.</h1>
+    <div class="actions">
+      <a class="btn btn-primary" href={langUrl('en')}>Home</a>
+      <a class="btn" href={url('terminal/')}>&gt;_ Terminal</a>
+    </div>
+  </section>
+</Base>

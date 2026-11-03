@@ -1,0 +1,55 @@
+---
+// Home hero: dark stage with the live ASCII butterfly.
+// Hidden philosophy: hold still on its body (see public/js/butterfly.js).
+import '../styles/hero.css';
+import { profile, philosophy, type Lang } from '../data/profile';
+import { ui, url, hasResume } from '../lib/site';
+
+interface Props { lang: Lang }
+const { lang } = Astro.props;
+const t = ui[lang];
+
+const config = {
+  lang,
+  dir: lang === 'ar' ? 'rtl' : 'ltr',
+  lines: philosophy.lines[lang],
+  title: philosophy.title[lang],
+  head: lang === 'ar' ? '// ليش_فراشات؟' : '// WHY_BUTTERFLIES?',
+  email: profile.email,
+  src: url('terminal/newbutterfly1.mp4'),
+  hints: t.butterflyHints,
+};
+---
+<section class="hero-stage">
+  <div class="wrap hero-stage-inner">
+    <div class="hero-text">
+      <p class="kicker mono">
+        <span class="dot" aria-hidden="true"></span>{profile.role[lang]} · {profile.availability[lang]}
+      </p>
+      <h1>{profile.name[lang]}</h1>
+      <p class="lead">{profile.intro[lang]}</p>
+      <ol class="workflow mono" aria-label="Workflow">
+        {profile.workflow[lang].map((step) => <li>{step}</li>)}
+      </ol>
+      <div class="actions">
+        <a class="btn btn-primary" href="#projects">{t.viewProjects}</a>
+        {hasResume && <a class="btn" href={url('resume.pdf')} download>{t.resume}</a>}
+        <a class="btn" href={`mailto:${profile.email}`}>{t.emailMe}</a>
+      </div>
+    </div>
+
+    <figure class="stage">
+      <canvas id="hero-ascii" role="img" aria-label="Animated ASCII art of a butterfly"></canvas>
+      <div id="stage-text" class="stage-text" dir={config.dir} lang={lang} aria-live="polite" hidden></div>
+      <figcaption class="mono">
+        <span id="hero-probe" dir="ltr">X:[--] Y:[--] VAL:[---]</span>
+        <span id="hero-hint">{t.butterflyHints.idle}</span>
+      </figcaption>
+    </figure>
+  </div>
+</section>
+
+<script is:inline define:vars={{ config }}>window.BUTTERFLY = config;</script>
+<script is:inline defer src={url('js/ascii.js')}></script>
+<script is:inline defer src={url('js/flyer.js')}></script>
+<script is:inline defer src={url('js/butterfly.js')}></script>

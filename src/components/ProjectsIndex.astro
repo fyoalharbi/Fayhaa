@@ -1,0 +1,19 @@
+---
+import Base from '../layouts/Base.astro';
+import ProjectCard from './ProjectCard.astro';
+import { type Lang } from '../data/profile';
+import { ui, getProjects } from '../lib/site';
+
+interface Props { lang: Lang }
+const { lang } = Astro.props;
+const t = ui[lang];
+const projects = await getProjects(lang);
+---
+<Base lang={lang} title={t.allProjects} path="projects/">
+  <section class="section wrap">
+    <div class="section-head"><h1>{t.allProjects}</h1></div>
+    <div class="cards">
+      {projects.map((p, i) => <ProjectCard project={p} lang={lang} index={i} />)}
+    </div>
+  </section>
+</Base>
