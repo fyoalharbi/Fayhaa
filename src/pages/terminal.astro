@@ -1,0 +1,159 @@
+---
+// TERMINAL VIEW: the original spec-sheet site plus a working command line.
+// Content comes from the same profile + project files as the normal view,
+// serialized into window.PORTFOLIO for the plain-JS scripts in /public/terminal.
+import { profile, skills, philosophy } from '../data/profile';
+import { url, langUrl, hasResume, hasPage, getProjects, projectSlug, formatDate } from '../lib/site';
+import type { Lang } from '../data/profile';
+
+async function projectsFor(lang: Lang) {
+  return (await getProjects(lang)).map((p) => ({
+    slug: projectSlug(p),
+    title: p.data.title,
+    date: formatDate(p.data.date, lang),
+    summary: p.data.summary,
+    tldr: hasPage(p) ? p.data.tldr : null, // drafts' TL;DR still holds TODOs
+    skills: p.data.skills,
+    links: p.data.links,
+    url: hasPage(p) ? langUrl(lang, `projects/${projectSlug(p)}/`) : null,
+  }));
+}
+
+const PORTFOLIO = {
+  normal: { en: url('?view=normal'), ar: url('ar/?view=normal') },
+  resume: hasResume ? url('resume.pdf') : null,
+  videoSrc: url('terminal/newbutterfly1.mp4'),
+  profile,
+  skills: skills.map((s) => ({ key: s.key, label: s.label })),
+  philosophy,
+  projects: { en: await projectsFor('en'), ar: await projectsFor('ar') },
+};
+const asset = (f: string) => url(`terminal/${f}`);
+---
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{profile.name.en} // Terminal</title>
+  <meta name="description" content={`${profile.name.en}: ${profile.role.en}. Interactive terminal portfolio.`}>
+  <link rel="icon" href={url('favicon.svg')} type="image/svg+xml">
+  <link rel="canonical" href={new URL(url('terminal/'), Astro.site)}>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,400;0,700;1,400&family=Noto+Sans+Arabic:wght@400;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href={asset('terminal.css')}>
+
+  <script is:inline define:vars={{ PORTFOLIO }}>
+    window.PORTFOLIO = PORTFOLIO;
+    window.BUTTERFLY_SRC = PORTFOLIO.videoSrc;
+    try { localStorage.setItem('fayhaa:view', 'terminal'); } catch (e) {}
+  </script>
+  <script is:inline src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/p5.min.js"></script>
+</head>
+<body>
+
+  <main class="spec-sheet">
+
+    <!-- ── HEADER ── -->
+    <header class="grid-row border-bottom">
+      <div class="col-3 meta" id="header-role">ROLE: DATA ANALYST & BUSINESS INTELLIGENCE</div>
+      <div class="col-6 title-center">PAPILLON_MORPHOLOGY // SPEC_SHEET_2026</div>
+      <div class="col-3 lang-switcher">
+        <a class="view-link" id="normal-link" href={PORTFOLIO.normal.en} data-view="normal">[NORMAL_VIEW]</a>
+        <span class="lang-sep">//</span>
+        <span class="lang-prefix">LANG:</span>
+        <button class="lang-btn active" id="lang-en" onclick="switchLanguage('EN')">EN</button>
+        <span class="lang-sep">//</span>
+        <button class="lang-btn" id="lang-ar" onclick="switchLanguage('AR')">AR</button>
+      </div>
+    </header>
+
+    <!-- ── REMOTE STATUS BAR ── -->
+    <div class="grid-row status-bar border-bottom">
+      <div class="col-12 status-line" id="remote-status">
+        STATUS: OPEN_FOR_REMOTE_HIRE // <span class="signal-blink">[SIGNAL_ACTIVE]</span>
+      </div>
+    </div>
+
+    <!-- ── SUB-HEADER ── -->
+    <div class="grid-row subheader border-bottom">
+      <div class="col-3 meta border-right">SYS_NAV // INPUT</div>
+      <div class="col-6 meta text-center">ASCII_RENDER // LIVE_FEED</div>
+      <div class="col-3 meta border-left text-right">DATA_OUT // OUTPUT</div>
+    </div>
+
+    <!-- ── MAIN CONTENT ── -->
+    <section class="grid-row main-content">
+
+      <!-- LEFT: Navigation (each button just runs a command) -->
+      <nav class="col-3 nav-col border-right" aria-label="Sections">
+        <button class="nav-btn active" id="btn-01" onclick="runCommand('whoami')">
+          <span class="btn-indicator">■</span>
+          <span class="btn-index">01</span>
+          <span class="btn-label">WHO_AM_I<br><span class="arabic">مين انا</span></span>
+        </button>
+        <button class="nav-btn" id="btn-02" onclick="runCommand('ls projects')">
+          <span class="btn-indicator">□</span>
+          <span class="btn-index">02</span>
+          <span class="btn-label">MY_PROJECTS<br><span class="arabic">مشاريعي</span></span>
+        </button>
+        <button class="nav-btn" id="btn-03" onclick="runCommand('skills')">
+          <span class="btn-indicator">□</span>
+          <span class="btn-index">03</span>
+          <span class="btn-label">MY_SKILLS<br><span class="arabic">مهاراتي</span></span>
+        </button>
+        <button class="nav-btn" id="btn-04" onclick="runCommand('philosophy')">
+          <span class="btn-indicator">□</span>
+          <span class="btn-index">04</span>
+          <span class="btn-label">MY_PHILOSOPHY<br><span class="arabic">فلسفتي</span></span>
+        </button>
+        <button class="nav-btn" id="btn-05" onclick="runCommand('contact')">
+          <span class="btn-indicator">□</span>
+          <span class="btn-index">05</span>
+          <span class="btn-label">SEND_SIGNAL<br><span class="arabic">اتصل بي</span></span>
+        </button>
+        <div class="nav-status">SYS: READY_▮ // TYPE <b>help</b></div>
+      </nav>
+
+      <!-- CENTER: p5.js Canvas -->
+      <div class="col-6 canvas-col" id="video-holder" role="img" aria-label="Animated ASCII art of a butterfly"></div>
+
+      <!-- RIGHT: Data Output + command line -->
+      <aside class="col-3 data-col border-left">
+        <pre id="data-output" class="data-output" aria-live="polite"></pre>
+        <form class="term-line" id="term-form" autocomplete="off">
+          <label for="term-input" class="term-prompt">&gt;</label>
+          <input id="term-input" class="term-input" type="text" spellcheck="false"
+                 autocapitalize="off" placeholder="type 'help'" aria-label="Terminal command">
+        </form>
+        <div class="data-meta" id="data-meta-wrap">
+          <div id="mode-label">MODE: WHO_AM_I</div>
+          <div id="data-status">STATUS: LOADING</div>
+        </div>
+      </aside>
+
+    </section>
+
+    <!-- ── FOOTER ── -->
+    <footer class="grid-row border-top">
+      <div class="col-6 meta">FAYHAA ALHARBI // EST.2002</div>
+      <div class="col-6 meta text-right">
+        <button class="erase-btn" onclick="eraseMarkings()">[ERASE_MARKINGS]</button>
+        &nbsp;//&nbsp; v1.0.0
+      </div>
+      <div class="col-12 uplink-monitor" id="uplink-status">
+        UPLINK: [REMOTE_READY] // LATENCY: [0ms] // PACKETS: <span class="signal-blink">[SYNCED]</span>
+      </div>
+    </footer>
+
+  </main>
+
+  <div id="scan-line"></div>
+
+  <script is:inline src={asset('sketch.js')}></script>
+  <script is:inline src={asset('terminal.js')}></script>
+  <script is:inline src={asset('easter.js')}></script>
+</body>
+</html>

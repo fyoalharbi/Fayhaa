@@ -35,7 +35,8 @@ let isHeartMode = false;
 
 // ── PRELOAD ──────────────────────────────────
 function preload() {
-  vid = createVideo(['newbutterfly1.mp4']);
+  // BUTTERFLY_SRC is set by the page so the path works under any base URL
+  vid = createVideo([window.BUTTERFLY_SRC || 'newbutterfly1.mp4']);
 }
 
 // ── SETUP ────────────────────────────────────
@@ -53,6 +54,8 @@ function setup() {
   vid.size(60, 60);
   vid.hide();
   vid.volume(0);
+  vid.elt.muted = true;                    // required for autoplay on mobile
+  vid.elt.setAttribute('playsinline', '');
 
   vid.loop();
   vid.play();

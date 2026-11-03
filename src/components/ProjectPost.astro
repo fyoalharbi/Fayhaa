@@ -1,0 +1,60 @@
+---
+import { render } from 'astro:content';
+import Base from '../layouts/Base.astro';
+import { type Lang } from '../data/profile';
+import { ui, url, langUrl, projectSlug, skillLabel, formatDate, type Project } from '../lib/site';
+
+interface Props { project: Project; lang: Lang }
+const { project, lang } = Astro.props;
+const t = ui[lang];
+const d = project.data;
+const slug = projectSlug(project);
+const { Content } = await render(project);
+const linkEntries = (Object.entries(d.links) as [keyof typeof t.links, string | undefined][])
+  .filter(([, v]) => v);
+---
+<Base lang={lang} title={d.title} description={d.summary} path={`projects/${slug}/`}>
+  <article class="post wrap">
+    <a class="back mono" href={langUrl(lang, 'projects/')}>{t.back}</a>
+
+    {d.draft && <p class="draft-banner mono">{t.draftBanner}</p>}
+
+    <header class="post-header">
+      <p class="mono muted"><time datetime={d.date.toISOString()}>{formatDate(d.date, lang)}</time></p>
+      <h1>{d.title}</h1>
+      <p class="lead">{d.summary}</p>
+    </header>
+
+    <dl class="tldr">
+      {(['problem', 'role', 'tools', 'result'] as const).map((k) => (
+        <div><dt class="mono">{t.tldr[k]}</dt><dd>{d.tldr[k]}</dd></div>
+      ))}
+    </dl>
+
+    {linkEntries.length > 0 && (
+      <div class="actions">
+        {linkEntries.map(([k, v]) => <a class="btn" href={v} target="_blank" rel="noopener">{t.links[k]} ↗</a>)}
+        <a class="btn" href={`${url('terminal/')}?cmd=${encodeURIComponent(`cat ${slug}`)}${lang === 'ar' ? '&lang=ar' : ''}`} data-view="terminal">
+          <span aria-hidden="true">&gt;_</span> {t.openInTerminal}
+        </a>
+      </div>
+    )}
+
+    {d.embed && (
+      <div class="embed">
+        <iframe src={d.embed} title={d.title} loading="lazy" allowfullscreen></iframe>
+      </div>
+    )}
+
+    <div class="prose">
+      <Content />
+    </div>
+
+    <footer class="post-footer">
+      <h2 class="mono">{t.skillsUsed}</h2>
+      <ul class="tags">
+        {d.skills.map((s) => <li><a href={langUrl(lang, `skills/${s}/`)}>{skillLabel(s, lang)}</a></li>)}
+      </ul>
+    </footer>
+  </article>
+</Base>

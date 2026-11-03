@@ -1,0 +1,133 @@
+---
+import Base from '../layouts/Base.astro';
+import Butterfly from './Butterfly.astro';
+import ProjectCard from './ProjectCard.astro';
+import { profile, skills, skillGroups, experience, education, philosophy, type Lang } from '../data/profile';
+import { ui, url, langUrl, hasResume, getProjects } from '../lib/site';
+
+interface Props { lang: Lang }
+const { lang } = Astro.props;
+const t = ui[lang];
+
+const projects = await getProjects(lang);
+const featured = projects.filter((p) => p.data.featured).slice(0, 3);
+const usage = (key: string) => projects.filter((p) => (p.data.skills as string[]).includes(key)).length;
+const groups = Object.keys(skillGroups).map((g) => ({
+  key: g,
+  label: skillGroups[g][lang],
+  items: skills.filter((s) => s.group === g),
+}));
+---
+<Base lang={lang} homeRedirect>
+  <!-- ── HERO ── -->
+  <section class="hero wrap">
+    <div class="hero-text">
+      <p class="kicker mono">
+        <span class="dot" aria-hidden="true"></span>{profile.role[lang]} · {profile.availability[lang]}
+      </p>
+      <h1>{profile.name[lang]}</h1>
+      <p class="lead">{profile.intro[lang]}</p>
+      <ol class="workflow mono" aria-label="Workflow">
+        {profile.workflow[lang].map((step) => <li>{step}</li>)}
+      </ol>
+      <div class="actions">
+        <a class="btn btn-primary" href="#projects">{t.viewProjects}</a>
+        {hasResume && <a class="btn" href={url('resume.pdf')} download>{t.resume}</a>}
+        <a class="btn" href={`mailto:${profile.email}`}>{t.emailMe}</a>
+      </div>
+    </div>
+    <Butterfly hint={t.butterflyHint} />
+  </section>
+
+  <!-- ── PROJECTS ── -->
+  <section id="projects" class="section wrap">
+    <div class="section-head">
+      <h2>{t.featured}</h2>
+      {projects.length > featured.length &&
+        <a class="mono" href={langUrl(lang, 'projects/')}>{t.allProjects} {lang === 'ar' ? '←' : '→'}</a>}
+    </div>
+    <div class="cards">
+      {featured.map((p, i) => <ProjectCard project={p} lang={lang} index={i} />)}
+    </div>
+  </section>
+
+  <!-- ── SKILLS ── -->
+  <section id="skills" class="section wrap">
+    <div class="section-head">
+      <h2>{t.skillsTitle}</h2>
+      <p class="muted">{t.skillsLead}</p>
+    </div>
+    <div class="skill-groups">
+      {groups.map((g) => (
+        <div class="skill-group">
+          <h3 class="mono">{g.label}</h3>
+          <ul>
+            {g.items.map((s) => {
+              const n = usage(s.key);
+              return (
+                <li>
+                  <a href={langUrl(lang, `skills/${s.key}/`)}>
+                    <span>{s.label[lang]}</span>
+                    <span class="mono muted">{n ? t.projectsUsing(n) : '—'}</span>
+                  </a>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      ))}
+    </div>
+  </section>
+
+  <!-- ── EXPERIENCE / EDUCATION (hidden until filled in profile.ts) ── -->
+  {(experience.length > 0 || education.length > 0) && (
+    <section id="experience" class="section wrap timeline-wrap">
+      {experience.length > 0 && (
+        <div>
+          <h2>{t.experience}</h2>
+          <ol class="timeline">
+            {experience.map((e) => (
+              <li>
+                <p class="mono muted">{e.period}</p>
+                <h3>{e.title[lang]} · {e.org[lang]}</h3>
+                <ul>{e.points[lang].map((pt) => <li>{pt}</li>)}</ul>
+              </li>
+            ))}
+          </ol>
+        </div>
+      )}
+      {education.length > 0 && (
+        <div>
+          <h2>{t.education}</h2>
+          <ol class="timeline">
+            {education.map((e) => (
+              <li>
+                <p class="mono muted">{e.period}</p>
+                <h3>{e.title[lang]} · {e.org[lang]}</h3>
+              </li>
+            ))}
+          </ol>
+        </div>
+      )}
+    </section>
+  )}
+
+  <!-- ── ABOUT / PHILOSOPHY ── -->
+  <section id="about" class="section wrap about">
+    <p class="kicker mono">{t.howIWork}</p>
+    <h2>{philosophy.title[lang]}</h2>
+    {philosophy.paragraphs[lang].map((para) => <p>{para}</p>)}
+  </section>
+
+  <!-- ── CONTACT ── -->
+  <section id="contact" class="section wrap contact">
+    <h2>{t.contactTitle}</h2>
+    <p class="muted">{t.contactLead} {profile.availability[lang]}.</p>
+    <a class="contact-email" href={`mailto:${profile.email}`}>{profile.email}</a>
+    <div class="actions">
+      <a class="btn" href={profile.links.linkedin} target="_blank" rel="noopener">LinkedIn ↗</a>
+      <a class="btn" href={profile.links.github} target="_blank" rel="noopener">GitHub ↗</a>
+      {hasResume && <a class="btn" href={url('resume.pdf')} download>{t.resume}</a>}
+    </div>
+  </section>
+</Base>

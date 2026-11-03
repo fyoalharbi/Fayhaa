@@ -1,0 +1,23 @@
+---
+import Base from '../layouts/Base.astro';
+import ProjectCard from './ProjectCard.astro';
+import { skills, skillGroups, type Lang } from '../data/profile';
+import { ui, langUrl, getProjects } from '../lib/site';
+
+interface Props { lang: Lang; skill: string }
+const { lang, skill } = Astro.props;
+const t = ui[lang];
+const s = skills.find((x) => x.key === skill)!;
+const projects = (await getProjects(lang)).filter((p) => (p.data.skills as string[]).includes(skill));
+---
+<Base lang={lang} title={s.label[lang]} path={`skills/${skill}/`}>
+  <section class="section wrap">
+    <a class="back mono" href={langUrl(lang, '#skills')}>{lang === 'ar' ? '→' : '←'} {t.nav.skills}</a>
+    <p class="kicker mono">{skillGroups[s.group][lang]}</p>
+    <h1>{s.label[lang]}</h1>
+    <p class="muted">{projects.length ? t.projectsUsing(projects.length) : t.noProjectsYet}</p>
+    <div class="cards">
+      {projects.map((p, i) => <ProjectCard project={p} lang={lang} index={i} />)}
+    </div>
+  </section>
+</Base>
