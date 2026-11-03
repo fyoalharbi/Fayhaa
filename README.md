@@ -16,6 +16,14 @@ Both views read from the same files:
 - `src/data/profile.ts`: name, role, links, skills, experience, philosophy
 - `src/content/projects/{en,ar}/*.md`: one Markdown file per project (a case study)
 
+## The butterflies
+
+- `public/js/ascii.js`: renders the hero butterfly from the video as ASCII
+- `public/js/flyer.js`: the small procedural butterfly (top view in flight, side view when perched)
+- `public/js/butterfly.js`: wires both up, plus the hidden philosophy:
+  hold still on the hero butterfly's body, or hover the flying one
+- The philosophy text lives in `src/data/profile.ts` → `philosophy.lines`
+
 ## Add a project
 
 1. Copy `src/content/projects/en/ascii-butterfly.md` to `src/content/projects/en/<slug>.md`

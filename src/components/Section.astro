@@ -7,14 +7,11 @@ interface Props {
   label: string;
   title: string;
   tone?: 'paper' | 'surface' | 'ink';
-  /** /lab/ flower-hunt: hide a ✿ in this section's corner */
-  flower?: boolean;
 }
-const { id, index, label, title, tone = 'paper', flower = false } = Astro.props;
+const { id, index, label, title, tone = 'paper' } = Astro.props;
 ---
 <section id={id} class={`band band-${tone}`} aria-labelledby={`${id}-title`}>
   <div class="wrap">
-    {flower && <button class="lab-flower lab-flower--corner" type="button" data-flower aria-label="A small flower">✿</button>}
     <div class="band-label mono" aria-hidden="true">
       <span class="band-index">{String(index).padStart(2, '0')}</span>
       <span class="band-rule"></span>

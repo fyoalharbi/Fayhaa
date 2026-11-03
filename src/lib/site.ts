@@ -82,7 +82,11 @@ export const ui = {
     openInTerminal: 'Open in terminal',
     skillsUsed: 'Skills in this project',
     draftBanner: 'Draft: only visible in dev mode. Set `draft: false` once the TODOs are filled in.',
-    butterflyHint: 'psst, hover the butterfly',
+    butterflyHints: {
+      idle: 'psst, hold still on its body…',
+      still: 'keep still…',
+      landed: 'it landed. move away to let it go',
+    },
     footer: 'Built with Astro & p5.js',
   },
   ar: {
@@ -111,7 +115,11 @@ export const ui = {
     openInTerminal: 'افتح في الطرفية',
     skillsUsed: 'المهارات في هذا المشروع',
     draftBanner: 'مسودة: تظهر في وضع التطوير فقط.',
-    butterflyHint: 'جرب تمرر على الفراشة',
+    butterflyHints: {
+      idle: 'جرب تثبت المؤشر على جسمها…',
+      still: 'اثبت…',
+      landed: 'نزلت. ابعد المؤشر عشان تطير',
+    },
     footer: 'مبني بـ Astro و p5.js',
   },
 } as const;

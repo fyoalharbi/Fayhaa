@@ -96,14 +96,7 @@ html[lang='ar'] .term-toggle { font-family: var(--font-ar); letter-spacing: 0; f
 .btn-primary { background: var(--ink); color: var(--paper); }
 .btn-primary:hover { background: var(--accent); border-color: var(--accent); }
 
-/* ── HERO ── */
-.hero {
-  display: grid; gap: 32px; align-items: center;
-  padding-block: 48px 32px;
-}
-@media (min-width: 900px) {
-  .hero { grid-template-columns: 1.15fr 1fr; padding-block: 72px 56px; }
-}
+/* ── HERO (text side; the stage lives in hero.css) ── */
 .dot {
   display: inline-block; width: 8px; height: 8px; border-radius: 50%;
   background: #1f9d55; margin-inline-end: 8px; vertical-align: middle;
@@ -113,11 +106,6 @@ html[lang='ar'] .term-toggle { font-family: var(--font-ar); letter-spacing: 0; f
 .workflow li + li::before { content: '→'; margin-inline-end: 6px; }
 html[dir='rtl'] .workflow li + li::before { content: '←'; }
 
-.butterfly { margin: 0; border: 1px solid var(--rule); background: var(--paper); }
-.butterfly-canvas { aspect-ratio: 1 / 1; display: flex; align-items: center; justify-content: center; overflow: hidden; }
-.butterfly-canvas canvas { display: block !important; width: 100% !important; height: auto !important; }
-.butterfly-canvas.is-static::before { content: '0|1. 0|1. 0|1.'; font-family: var(--font-mono); color: var(--muted); }
-.butterfly figcaption { padding: 8px 12px; border-top: 1px solid var(--rule); font-size: 0.7rem; }
 
 /* ── SECTIONS ── */
 .section { padding-block: 48px; border-top: 1px solid var(--rule); }

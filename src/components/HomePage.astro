@@ -1,19 +1,13 @@
 ---
 import Base from '../layouts/Base.astro';
-import Butterfly from './Butterfly.astro';
+import Hero from './Hero.astro';
 import ProjectCard from './ProjectCard.astro';
 import Section from './Section.astro';
-import LabHero from './LabHero.astro';
-import LabPanel from './LabPanel.astro';
-import { profile, skills, skillGroups, experience, education, philosophy, type Lang } from '../data/profile';
+import { profile, skills, skillGroups, experience, education, type Lang } from '../data/profile';
 import { ui, url, langUrl, hasResume, getProjects } from '../lib/site';
 
-interface Props {
-  lang: Lang;
-  /** /lab/ mode: experimental hero, hidden philosophy, variant switcher */
-  lab?: boolean;
-}
-const { lang, lab = false } = Astro.props;
+interface Props { lang: Lang }
+const { lang } = Astro.props;
 const t = ui[lang];
 
 const projects = await getProjects(lang);
@@ -27,51 +21,17 @@ const groups = Object.keys(skillGroups).map((g) => ({
 
 // Sections are numbered in order and alternate white / paper backgrounds;
 // the optional experience section shifts the numbering when present.
+// (The philosophy is hidden in the hero butterflies, not a section.)
 const hasTimeline = experience.length > 0 || education.length > 0;
-const order = ['projects', 'skills', ...(hasTimeline ? ['experience'] : []), ...(lab ? [] : ['about']), 'contact'];
+const order = ['projects', 'skills', ...(hasTimeline ? ['experience'] : []), 'contact'];
 const num = (id: string) => order.indexOf(id) + 1;
 const tone = (id: string) => (num(id) % 2 ? 'surface' : 'paper') as 'surface' | 'paper';
 ---
-<Base lang={lang} homeRedirect={!lab} noindex={lab} title={lab ? 'Lab' : undefined}>
-  {lab && (
-    <Fragment slot="head">
-      <script is:inline define:vars={{ lines: philosophy.lines[lang], title: philosophy.title[lang], email: profile.email, src: url('terminal/newbutterfly1.mp4') }}>
-        const p = new URLSearchParams(location.search);
-        const pick = (k, list, d) => (list.includes(p.get(k)) ? p.get(k) : d);
-        document.documentElement.dataset.layout = pick('layout', ['a', 'b', 'c', 'd', 'current'], 'a');
-        document.documentElement.dataset.secret = pick('secret', ['fly', 'land', 'flowers', 'bee', 'note'], 'fly');
-        window.LAB = { lines, title, email };
-        window.BUTTERFLY_SRC = src;
-      </script>
-      <script is:inline defer src={url('lab/ascii.js')}></script>
-      <script is:inline defer src={url('lab/flyer.js')}></script>
-      <script is:inline defer src={url('lab/secrets.js')}></script>
-    </Fragment>
-  )}
-
-  {lab ? <LabHero lang={lang} /> : (
-  <section class="hero wrap">
-    <div class="hero-text">
-      <p class="kicker mono">
-        <span class="dot" aria-hidden="true"></span>{profile.role[lang]} · {profile.availability[lang]}
-      </p>
-      <h1>{profile.name[lang]}</h1>
-      <p class="lead">{profile.intro[lang]}</p>
-      <ol class="workflow mono" aria-label="Workflow">
-        {profile.workflow[lang].map((step) => <li>{step}</li>)}
-      </ol>
-      <div class="actions">
-        <a class="btn btn-primary" href="#projects">{t.viewProjects}</a>
-        {hasResume && <a class="btn" href={url('resume.pdf')} download>{t.resume}</a>}
-        <a class="btn" href={`mailto:${profile.email}`}>{t.emailMe}</a>
-      </div>
-    </div>
-    <Butterfly hint={t.butterflyHint} />
-  </section>
-  )}
+<Base lang={lang} homeRedirect>
+  <Hero lang={lang} />
 
   <!-- ── PROJECTS ── -->
-  <Section id="projects" flower={lab} index={num('projects')} tone={tone('projects')} label={t.nav.projects} title={t.featured}>
+  <Section id="projects" index={num('projects')} tone={tone('projects')} label={t.nav.projects} title={t.featured}>
     {projects.length > featured.length &&
       <a slot="aside" class="mono" href={langUrl(lang, 'projects/')}>{t.allProjects} {lang === 'ar' ? '←' : '→'}</a>}
     <div class="cards">
@@ -80,7 +40,7 @@ const tone = (id: string) => (num(id) % 2 ? 'surface' : 'paper') as 'surface' | 
   </Section>
 
   <!-- ── SKILLS ── -->
-  <Section id="skills" flower={lab} index={num('skills')} tone={tone('skills')} label={t.nav.skills} title={t.skillsTitle}>
+  <Section id="skills" index={num('skills')} tone={tone('skills')} label={t.nav.skills} title={t.skillsTitle}>
     <p slot="aside" class="muted">{t.skillsLead}</p>
     <div class="skill-groups">
       {groups.map((g) => (
@@ -137,15 +97,8 @@ const tone = (id: string) => (num(id) % 2 ? 'surface' : 'paper') as 'surface' | 
     </Section>
   )}
 
-  <!-- ── ABOUT / PHILOSOPHY (hidden in /lab/: it becomes a secret) ── -->
-  {!lab && <Section id="about" index={num('about')} tone={tone('about')} label={t.howIWork} title={philosophy.title[lang]}>
-    <div class="about">
-      {philosophy.paragraphs[lang].map((para) => <p>{para}</p>)}
-    </div>
-  </Section>}
-
   <!-- ── CONTACT ── -->
-  <Section id="contact" flower={lab} index={num('contact')} tone="ink" label={t.nav.contact} title={t.contactTitle}>
+  <Section id="contact" index={num('contact')} tone="ink" label={t.nav.contact} title={t.contactTitle}>
     <p class="muted">{t.contactLead} {profile.availability[lang]}.</p>
     <a class="contact-email" href={`mailto:${profile.email}`}>{profile.email}</a>
     <div class="actions">
@@ -154,5 +107,4 @@ const tone = (id: string) => (num(id) % 2 ? 'surface' : 'paper') as 'surface' | 
       {hasResume && <a class="btn" href={url('resume.pdf')} download>{t.resume}</a>}
     </div>
   </Section>
-  {lab && <LabPanel />}
 </Base>
