@@ -43,9 +43,11 @@ export const skills = [
   { key: 'azure',            group: 'eng',      core: false, label: { en: 'Azure',              ar: 'Azure' } },
   { key: 'docker',           group: 'eng',      core: false, label: { en: 'Docker',             ar: 'Docker' } },
   { key: 'ci-cd',            group: 'eng',      core: false, label: { en: 'CI/CD',              ar: 'CI/CD' } },
+  { key: 'git',              group: 'eng',      core: false, label: { en: 'Git',                ar: 'Git' } },
   { key: 'rest-apis',        group: 'eng',      core: false, label: { en: 'REST API integration', ar: 'تكامل REST API' } },
   { key: 'power-bi',         group: 'bi',       core: true,  label: { en: 'Power BI',           ar: 'Power BI' } },
   { key: 'dax',              group: 'bi',       core: false, label: { en: 'DAX',                ar: 'DAX' } },
+  { key: 'power-query',      group: 'bi',       core: false, label: { en: 'Power Query',        ar: 'Power Query' } },
   { key: 'dashboard-design', group: 'bi',       core: false, label: { en: 'Dashboard design',   ar: 'تصميم اللوحات' } },
   { key: 'data-cleaning',    group: 'bi',       core: false, label: { en: 'Data cleaning',      ar: 'تنظيف البيانات' } },
   { key: 'web-scraping',     group: 'bi',       core: false, label: { en: 'Web scraping',       ar: 'استخراج بيانات الويب' } },
@@ -67,51 +69,57 @@ export const skillGroups: Record<string, T> = {
   web: { en: 'Web & creative coding',   ar: 'الويب والبرمجة الإبداعية' },
 };
 
-// ── EXPERIENCE, EDUCATION, CERTIFICATIONS (from LinkedIn) ──
+// ── EXPERIENCE, EDUCATION, CERTIFICATIONS (from the CV + LinkedIn) ──
 // Sections stay hidden while an array is empty.
 export const experience: {
   title: T; org: T; period: string; points: Record<Lang, string[]>;
 }[] = [
   {
-    title: { en: 'Data Analyst & Business Intelligence', ar: 'محللة بيانات وذكاء أعمال' },
+    title: { en: 'Data Analyst & BI Developer', ar: 'محللة بيانات ومطورة ذكاء أعمال' },
     org: { en: 'Freelance · Remote', ar: 'عمل حر · عن بعد' },
     period: 'Sep 2025 — Present',
     points: {
-      en: ['Help individuals and companies answer business questions with data-driven insights.'],
-      ar: ['أساعد الأفراد والشركات في الإجابة عن أسئلة أعمالهم برؤى مبنية على البيانات.'],
+      en: ['Delivered 2 Power BI dashboards for 2 clients, turning their business questions into KPIs they could track.'],
+      ar: ['سلّمت لوحتي Power BI لعميلين، وحوّلت أسئلة أعمالهم إلى مؤشرات أداء يقدرون يتابعونها.'],
     },
   },
   {
     title: { en: 'Software Developer (Integrations)', ar: 'مطورة برمجيات (تكامل الأنظمة)' },
-    org: { en: 'EJADA · Buraydah', ar: 'إجادة · بريدة' },
+    org: { en: 'Ejada · Buraydah', ar: 'إجادة · بريدة' },
     period: 'Feb 2025 — Jul 2025',
     points: {
       en: [
         'Built and maintained inbound and outbound REST API integrations for finance systems with IBM API Connect and OutSystems.',
-        'Tested and deployed integrations from development to production, fixing issues found in testing before release.',
+        'Tested integrations and fixed the issues found before releasing them from development to production.',
       ],
       ar: [
         'بنيت وصنت تكاملات REST API واردة وصادرة للأنظمة المالية باستخدام IBM API Connect و OutSystems.',
-        'اختبرت ونشرت التكاملات من التطوير إلى الإنتاج، وعالجت المشاكل قبل الإطلاق.',
+        'اختبرت التكاملات وعالجت المشاكل قبل إطلاقها من التطوير إلى الإنتاج.',
       ],
     },
   },
   {
     title: { en: 'Data Analyst', ar: 'محللة بيانات' },
-    org: { en: 'Hackathonat · Part-time', ar: 'هاكاثونات · دوام جزئي' },
-    period: 'Apr 2024 — May 2024',
+    org: { en: 'Hackathonat · Remote', ar: 'هاكاثونات · عن بعد' },
+    period: 'Jul–Aug 2023 · Apr–May 2024',
     points: {
-      en: ["Wrote a Python tool on X's engagement API that filters tweets, analyzes engagement and generates charts and an insights report."],
-      ar: ['كتبت أداة Python على واجهة تفاعل X تفلتر التغريدات وتحلل التفاعل وتطلع رسوم وتقرير رؤى.'],
+      en: [
+        'Built 3 dashboards end to end for hackathon ideas: web scraping, data cleaning in Power Query and visualization in Power BI and Python.',
+        "Wrote a Python tool on X's engagement API that filters tweets, analyzes engagement metrics and generates charts and an insights report.",
+      ],
+      ar: [
+        'بنيت 3 لوحات بيانات من البداية للنهاية لأفكار الهاكاثونات: استخراج بيانات الويب، تنظيفها بـ Power Query، وعرضها في Power BI و Python.',
+        'كتبت أداة Python على واجهة تفاعل X تفلتر التغريدات وتحلل مقاييس التفاعل وتطلع رسوم وتقرير رؤى.',
+      ],
     },
   },
   {
-    title: { en: 'Data Analyst Intern', ar: 'متدربة تحليل بيانات' },
-    org: { en: 'Hackathonat', ar: 'هاكاثونات' },
-    period: 'Jul 2023 — Aug 2023',
+    title: { en: 'Co-Founder', ar: 'شريكة مؤسسة' },
+    org: { en: 'TechVerse', ar: 'TechVerse' },
+    period: 'Aug 2022 — Present',
     points: {
-      en: ['Built dashboards end to end: scraped web data, cleaned it and visualized it in Power BI and Python.'],
-      ar: ['بنيت لوحات بيانات من البداية للنهاية: استخراج بيانات الويب، تنظيفها، وعرضها في Power BI و Python.'],
+      en: ['Co-founded a tech community that runs tech talks and bootcamps.'],
+      ar: ['أسست مع فريقي مجتمع تقني يقدم لقاءات تقنية ومعسكرات.'],
     },
   },
   {
@@ -125,16 +133,17 @@ export const experience: {
   },
 ];
 
-export const education: { title: T; org: T; period: string }[] = [
+export const education: { title: T; org: T; period: string; note?: T }[] = [
   {
-    title: { en: 'Data Engineering Bootcamp', ar: 'معسكر هندسة البيانات' },
+    title: { en: 'Data Engineering Bootcamp (7 weeks)', ar: 'معسكر هندسة البيانات (7 أسابيع)' },
     org: { en: 'Saudi Digital Academy', ar: 'الأكاديمية السعودية الرقمية' },
     period: 'Aug 2026 — Sep 2026',
   },
   {
     title: { en: "Bachelor's in Computer Science", ar: 'بكالوريوس علوم الحاسب' },
     org: { en: 'Qassim University', ar: 'جامعة القصيم' },
-    period: '2019 — 2024',
+    period: 'Sep 2019 — May 2024',
+    note: { en: 'GPA 4.5 / 5', ar: 'المعدل 4.5 من 5' },
   },
 ];
 

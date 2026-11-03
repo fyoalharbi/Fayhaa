@@ -138,7 +138,7 @@ html[dir='rtl'] .workflow li + li::before { content: '←'; }
   border-top: 1px solid var(--rule);
   scroll-snap-align: start;
 }
-@media (max-width: 719px) { .band { padding-block: 28px; } }
+@media (max-width: 719px) { .band { padding-block: 22px; } }
 .band > .wrap { width: 100%; }
 .band:last-of-type { min-height: calc(100svh - var(--header-h) - var(--footer-h)); }
 .band-surface { background: var(--surface); }
@@ -325,6 +325,7 @@ html[lang='ar'] .mx-core { letter-spacing: 0; font-size: 0.7rem; }
 @media (min-width: 720px) and (max-height: 760px) {
   .timeline > li { padding-block-end: 10px; }
   .timeline ul { font-size: 0.85rem; line-height: 1.4; }
+  .timeline ul li + li { display: none; }
 }
 /* Phones: one list at a time (tabs), each role keeps its first bullet */
 @media (max-width: 719px) {
@@ -341,8 +342,10 @@ html[lang='ar'] .mx-core { letter-spacing: 0; font-size: 0.7rem; }
   .timeline-wrap[data-active='cert'] [data-panel='cert'] { display: block; }
   .timeline-sub { display: none; }
   .timeline > li { padding-block-end: 8px; }
+  .timeline h3 { font-size: 0.95rem; }
+  .tl-meta { margin: 1px 0 2px; }
   .timeline ul li + li { display: none; }
-  .timeline ul { font-size: 0.85rem; }
+  .timeline ul { font-size: 0.82rem; line-height: 1.4; }
 }
 
 /* ── ABOUT / CONTACT ── */

@@ -4,10 +4,10 @@ date: 2026-09
 summary: An ELT pipeline that turns a firm's transaction ledger and daily market prices into a SAR-valued star schema and a Power BI dashboard, orchestrated with Airflow.
 tldr:
   problem: A small investment firm needed one reliable view of its portfolio, combining an internal transaction ledger with daily FX, precious-metal and equity prices, all valued in Saudi riyals.
-  role: "Team capstone (SDA Data Engineering bootcamp). My part: orchestration and integration — the Airflow DAGs, landing and loading logic, Snowflake loading, CI/CD and the dashboard wiring."
-  tools: Airflow, dbt, Snowflake, Azure Blob Storage, Power BI, Docker, GitHub Actions (DuckDB for the local version)
+  role: "SDA Data Engineering bootcamp capstone, team of 4. My part: orchestration and integration — the Airflow DAGs, landing and loading logic, Snowflake loading, CI/CD and the dashboard wiring."
+  tools: Airflow, dbt, Snowflake, Azure Blob Storage, AWS EC2, Power BI, Docker, GitHub Actions, pytest (DuckDB for the local version)
   result: An end-to-end pipeline with two DAGs, 13 dbt models and 79 data tests feeding a portfolio dashboard. The public version runs locally with a single docker compose command.
-skills: [airflow, dbt, sql, python, etl, snowflake, data-modeling, power-bi, docker, ci-cd, azure]
+skills: [airflow, dbt, sql, python, etl, snowflake, data-modeling, power-bi, docker, ci-cd, azure, aws, git]
 links:
   github: https://github.com/fyoalharbi/invasight
 featured: true
@@ -52,6 +52,10 @@ Airflow orchestrates every step.
 `dbt build` runs **79 data tests** alongside the models, and any failure fails the Airflow task: keys, referential integrity between facts and dimensions, accepted values, positive prices and quantities, and business rules such as *every transaction found an FX rate*. Payloads are also checked at extraction, so bad data never reaches the warehouse.
 
 ![dbt lineage graph](https://raw.githubusercontent.com/fyoalharbi/invasight/main/docs/images/dbt_lineage.jpg)
+
+## The day before delivery
+
+One day before we delivered, I noticed **3 unauthorized logins** on our EC2 server, along with deleted dbt files that were breaking the dashboard. Every time we fixed one file, another one disappeared. I traced the problem, recovered the situation, and **restored the full dbt project from Snowflake's query history** in time for delivery.
 
 ## What I'd do next
 

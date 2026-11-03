@@ -171,7 +171,9 @@ const tone = (id: string) => (num(id) % 2 ? 'surface' : 'paper') as 'surface' | 
                 {education.map((e) => (
                   <li>
                     <h3>{e.title[lang]}</h3>
-                    <p class="tl-meta mono muted">{e.org[lang]} · <span dir="ltr">{e.period}</span></p>
+                    <p class="tl-meta mono muted">
+                      {e.org[lang]} · <span dir="ltr">{e.period}</span>{e.note && <> · <b>{e.note[lang]}</b></>}
+                    </p>
                   </li>
                 ))}
               </ol>

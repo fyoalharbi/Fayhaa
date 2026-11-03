@@ -5,9 +5,9 @@ summary: لوحة Power BI تفاعلية عن كأس العالم للرياض�
 tldr:
   problem: كأس العالم للرياضات الإلكترونية 2024 جمع أكثر من 1500 لاعب و200 فريق و20 لعبة في الرياض بجوائز 60 مليون دولار، بدون صورة وحدة توضح مين فاز بإيش حسب الدولة والفريق واللعبة.
   role: عمل فردي من البداية للنهاية، من جمع البيانات وتنظيفها إلى التحقق منها ولوحة Power BI.
-  tools: Python (استخراج بيانات الويب) و Power BI و DAX
+  tools: Python (استخراج بيانات الويب) و Power BI و Power Query و DAX
   result: لوحة منشورة فيها الجوائز والمراكز لكل دولة، خريطة اللاعبين، واللاعبين والفرق لكل لعبة ودولة. وخلال العمل اكتشفت أخطاء حسابية في بيانات المصدر وصححتها.
-skills: [power-bi, dax, dashboard-design, python, web-scraping, data-cleaning]
+skills: [power-bi, dax, power-query, dashboard-design, python, web-scraping, data-cleaning]
 links:
   live: https://app.powerbi.com/view?r=eyJrIjoiY2Y1M2M2ZjUtYjg4OC00NTc5LThlZTUtMjVjMDI5OWE1YjU5IiwidCI6ImMyYjA0ZGE2LTg0ODctNDFjYy04ODAzLTkwMzIxMDQ4YTc3MiIsImMiOjl9
   github: https://github.com/fyoalharbi/EWC_Dashboard

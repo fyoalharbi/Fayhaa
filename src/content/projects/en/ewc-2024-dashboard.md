@@ -5,9 +5,9 @@ summary: An interactive Power BI dashboard on the Esports World Cup 2024 in Riya
 tldr:
   problem: The Esports World Cup 2024 brought 1,500+ players, 200+ teams and 20+ games to Riyadh with a $60M prize pool, but there was no single view of who won what, by country, team and game.
   role: Solo, end to end, from data collection and cleaning to validation and the Power BI dashboard.
-  tools: Python (web scraping), Power BI, DAX
+  tools: Python (web scraping), Power BI, Power Query, DAX
   result: A published dashboard with prizes and placements per country, a player map, and players and teams per game and country. Along the way I found and corrected counting errors in the source data.
-skills: [power-bi, dax, dashboard-design, python, web-scraping, data-cleaning]
+skills: [power-bi, dax, power-query, dashboard-design, python, web-scraping, data-cleaning]
 links:
   live: https://app.powerbi.com/view?r=eyJrIjoiY2Y1M2M2ZjUtYjg4OC00NTc5LThlZTUtMjVjMDI5OWE1YjU5IiwidCI6ImMyYjA0ZGE2LTg0ODctNDFjYy04ODAzLTkwMzIxMDQ4YTc3MiIsImMiOjl9
   github: https://github.com/fyoalharbi/EWC_Dashboard
