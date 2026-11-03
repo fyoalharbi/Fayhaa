@@ -1,13 +1,13 @@
 ---
 title: InvaSight — an investment portfolio data pipeline
-date: 2026-10
+date: 2026-09
 summary: An ELT pipeline that turns a firm's transaction ledger and daily market prices into a SAR-valued star schema and a Power BI dashboard, orchestrated with Airflow.
 tldr:
   problem: A small investment firm needed one reliable view of its portfolio, combining an internal transaction ledger with daily FX, precious-metal and equity prices, all valued in Saudi riyals.
   role: "Team capstone (SDA Data Engineering bootcamp). My part: orchestration and integration — the Airflow DAGs, landing and loading logic, Snowflake loading, CI/CD and the dashboard wiring."
   tools: Airflow, dbt, Snowflake, Azure Blob Storage, Power BI, Docker, GitHub Actions (DuckDB for the local version)
   result: An end-to-end pipeline with two DAGs, 13 dbt models and 79 data tests feeding a portfolio dashboard. The public version runs locally with a single docker compose command.
-skills: [airflow, dbt, sql, python, snowflake, data-modeling, power-bi, docker, ci-cd, azure]
+skills: [airflow, dbt, sql, python, etl, snowflake, data-modeling, power-bi, docker, ci-cd, azure]
 links:
   github: https://github.com/fyoalharbi/invasight
 featured: true

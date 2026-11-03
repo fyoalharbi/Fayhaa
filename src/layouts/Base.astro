@@ -1,6 +1,6 @@
 ---
 import '../styles/normal.css';
-import { profile, type Lang } from '../data/profile';
+import { profile, experience, education, type Lang } from '../data/profile';
 import { ui, url, langUrl, hasOgImage } from '../lib/site';
 
 interface Props {
@@ -74,6 +74,7 @@ const terminalHref = url('terminal/') + (lang === 'ar' ? '?lang=ar' : '');
       <nav class="site-nav" aria-label="Main">
         <a href={langUrl(lang, '#projects')}>{t.nav.projects}</a>
         <a href={langUrl(lang, '#skills')}>{t.nav.skills}</a>
+        {(experience.length > 0 || education.length > 0) && <a href={langUrl(lang, '#experience')}>{t.experience}</a>}
         <a href={langUrl(lang, '#contact')}>{t.nav.contact}</a>
       </nav>
       <div class="header-tools">

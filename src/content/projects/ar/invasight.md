@@ -1,13 +1,13 @@
 ---
 title: InvaSight — خط بيانات لمحفظة استثمارية
-date: 2026-10
+date: 2026-09
 summary: خط ELT يحوّل سجل معاملات الشركة وأسعار السوق اليومية إلى نموذج نجمي مقيّم بالريال السعودي ولوحة Power BI، بتنسيق Airflow.
 tldr:
   problem: شركة استثمار صغيرة تحتاج صورة موحدة وموثوقة لمحفظتها، تجمع سجل المعاملات الداخلي مع أسعار العملات والمعادن والأسهم اليومية، وكلها مقيّمة بالريال السعودي.
   role: "مشروع تخرج جماعي (معسكر هندسة البيانات في الأكاديمية السعودية الرقمية SDA). دوري: التنسيق والتكامل — DAGs في Airflow، منطق الاستلام والتحميل، التحميل إلى Snowflake، CI/CD وربط اللوحة."
   tools: Airflow و dbt و Snowflake و Azure Blob Storage و Power BI و Docker و GitHub Actions (و DuckDB للنسخة المحلية)
   result: خط بيانات متكامل فيه DAGين و13 نموذج dbt و79 اختبار بيانات يغذي لوحة المحفظة. النسخة العامة تشتغل محلياً بأمر docker compose واحد.
-skills: [airflow, dbt, sql, python, snowflake, data-modeling, power-bi, docker, ci-cd, azure]
+skills: [airflow, dbt, sql, python, etl, snowflake, data-modeling, power-bi, docker, ci-cd, azure]
 links:
   github: https://github.com/fyoalharbi/invasight
 featured: true

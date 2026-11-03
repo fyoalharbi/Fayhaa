@@ -3,7 +3,7 @@ import Base from '../layouts/Base.astro';
 import Hero from './Hero.astro';
 import ProjectCard from './ProjectCard.astro';
 import Section from './Section.astro';
-import { profile, skills, skillGroups, experience, education, type Lang } from '../data/profile';
+import { profile, skills, skillGroups, experience, education, certifications, type Lang } from '../data/profile';
 import { ui, url, langUrl, hasResume, getProjects, projectHref, formatDate } from '../lib/site';
 
 interface Props { lang: Lang }
@@ -141,36 +141,67 @@ const tone = (id: string) => (num(id) % 2 ? 'surface' : 'paper') as 'surface' | 
     </script>
   </Section>
 
-  <!-- ── EXPERIENCE / EDUCATION (hidden until filled in profile.ts) ── -->
+  <!-- ── EXPERIENCE / EDUCATION / CERTIFICATIONS (hidden until filled in profile.ts) ── -->
   {hasTimeline && (
     <Section id="experience" index={num('experience')} tone={tone('experience')}
              label={t.experience} title={experience.length ? t.experience : t.education}>
-      <div class="timeline-wrap">
+      <div class="timeline-wrap" data-active={experience.length ? 'exp' : 'edu'}>
+        {/* Phones show one list at a time via these tabs; desktop shows all */}
+        <div class="tl-tabs mono" role="tablist">
+          {experience.length > 0 && <button type="button" role="tab" data-tab="exp" aria-selected="true">{t.experience}</button>}
+          {education.length > 0 && <button type="button" role="tab" data-tab="edu" aria-selected={experience.length ? 'false' : 'true'}>{t.education}</button>}
+          {certifications.length > 0 && <button type="button" role="tab" data-tab="cert" aria-selected="false">{t.certifications}</button>}
+        </div>
         {experience.length > 0 && (
-          <ol class="timeline">
+          <ol class="timeline" data-panel="exp">
             {experience.map((e) => (
               <li>
-                <p class="mono muted">{e.period}</p>
-                <h3>{e.title[lang]} · {e.org[lang]}</h3>
+                <h3>{e.title[lang]}</h3>
+                <p class="tl-meta mono muted">{e.org[lang]} · <span dir="ltr">{e.period}</span></p>
                 <ul>{e.points[lang].map((pt) => <li>{pt}</li>)}</ul>
               </li>
             ))}
           </ol>
         )}
-        {education.length > 0 && (
-          <div>
-            {experience.length > 0 && <h3 class="mono muted timeline-sub">{t.education}</h3>}
-            <ol class="timeline">
-              {education.map((e) => (
-                <li>
-                  <p class="mono muted">{e.period}</p>
-                  <h3>{e.title[lang]} · {e.org[lang]}</h3>
-                </li>
-              ))}
-            </ol>
-          </div>
-        )}
+        <div class="timeline-side">
+          {education.length > 0 && (
+            <div data-panel="edu">
+              {experience.length > 0 && <h3 class="mono muted timeline-sub">{t.education}</h3>}
+              <ol class="timeline">
+                {education.map((e) => (
+                  <li>
+                    <h3>{e.title[lang]}</h3>
+                    <p class="tl-meta mono muted">{e.org[lang]} · <span dir="ltr">{e.period}</span></p>
+                  </li>
+                ))}
+              </ol>
+            </div>
+          )}
+          {certifications.length > 0 && (
+            <div data-panel="cert">
+              <h3 class="mono muted timeline-sub">{t.certifications}</h3>
+              <ol class="timeline">
+                {certifications.map((e) => (
+                  <li>
+                    <h3>{e.title[lang]}</h3>
+                    <p class="tl-meta mono muted">{e.org[lang]} · <span dir="ltr">{e.period}</span></p>
+                  </li>
+                ))}
+              </ol>
+            </div>
+          )}
+        </div>
       </div>
+      <script is:inline>
+        document.querySelectorAll('.timeline-wrap').forEach((wrap) => {
+          wrap.querySelector('.tl-tabs').addEventListener('click', (e) => {
+            const tab = e.target.closest('[data-tab]');
+            if (!tab) return;
+            wrap.dataset.active = tab.dataset.tab;
+            wrap.querySelectorAll('[data-tab]').forEach((b) => b.setAttribute('aria-selected', String(b === tab)));
+          });
+        });
+      </script>
     </Section>
   )}
 

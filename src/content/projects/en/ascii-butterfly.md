@@ -10,7 +10,7 @@ tldr:
 skills: [p5js, javascript, generative-viz]
 links:
   github: https://github.com/fyoalharbi/Fayhaa
-featured: true
+featured: false
 ---
 
 ## The idea

@@ -1,48 +1,43 @@
 ---
 title: Personal Finance Analyzer
 date: 2025-09
-summary: A Streamlit app that turns raw bank transactions into a clear view of where the money goes.
+summary: A Streamlit app that reads a bank statement PDF, turns it into a DataFrame, and shows where your money comes from and goes.
 tldr:
-  problem: "TODO: one sentence. What was hard about understanding spending from a raw bank statement?"
-  role: "TODO: e.g. Solo, end to end (data cleaning → app → deploy)"
+  problem: Banking apps don't break your transactions down the way you'd want. I wanted that analysis built in, so I built it myself.
+  role: Built end to end, from PDF parsing and transaction classification to the analysis and the Streamlit app.
   tools: Python, Streamlit
-  result: "TODO: one sentence, with a number if possible"
+  result: A working analyzer for any Al Rajhi Bank statement, with eight views from income vs. spending to hourly patterns and CSV export.
 skills: [python, streamlit, data-cleaning]
 links:
   linkedin: https://www.linkedin.com/posts/fayhaaralharbi_streamlit-dataabranalysis-fintech-ugcPost-7368461640532480003-fU7A
-  # live: https://....streamlit.app        ← TODO: add if deployed
-  # github: https://github.com/fyoalharbi/...  ← TODO
 featured: true
-draft: true   # ← set to false once the TODOs below are written
 ---
-
-<!--
-  Writing tips: aim for 400–800 words. Recruiters skim the TL;DR box and the
-  headings; engineers read "Approach". Put screenshots in
-  public/projects/finance-analyzer/ and reference them as
-  ![Upload screen](/Fayhaa/projects/finance-analyzer/screen-1.png)
--->
 
 ## The problem
 
-> **TODO:** Who is this for, and what question did they need answered? Why wasn't a spreadsheet or the bank app good enough?
+I kept wishing my banking app came with a real breakdown of my transactions, not just a list. So I built the analyzer I wanted to see inside it.
 
-## The data
+## How it works
 
-> **TODO:** What did the raw export look like (format, columns, how messy)? What had to be cleaned: dates, Arabic/English merchant names, duplicates, refunds?
+1. **Read the statement.** The app takes a bank statement as a PDF and converts its transactions into a DataFrame.
+2. **Understand each transaction.** Banks describe transfers in their own wording, so I worked through how each transaction type is phrased and wrote the logic to extract the useful details (who, what kind, how much) from that text.
+3. **Analyze.** It runs the calculations and pulls out the key figures.
 
-## Approach
+## What it shows
 
-> **TODO:** The 2–4 decisions that mattered. For each: what you chose, what you didn't, and why. For example, how did you categorize transactions (rules, keywords, a model?) and what happened to the ones that didn't match?
-
-## What I built
-
-> **TODO:** Screenshots of the app, with one or two sentences on each view.
+1. An overview of your income and spending
+2. Filtering by transaction type, amount range and date
+3. Income and spending over the period you choose
+4. A comparison of your transaction types and each one's share
+5. Spending vs. income per merchant or person
+6. Monthly, weekly and hourly transaction patterns
+7. Export of the cleaned data as CSV
+8. Quick facts: average spending and income, the most frequent transaction, the largest payment and the highest income
 
 ## Result
 
-> **TODO:** What can someone do now that they couldn't before? Any numbers, feedback, or reactions to the LinkedIn post?
+It currently works for anyone banking with **Al Rajhi Bank**. The data shown in the demo is not real.
 
-## What I'd do differently
+## What I learned
 
-> **TODO:** Be honest here. It's one of the most-read parts of a case study.
+How banks structure transaction records, how to extract structured information from free text, and how to handle each transfer type based on the bank's own wording.

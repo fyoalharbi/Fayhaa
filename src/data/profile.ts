@@ -8,15 +8,16 @@ type T = Record<Lang, string>;
 
 export const profile = {
   name: { en: 'Fayhaa Alharbi', ar: 'فيحاء الحربي' } as T,
-  role: { en: 'Data Analyst & Business Intelligence', ar: 'محلل بيانات وذكاء الأعمال' } as T,
-  availability: { en: 'Open to remote roles', ar: 'متاحة للعمل عن بعد' } as T,
+  // Headline, About and availability follow the LinkedIn profile
+  role: { en: 'Data Engineer', ar: 'مهندسة بيانات' } as T,
+  availability: { en: 'Open to remote or hybrid roles', ar: 'متاحة للعمل عن بعد أو هجين' } as T,
   intro: {
-    en: "I like data and business problems, and I'm a very curious person. I work across SQL, Python and Power BI to turn questions into dashboards and tools people actually use.",
-    ar: 'أحب البيانات ومشاكل الأعمال، وفضولية جداً. أشتغل على SQL و Python و Power BI عشان أحول الأسئلة إلى لوحات وأدوات يستخدمها الناس فعلاً.',
+    en: 'I build reliable pipelines that turn raw data into decisions. I come from system integration, and today I work across the whole data lifecycle: ingestion, transformation, modeling and reporting.',
+    ar: 'أبني خطوط بيانات موثوقة تحوّل البيانات الخام إلى قرارات. خلفيتي في تكامل الأنظمة، واليوم أشتغل على دورة البيانات كاملة: الاستخراج، التحويل، النمذجة والتقارير.',
   } as T,
   workflow: {
-    en: ['Idea', 'Analysis', 'Develop', 'Deploy'],
-    ar: ['فكرة', 'تحليل', 'تطوير', 'تطبيق'],
+    en: ['Ingest', 'Transform', 'Model', 'Report'],
+    ar: ['استخراج', 'تحويل', 'نمذجة', 'تقارير'],
   },
   email: 'fayhaaralharbi@gmail.com',
   links: {
@@ -28,49 +29,128 @@ export const profile = {
 // ── SKILLS ───────────────────────────────────
 // `key` is what project frontmatter references in `skills: [...]`.
 // Each skill gets its own page at /skills/<key>/ listing the projects that use it.
-// `core: true` = headline skills (matches CORE_INTEL in the terminal intro);
-// they're marked and listed first on the home page.
+// `core: true` = headline skills (LinkedIn headline + top skills: Python, SQL,
+// Airflow, dbt, Power BI); they're marked and listed first on the home page.
 export const skills = [
-  { key: 'sql',              group: 'data',     core: true,  label: { en: 'SQL',                ar: 'SQL' } },
-  { key: 'python',           group: 'data',     core: true,  label: { en: 'Python',             ar: 'Python' } },
-  { key: 'data-cleaning',    group: 'data',     core: false, label: { en: 'Data cleaning',      ar: 'تنظيف البيانات' } },
-  { key: 'streamlit',        group: 'data',     core: false, label: { en: 'Streamlit',          ar: 'Streamlit' } },
-  { key: 'web-scraping',     group: 'data',     core: false, label: { en: 'Web scraping',       ar: 'استخراج بيانات الويب' } },
-  { key: 'airflow',          group: 'eng',      core: false, label: { en: 'Airflow',            ar: 'Airflow' } },
-  { key: 'dbt',              group: 'eng',      core: false, label: { en: 'dbt',                ar: 'dbt' } },
+  { key: 'sql',              group: 'eng',      core: true,  label: { en: 'SQL',                ar: 'SQL' } },
+  { key: 'python',           group: 'eng',      core: true,  label: { en: 'Python',             ar: 'Python' } },
+  { key: 'airflow',          group: 'eng',      core: true,  label: { en: 'Airflow',            ar: 'Airflow' } },
+  { key: 'dbt',              group: 'eng',      core: true,  label: { en: 'dbt',                ar: 'dbt' } },
+  { key: 'etl',              group: 'eng',      core: false, label: { en: 'ETL / ELT',          ar: 'ETL / ELT' } },
   { key: 'snowflake',        group: 'eng',      core: false, label: { en: 'Snowflake',          ar: 'Snowflake' } },
   { key: 'data-modeling',    group: 'eng',      core: false, label: { en: 'Data modeling',      ar: 'نمذجة البيانات' } },
+  { key: 'aws',              group: 'eng',      core: false, label: { en: 'AWS',                ar: 'AWS' } },
+  { key: 'azure',            group: 'eng',      core: false, label: { en: 'Azure',              ar: 'Azure' } },
   { key: 'docker',           group: 'eng',      core: false, label: { en: 'Docker',             ar: 'Docker' } },
   { key: 'ci-cd',            group: 'eng',      core: false, label: { en: 'CI/CD',              ar: 'CI/CD' } },
-  { key: 'azure',            group: 'eng',      core: false, label: { en: 'Azure',              ar: 'Azure' } },
+  { key: 'rest-apis',        group: 'eng',      core: false, label: { en: 'REST API integration', ar: 'تكامل REST API' } },
   { key: 'power-bi',         group: 'bi',       core: true,  label: { en: 'Power BI',           ar: 'Power BI' } },
+  { key: 'dax',              group: 'bi',       core: false, label: { en: 'DAX',                ar: 'DAX' } },
   { key: 'dashboard-design', group: 'bi',       core: false, label: { en: 'Dashboard design',   ar: 'تصميم اللوحات' } },
-  { key: 'p5js',             group: 'creative', core: true,  label: { en: 'p5.js',              ar: 'p5.js' } },
-  { key: 'javascript',       group: 'creative', core: false, label: { en: 'JavaScript',         ar: 'JavaScript' } },
-  { key: 'generative-viz',   group: 'creative', core: false, label: { en: 'Generative visuals', ar: 'رسوميات توليدية' } },
+  { key: 'data-cleaning',    group: 'bi',       core: false, label: { en: 'Data cleaning',      ar: 'تنظيف البيانات' } },
+  { key: 'web-scraping',     group: 'bi',       core: false, label: { en: 'Web scraping',       ar: 'استخراج بيانات الويب' } },
+  { key: 'streamlit',        group: 'bi',       core: false, label: { en: 'Streamlit',          ar: 'Streamlit' } },
+  { key: 'statistics',       group: 'bi',       core: false, label: { en: 'Statistics',         ar: 'الإحصاء' } },
+  { key: 'typescript',       group: 'web',      core: false, label: { en: 'TypeScript',         ar: 'TypeScript' } },
+  { key: 'javascript',       group: 'web',      core: false, label: { en: 'JavaScript',         ar: 'JavaScript' } },
+  { key: 'astro',            group: 'web',      core: false, label: { en: 'Astro',              ar: 'Astro' } },
+  { key: 'p5js',             group: 'web',      core: false, label: { en: 'p5.js',              ar: 'p5.js' } },
+  { key: 'generative-viz',   group: 'web',      core: false, label: { en: 'Generative visuals', ar: 'رسوميات توليدية' } },
 ] as const;
 
 export type SkillKey = (typeof skills)[number]['key'];
 export const skillKeys = skills.map((s) => s.key) as [SkillKey, ...SkillKey[]];
 
 export const skillGroups: Record<string, T> = {
-  data:     { en: 'Data & analysis',       ar: 'البيانات والتحليل' },
-  eng:      { en: 'Data engineering',      ar: 'هندسة البيانات' },
-  bi:       { en: 'Business intelligence', ar: 'ذكاء الأعمال' },
-  creative: { en: 'Creative coding',       ar: 'البرمجة الإبداعية' },
+  eng: { en: 'Data engineering',        ar: 'هندسة البيانات' },
+  bi:  { en: 'Analytics & BI',          ar: 'التحليل وذكاء الأعمال' },
+  web: { en: 'Web & creative coding',   ar: 'الويب والبرمجة الإبداعية' },
 };
 
-// ── EXPERIENCE & EDUCATION ───────────────────
-// TODO(Fayhaa): fill these in. Sections stay hidden while the arrays are empty.
-// Example:
-// { title: { en: 'Data Analyst Intern', ar: 'متدربة تحليل بيانات' },
-//   org: { en: 'Company', ar: 'الشركة' }, period: '2025 — 2026',
-//   points: { en: ['Built X that saved Y'], ar: ['...'] } },
+// ── EXPERIENCE, EDUCATION, CERTIFICATIONS (from LinkedIn) ──
+// Sections stay hidden while an array is empty.
 export const experience: {
   title: T; org: T; period: string; points: Record<Lang, string[]>;
-}[] = [];
+}[] = [
+  {
+    title: { en: 'Data Analyst & Business Intelligence', ar: 'محللة بيانات وذكاء أعمال' },
+    org: { en: 'Freelance · Remote', ar: 'عمل حر · عن بعد' },
+    period: 'Sep 2025 — Present',
+    points: {
+      en: ['Help individuals and companies answer business questions with data-driven insights.'],
+      ar: ['أساعد الأفراد والشركات في الإجابة عن أسئلة أعمالهم برؤى مبنية على البيانات.'],
+    },
+  },
+  {
+    title: { en: 'Software Developer (Integrations)', ar: 'مطورة برمجيات (تكامل الأنظمة)' },
+    org: { en: 'EJADA · Buraydah', ar: 'إجادة · بريدة' },
+    period: 'Feb 2025 — Jul 2025',
+    points: {
+      en: [
+        'Built and maintained inbound and outbound REST API integrations for finance systems with IBM API Connect and OutSystems.',
+        'Tested and deployed integrations from development to production, fixing issues found in testing before release.',
+      ],
+      ar: [
+        'بنيت وصنت تكاملات REST API واردة وصادرة للأنظمة المالية باستخدام IBM API Connect و OutSystems.',
+        'اختبرت ونشرت التكاملات من التطوير إلى الإنتاج، وعالجت المشاكل قبل الإطلاق.',
+      ],
+    },
+  },
+  {
+    title: { en: 'Data Analyst', ar: 'محللة بيانات' },
+    org: { en: 'Hackathonat · Part-time', ar: 'هاكاثونات · دوام جزئي' },
+    period: 'Apr 2024 — May 2024',
+    points: {
+      en: ["Wrote a Python tool on X's engagement API that filters tweets, analyzes engagement and generates charts and an insights report."],
+      ar: ['كتبت أداة Python على واجهة تفاعل X تفلتر التغريدات وتحلل التفاعل وتطلع رسوم وتقرير رؤى.'],
+    },
+  },
+  {
+    title: { en: 'Data Analyst Intern', ar: 'متدربة تحليل بيانات' },
+    org: { en: 'Hackathonat', ar: 'هاكاثونات' },
+    period: 'Jul 2023 — Aug 2023',
+    points: {
+      en: ['Built dashboards end to end: scraped web data, cleaned it and visualized it in Power BI and Python.'],
+      ar: ['بنيت لوحات بيانات من البداية للنهاية: استخراج بيانات الويب، تنظيفها، وعرضها في Power BI و Python.'],
+    },
+  },
+  {
+    title: { en: 'Private Tutor', ar: 'مدرسة خصوصية' },
+    org: { en: 'Freelance', ar: 'عمل حر' },
+    period: 'Aug 2021 — Jan 2025',
+    points: {
+      en: ['Tutored Qassim University students in Data Structures and Statistics.'],
+      ar: ['درّست طلاب جامعة القصيم هياكل البيانات والإحصاء.'],
+    },
+  },
+];
 
-export const education: { title: T; org: T; period: string }[] = [];
+export const education: { title: T; org: T; period: string }[] = [
+  {
+    title: { en: 'Data Engineering Bootcamp', ar: 'معسكر هندسة البيانات' },
+    org: { en: 'Saudi Digital Academy', ar: 'الأكاديمية السعودية الرقمية' },
+    period: 'Aug 2026 — Sep 2026',
+  },
+  {
+    title: { en: "Bachelor's in Computer Science", ar: 'بكالوريوس علوم الحاسب' },
+    org: { en: 'Qassim University', ar: 'جامعة القصيم' },
+    period: '2019 — 2024',
+  },
+];
+
+// LinkedIn lists 8; these are the two visible on the saved profile page.
+export const certifications: { title: T; org: T; period: string }[] = [
+  {
+    title: { en: 'Associate Data Engineer in SQL', ar: 'Associate Data Engineer in SQL' },
+    org: { en: 'DataCamp', ar: 'DataCamp' },
+    period: 'Nov 2024',
+  },
+  {
+    title: { en: 'Google Data Analytics Professional Certificate', ar: 'شهادة Google المهنية لتحليل البيانات' },
+    org: { en: 'Coursera', ar: 'Coursera' },
+    period: 'Aug 2024',
+  },
+];
 
 // ── PHILOSOPHY (the butterfly) ───────────────
 export const philosophy = {
