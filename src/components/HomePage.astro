@@ -2,6 +2,7 @@
 import Base from '../layouts/Base.astro';
 import Butterfly from './Butterfly.astro';
 import ProjectCard from './ProjectCard.astro';
+import Section from './Section.astro';
 import { profile, skills, skillGroups, experience, education, philosophy, type Lang } from '../data/profile';
 import { ui, url, langUrl, hasResume, getProjects } from '../lib/site';
 
@@ -17,6 +18,13 @@ const groups = Object.keys(skillGroups).map((g) => ({
   label: skillGroups[g][lang],
   items: skills.filter((s) => s.group === g),
 }));
+
+// Sections are numbered in order and alternate white / paper backgrounds;
+// the optional experience section shifts the numbering when present.
+const hasTimeline = experience.length > 0 || education.length > 0;
+const order = ['projects', 'skills', ...(hasTimeline ? ['experience'] : []), 'about', 'contact'];
+const num = (id: string) => order.indexOf(id) + 1;
+const tone = (id: string) => (num(id) % 2 ? 'surface' : 'paper') as 'surface' | 'paper';
 ---
 <Base lang={lang} homeRedirect>
   <!-- ── HERO ── -->
@@ -40,23 +48,17 @@ const groups = Object.keys(skillGroups).map((g) => ({
   </section>
 
   <!-- ── PROJECTS ── -->
-  <section id="projects" class="section wrap">
-    <div class="section-head">
-      <h2>{t.featured}</h2>
-      {projects.length > featured.length &&
-        <a class="mono" href={langUrl(lang, 'projects/')}>{t.allProjects} {lang === 'ar' ? '←' : '→'}</a>}
-    </div>
+  <Section id="projects" index={num('projects')} tone={tone('projects')} label={t.nav.projects} title={t.featured}>
+    {projects.length > featured.length &&
+      <a slot="aside" class="mono" href={langUrl(lang, 'projects/')}>{t.allProjects} {lang === 'ar' ? '←' : '→'}</a>}
     <div class="cards">
       {featured.map((p, i) => <ProjectCard project={p} lang={lang} index={i} />)}
     </div>
-  </section>
+  </Section>
 
   <!-- ── SKILLS ── -->
-  <section id="skills" class="section wrap">
-    <div class="section-head">
-      <h2>{t.skillsTitle}</h2>
-      <p class="muted">{t.skillsLead}</p>
-    </div>
+  <Section id="skills" index={num('skills')} tone={tone('skills')} label={t.nav.skills} title={t.skillsTitle}>
+    <p slot="aside" class="muted">{t.skillsLead}</p>
     <div class="skill-groups">
       {groups.map((g) => (
         <div class="skill-group">
@@ -77,14 +79,14 @@ const groups = Object.keys(skillGroups).map((g) => ({
         </div>
       ))}
     </div>
-  </section>
+  </Section>
 
   <!-- ── EXPERIENCE / EDUCATION (hidden until filled in profile.ts) ── -->
-  {(experience.length > 0 || education.length > 0) && (
-    <section id="experience" class="section wrap timeline-wrap">
-      {experience.length > 0 && (
-        <div>
-          <h2>{t.experience}</h2>
+  {hasTimeline && (
+    <Section id="experience" index={num('experience')} tone={tone('experience')}
+             label={t.experience} title={experience.length ? t.experience : t.education}>
+      <div class="timeline-wrap">
+        {experience.length > 0 && (
           <ol class="timeline">
             {experience.map((e) => (
               <li>
@@ -94,34 +96,33 @@ const groups = Object.keys(skillGroups).map((g) => ({
               </li>
             ))}
           </ol>
-        </div>
-      )}
-      {education.length > 0 && (
-        <div>
-          <h2>{t.education}</h2>
-          <ol class="timeline">
-            {education.map((e) => (
-              <li>
-                <p class="mono muted">{e.period}</p>
-                <h3>{e.title[lang]} · {e.org[lang]}</h3>
-              </li>
-            ))}
-          </ol>
-        </div>
-      )}
-    </section>
+        )}
+        {education.length > 0 && (
+          <div>
+            {experience.length > 0 && <h3 class="mono muted timeline-sub">{t.education}</h3>}
+            <ol class="timeline">
+              {education.map((e) => (
+                <li>
+                  <p class="mono muted">{e.period}</p>
+                  <h3>{e.title[lang]} · {e.org[lang]}</h3>
+                </li>
+              ))}
+            </ol>
+          </div>
+        )}
+      </div>
+    </Section>
   )}
 
   <!-- ── ABOUT / PHILOSOPHY ── -->
-  <section id="about" class="section wrap about">
-    <p class="kicker mono">{t.howIWork}</p>
-    <h2>{philosophy.title[lang]}</h2>
-    {philosophy.paragraphs[lang].map((para) => <p>{para}</p>)}
-  </section>
+  <Section id="about" index={num('about')} tone={tone('about')} label={t.howIWork} title={philosophy.title[lang]}>
+    <div class="about">
+      {philosophy.paragraphs[lang].map((para) => <p>{para}</p>)}
+    </div>
+  </Section>
 
   <!-- ── CONTACT ── -->
-  <section id="contact" class="section wrap contact">
-    <h2>{t.contactTitle}</h2>
+  <Section id="contact" index={num('contact')} tone="ink" label={t.nav.contact} title={t.contactTitle}>
     <p class="muted">{t.contactLead} {profile.availability[lang]}.</p>
     <a class="contact-email" href={`mailto:${profile.email}`}>{profile.email}</a>
     <div class="actions">
@@ -129,5 +130,5 @@ const groups = Object.keys(skillGroups).map((g) => ({
       <a class="btn" href={profile.links.github} target="_blank" rel="noopener">GitHub ↗</a>
       {hasResume && <a class="btn" href={url('resume.pdf')} download>{t.resume}</a>}
     </div>
-  </section>
+  </Section>
 </Base>

@@ -47,6 +47,8 @@ p { margin: 0 0 1em; }
 /* Arabic letters must join, so no letter-spacing and a proper Arabic face */
 html[lang='ar'] .mono:not(.brand) { font-family: var(--font-ar); letter-spacing: 0; font-size: 0.85rem; }
 html[lang='ar'] .brand { letter-spacing: 0; }
+html[lang='ar'] .tags a,
+html[lang='ar'] .term-toggle { font-family: var(--font-ar); letter-spacing: 0; font-size: 0.8rem; }
 .kicker { text-transform: uppercase; color: var(--muted); margin-bottom: 0.75rem; }
 .lead { font-size: 1.15rem; color: #333; max-width: 60ch; }
 
@@ -119,12 +121,58 @@ html[dir='rtl'] .workflow li + li::before { content: '←'; }
 
 /* ── SECTIONS ── */
 .section { padding-block: 48px; border-top: 1px solid var(--rule); }
-.hero + .section { border-top: 1px solid var(--rule); }
 .section-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 8px 24px; margin-bottom: 24px; }
 .section-head h1, .section-head h2 { margin: 0; }
 .section-head p { margin: 0; }
 .back { display: inline-block; margin-bottom: 1.5rem; text-decoration: none; color: var(--muted); }
 .back:hover { color: var(--ink); }
+
+/* ── HOME BANDS ──
+   Full-width, alternating backgrounds + numbered labels so each section
+   reads as its own block. Contact closes the page on an inverted band. */
+.band {
+  padding-block: clamp(56px, 8vw, 96px);
+  border-top: 1px solid var(--rule);
+  scroll-margin-top: 60px;           /* clear the sticky header on anchor jumps */
+}
+.band-surface { background: var(--surface); }
+.band-paper   { background: var(--paper); }
+.band-ink {
+  --muted: #a3a3a3;
+  --rule: #3a3a3a;
+  background: var(--ink);
+  color: var(--paper);
+  border-top-color: var(--ink);
+}
+.band-label {
+  display: flex; align-items: center; gap: 12px;
+  text-transform: uppercase; color: var(--muted);
+  margin-bottom: 14px;
+}
+.band-index { color: currentColor; font-weight: 700; }
+.band-label .band-index { color: var(--accent); }
+.band-ink .band-label .band-index { color: #ff8a8a; }
+.band-rule { flex: 0 0 40px; height: 1px; background: currentColor; opacity: 0.5; }
+.band-head {
+  display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between;
+  gap: 8px 32px; margin-bottom: 36px;
+}
+.band-head h2 { margin: 0; font-size: clamp(1.7rem, 3.6vw, 2.5rem); }
+.band-head > :not(h2) { margin: 0; }
+
+/* Cards and tags flip their fill so they still stand off a white band */
+.band-surface .card { background: var(--paper); }
+.band-surface .card:hover { background: var(--surface); }
+.band-surface .tags a { background: var(--surface); }
+
+/* Inverted contact band */
+.band-ink .btn { border-color: var(--paper); color: var(--paper); }
+.band-ink .btn:hover { background: var(--paper); color: var(--ink); }
+.band-ink .contact-email { border-color: var(--paper); }
+.band-ink .contact-email:hover { color: #ff8a8a; border-color: #ff8a8a; }
+.band-ink :focus-visible { outline-color: #ff8a8a; }
+
+.timeline-sub { text-transform: uppercase; font-weight: 400; margin: 0 0 12px; }
 
 /* ── CARDS ── */
 .cards { display: grid; gap: 16px; }
@@ -171,7 +219,7 @@ html[dir='rtl'] .workflow li + li::before { content: '←'; }
 .timeline p { margin: 0; }
 
 /* ── ABOUT / CONTACT ── */
-.about p:not(.kicker) { max-width: 65ch; font-size: 1.08rem; }
+.about p { max-width: 65ch; font-size: 1.1rem; }
 .contact-email {
   display: inline-block; font-size: clamp(1.2rem, 4vw, 2rem); font-weight: 600;
   text-decoration: none; border-bottom: 2px solid var(--ink); word-break: break-all;
