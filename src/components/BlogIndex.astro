@@ -1,0 +1,31 @@
+---
+import Base from '../layouts/Base.astro';
+import { type Lang } from '../data/profile';
+import { ui, langUrl, getPosts, postSlug, formatDate } from '../lib/site';
+
+interface Props { lang: Lang }
+const { lang } = Astro.props;
+const t = ui[lang];
+const posts = await getPosts(lang);
+---
+<Base lang={lang} title={t.blogTitle} path="blog/">
+  <section class="section wrap blog-index">
+    <div class="section-head">
+      <h1>{t.blogTitle}</h1>
+      <p class="muted">{t.blogLead}</p>
+    </div>
+    {posts.length === 0 && <p class="muted">{t.noPosts}</p>}
+    <ol class="post-list">
+      {posts.map((p) => (
+        <li>
+          <a href={langUrl(lang, `blog/${postSlug(p)}/`)}>
+            <time class="mono muted" datetime={p.data.date.toISOString()}>{formatDate(p.data.date, lang)}</time>
+            <h2>{p.data.title}</h2>
+            <p>{p.data.summary}</p>
+            {p.data.tags.length > 0 && <span class="post-tags mono">{p.data.tags.map((tag) => `#${tag}`).join('  ')}</span>}
+          </a>
+        </li>
+      ))}
+    </ol>
+  </section>
+</Base>
