@@ -110,10 +110,15 @@
 }
 .falling-line {
   position: fixed; top: 0; left: 0; z-index: 41; pointer-events: none;
-  max-width: min(420px, 90vw); padding: 2px 6px;
-  font-family: var(--font-mono); font-size: 0.85rem; font-weight: 700; color: var(--accent);
-  background: color-mix(in srgb, var(--paper) 85%, transparent); border-radius: 3px;
+  max-width: min(440px, 90vw); white-space: pre-wrap;
+  font-family: var(--font-mono); font-size: 0.85rem; font-weight: 700; letter-spacing: 0.04em; color: var(--accent);
+  text-shadow: 0 0 6px color-mix(in srgb, var(--paper) 90%, transparent);
 }
+.fl-ch { display: inline-block; white-space: pre; will-change: transform; }
+.fl-ch.is-bit { color: var(--ink); }
+/* glitch frames: red ghost + slight skew */
+.falling-line.is-glitch { text-shadow: 2px 0 rgba(180, 20, 30, .65), -2px 0 rgba(26, 26, 26, .35); transform-origin: left; }
+.falling-line.is-glitch .fl-ch:nth-child(3n) { transform: translateY(-1px); }
 .status-line-bar {
   position: fixed; inset-inline: 0; bottom: 0; z-index: 85;
   padding: 10px var(--gutter); white-space: pre-line;

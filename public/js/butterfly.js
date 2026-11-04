@@ -248,20 +248,65 @@
       const type = () => { tag.textContent = '› ' + line.slice(0, ++i); if (i < line.length) setTimeout(type, REDUCED ? 0 : 22); };
       type();
     }
+    // Digitized falling line: scrambles → decodes into the text → drifts and
+    // glitches → each letter dissolves into a 6/7 bit that drops away.
+    // Arabic stays one unit so its letters keep joining.
+    const GLYPHS = '01#%&@$*+=<>/\|67';
+    const glyph = () => GLYPHS[(Math.random() * GLYPHS.length) | 0];
     function fallLine() {
+      const line = nextLine();
       const d = document.createElement('div');
       d.className = 'falling-line';
       d.dir = CFG.dir;
-      d.textContent = nextLine();
+      d.setAttribute('aria-label', line);
+      const units = (RTL ? [line] : [...line]).map((c) => {
+        const span = document.createElement('span');
+        span.className = 'fl-ch';
+        span.setAttribute('aria-hidden', 'true');
+        span.textContent = c === ' ' ? ' ' : c.length > 1 ? Array.from({ length: Math.min(c.length, 28) }, glyph).join('') : glyph();
+        d.appendChild(span);
+        return { span, c, vx: (Math.random() - 0.5) * 1.4, vy: -Math.random() * 1.5, dx: 0, dy: 0 };
+      });
       document.body.appendChild(d);
       const sx = Math.max(8, Math.min(innerWidth - d.offsetWidth - 8, x + W / 2 - d.offsetWidth / 2));
-      const sy = y + H * 0.7;
-      d.animate([
-        { transform: `translate(${sx}px, ${sy}px)`, opacity: 0 },
-        { transform: `translate(${sx}px, ${sy + 12}px)`, opacity: 1, offset: 0.12 },
-        { transform: `translate(${sx}px, ${sy + 70}px)`, opacity: 1, offset: 0.7 },
-        { transform: `translate(${sx}px, ${sy + 110}px)`, opacity: 0 },
-      ], { duration: REDUCED ? 3000 : 4800, easing: 'ease-out' }).onfinish = () => d.remove();
+      const sy = y + H + 6;                     // just under the butterfly, not over it
+      const DECODE = REDUCED ? 0 : 750, HOLD = 2600, SPREAD = 900;
+      units.forEach((u, i) => {
+        u.at = DECODE * (0.25 + 0.75 * i / units.length) + Math.random() * 120;   // when it resolves
+        u.dropAt = DECODE + HOLD + Math.random() * SPREAD;                        // when it dissolves
+      });
+      const t0 = performance.now();
+      const tick = (now) => {
+        const t = now - t0;
+        const glitch = !REDUCED && Math.random() < 0.05;
+        d.classList.toggle('is-glitch', glitch);
+        d.style.transform = `translate(${sx + (glitch ? (Math.random() - 0.5) * 6 : 0)}px, ${sy + Math.min(t, DECODE + HOLD) * 0.014}px)`;
+        let alive = false;
+        for (const u of units) {
+          if (u.c === ' ') continue;
+          if (t < u.at) {                                           // still scrambling
+            u.span.textContent = u.c.length > 1 ? Array.from({ length: Math.min(u.c.length, 28) }, glyph).join('') : glyph();
+            alive = true;
+          } else if (t < u.dropAt) {                                // readable
+            if (u.span.textContent !== u.c) u.span.textContent = u.c;
+            if (glitch && Math.random() < 0.15 && u.c.length === 1) u.span.textContent = glyph();
+            alive = true;
+          } else {                                                  // dissolve into a falling bit
+            if (!u.bit) {
+              u.bit = true;
+              u.span.classList.add('is-bit');
+              u.span.textContent = u.c.length > 1 ? Array.from({ length: 6 }, () => (Math.random() < 0.5 ? '6' : '7')).join('') : (Math.random() < 0.5 ? '6' : '7');
+            }
+            u.vy += 0.28; u.dy += u.vy; u.dx += u.vx;
+            const life = 1 - (t - u.dropAt) / 1000;
+            u.span.style.transform = `translate(${u.dx}px, ${u.dy}px)`;
+            u.span.style.opacity = String(Math.max(0, life));
+            if (life > 0) alive = true;
+          }
+        }
+        if (alive) requestAnimationFrame(tick); else d.remove();
+      };
+      requestAnimationFrame(tick);
     }
     let statusEl, statusTimer;
     function statusLine() {
