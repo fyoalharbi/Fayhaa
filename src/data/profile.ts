@@ -7,7 +7,7 @@ export type Lang = 'en' | 'ar';
 type T = Record<Lang, string>;
 
 export const profile = {
-  name: { en: 'Fayhaa Alharbi', ar: 'فيحاء الحربي' } as T,
+  name: { en: 'Fayhaa', ar: 'فيحاء' } as T,
   // Headline, About and availability follow the LinkedIn profile
   role: { en: 'Data Engineer', ar: 'مهندسة بيانات' } as T,
   availability: { en: 'Open to remote or hybrid roles', ar: 'متاحة للعمل عن بعد أو هجين' } as T,
