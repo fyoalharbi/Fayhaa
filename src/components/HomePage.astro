@@ -209,7 +209,7 @@ const tone = (id: string) => (num(id) % 2 ? 'surface' : 'paper') as 'surface' | 
 
   <!-- ── CONTACT ── -->
   <Section id="contact" index={num('contact')} tone="ink" label={t.nav.contact} title={t.contactTitle}>
-    <p class="muted">{t.contactLead} {profile.availability[lang]}.</p>
+    <p class="muted">{t.contactLead}</p>
     <a class="contact-email" href={`mailto:${profile.email}`}>{profile.email}</a>
     <div class="actions">
       <a class="btn" href={profile.links.linkedin} target="_blank" rel="noopener">LinkedIn ↗</a>

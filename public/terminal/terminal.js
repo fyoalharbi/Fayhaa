@@ -27,7 +27,6 @@ const COPY = {
       `GITHUB: ${link(DATA.profile.links.github, '@fyoalharbi ↗')}`,
       DATA.resume ? `RESUME: ${link(DATA.resume, 'resume.pdf ↗')}` : null,
       '',
-      'DEPLOYMENT: [REMOTE // HYBRID]. CLOUD_WORKFLOW: [TRUE].',
       'SPEC: LIKES TO LEARN A LOT!',
       'WORKFLOW: INGEST → TRANSFORM → MODEL → REPORT',
       'STATUS: OPERATIONAL',
@@ -42,7 +41,6 @@ const COPY = {
       `جيت_هب: ${link(DATA.profile.links.github, '@fyoalharbi ↗')}`,
       DATA.resume ? `السيرة_الذاتية: ${link(DATA.resume, 'resume.pdf ↗')}` : null,
       '',
-      'نظام_العمل: [عن_بعد // هجين]. سير_العمل_السحابي: [مفعل].',
       'المواصفات: أحب اتعلم كثير!',
       'سير_العمل: استخراج ← تحويل ← نمذجة ← تقارير',
       'الحالة: تبحث عن فرص وتحديات جديدة',
@@ -92,8 +90,6 @@ const COPY = {
       '',
       '<span class="comment">// SECRET_CHANNEL: CLICK THE BUTTERFLY.</span>',
       '',
-      '> DATA_CHECK: LOCATION_INDEPENDENT_WORKFLOW_REQUIRED.',
-      '> [ACCEPT_REMOTE_ONLY: TRUE]',
     ],
     AR: () => [
       'القناة: جيميل',
@@ -104,8 +100,6 @@ const COPY = {
       '',
       '<span class="comment">// القناة_السرية: اضغط على الفراشة.</span>',
       '',
-      '> فحص_البيانات: العمل_المستقل_عن_الموقع_مطلوب.',
-      '> [قبول_العمل_عن_بعد_فقط: صحيح]',
     ],
   },
 };
@@ -187,15 +181,9 @@ let currentMode     = null;
 let currentLang     = 'EN';
 let lastCommand     = 'whoami';
 let typewriterTimer = null;
-let _contactTimer   = null;  // desperation Easter egg timer
 const history = [];
 let historyIdx = 0;
 
-// ── DESPERATION WARNING STRINGS ───────────────
-const DESPERATION = {
-  EN: '\n\n> WARNING: HIGH_REMOTE_PRIORITY.\n> IN_OFFICE_OFFERS_WILL_BE_REJECTED.\n> [RETRY_CONNECTION?]',
-  AR: '\n\n> تحذير: أولوية_عالية_للعمل_عن_بعد.\n> العروض_المكتبية_سترفض_إلا_في_حال_وفرة_المال.\n> [إعادة_المحاولة؟]',
-};
 
 // ── DATA HELPERS ──────────────────────────────
 const projects = () => DATA.projects[currentLang === 'AR' ? 'ar' : 'en'];
@@ -397,15 +385,6 @@ function _render(mode, text, speed) {
     setTimeout(startAsciiRain, 420);
   }
 
-  // Desperation Easter egg: 10 s on contact without clicking the link
-  clearTimeout(_contactTimer);
-  _contactTimer = null;
-  if (mode === 'contact') {
-    _contactTimer = setTimeout(() => {
-      if (currentMode !== 'contact') return;
-      _appendTypewrite(DESPERATION[currentLang]);
-    }, 10000);
-  }
 
   const doGlitch = modeChanged;
   if (doGlitch && typeof triggerGlitch === 'function') triggerGlitch();
@@ -507,10 +486,10 @@ function _updateUplinkStatus(lang) {
   const el = document.getElementById('uplink-status');
   if (!el) return;
   if (lang === 'AR') {
-    el.innerHTML = 'اتصال: [جاهز_عن_بعد] // التأخير: [0_ملي_ثانية] // الحزم: <span class="signal-blink">[متزامنة]</span>';
+    el.innerHTML = 'اتصال: [جاهز] // التأخير: [0_ملي_ثانية] // الحزم: <span class="signal-blink">[متزامنة]</span>';
     el.classList.add('lang-ar-status');
   } else {
-    el.innerHTML = 'UPLINK: [REMOTE_READY] // LATENCY: [0ms] // PACKETS: <span class="signal-blink">[SYNCED]</span>';
+    el.innerHTML = 'UPLINK: [READY] // LATENCY: [0ms] // PACKETS: <span class="signal-blink">[SYNCED]</span>';
     el.classList.remove('lang-ar-status');
   }
 }
@@ -520,10 +499,10 @@ function _updateRemoteStatus(lang) {
   const el = document.getElementById('remote-status');
   if (!el) return;
   if (lang === 'AR') {
-    el.innerHTML = 'الحالة: متاح_للعمل_عن_بعد // <span class="signal-blink">[الإشارة_نشطة]</span>';
+    el.innerHTML = 'الحالة: متصلة // <span class="signal-blink">[الإشارة_نشطة]</span>';
     el.classList.add('lang-ar-status');
   } else {
-    el.innerHTML = 'STATUS: OPEN_FOR_REMOTE_HIRE // <span class="signal-blink">[SIGNAL_ACTIVE]</span>';
+    el.innerHTML = 'STATUS: ONLINE // <span class="signal-blink">[SIGNAL_ACTIVE]</span>';
     el.classList.remove('lang-ar-status');
   }
 }

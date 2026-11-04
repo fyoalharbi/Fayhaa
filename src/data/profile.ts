@@ -8,9 +8,8 @@ type T = Record<Lang, string>;
 
 export const profile = {
   name: { en: 'Fayhaa', ar: 'فيحاء' } as T,
-  // Headline, About and availability follow the LinkedIn profile
+  // Headline and About follow the LinkedIn profile
   role: { en: 'Data Engineer', ar: 'مهندسة بيانات' } as T,
-  availability: { en: 'Open to remote or hybrid roles', ar: 'متاحة للعمل عن بعد أو هجين' } as T,
   intro: {
     en: 'I build reliable pipelines that turn raw data into decisions. I come from system integration, and today I work across the whole data lifecycle: ingestion, transformation, modeling and reporting.',
     ar: 'أبني خطوط بيانات موثوقة تحوّل البيانات الخام إلى قرارات. خلفيتي في تكامل الأنظمة، واليوم أشتغل على دورة البيانات كاملة: الاستخراج، التحويل، النمذجة والتقارير.',
@@ -120,15 +119,6 @@ export const experience: {
     points: {
       en: ['Co-founded a tech community that runs tech talks and bootcamps.'],
       ar: ['أسست مع فريقي مجتمع تقني يقدم لقاءات تقنية ومعسكرات.'],
-    },
-  },
-  {
-    title: { en: 'Private Tutor', ar: 'مدرسة خصوصية' },
-    org: { en: 'Freelance', ar: 'عمل حر' },
-    period: 'Aug 2021 — Jan 2025',
-    points: {
-      en: ['Tutored Qassim University students in Data Structures and Statistics.'],
-      ar: ['درّست طلاب جامعة القصيم هياكل البيانات والإحصاء.'],
     },
   },
 ];
