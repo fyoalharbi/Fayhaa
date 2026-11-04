@@ -6,8 +6,8 @@ import Section from './Section.astro';
 import { profile, skills, skillGroups, experience, education, certifications, type Lang } from '../data/profile';
 import { ui, url, langUrl, hasResume, getProjects, projectHref, formatDate } from '../lib/site';
 
-interface Props { lang: Lang }
-const { lang } = Astro.props;
+interface Props { lang: Lang; lab?: boolean }
+const { lang, lab = false } = Astro.props;
 const t = ui[lang];
 
 const projects = await getProjects(lang);
@@ -47,8 +47,8 @@ const order = ['projects', 'skills', ...(hasTimeline ? ['experience'] : []), 'co
 const num = (id: string) => order.indexOf(id) + 1;
 const tone = (id: string) => (num(id) % 2 ? 'surface' : 'paper') as 'surface' | 'paper';
 ---
-<Base lang={lang} homeRedirect>
-  <Hero lang={lang} />
+<Base lang={lang} homeRedirect={!lab} noindex={lab} title={lab ? 'Lab' : undefined}>
+  <Hero lang={lang} lab={lab} />
 
   <!-- ── PROJECTS ── -->
   <Section id="projects" index={num('projects')} tone={tone('projects')} label={t.nav.projects} title={t.featured}>

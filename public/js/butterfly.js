@@ -223,8 +223,91 @@
       if (shown && y < 0) { y = -H; x = innerWidth * (0.3 + Math.random() * 0.5); chooseNext(performance.now()); }
     }, { threshold: [0, 0.35, 0.6, 1] }).observe(document.querySelector('.hero-stage'));
 
+    // ── How hovering the flyer reveals the philosophy ──
+    //   popup   · the note card next to it (default)
+    //   pollen  · one line typed onto the card it sits on / lands on next
+    //   falling · the next line falls from its wings and fades
+    //   status  · a terminal-style bar at the bottom types the next line
+    //   lead    · scrolls back to the hero, where the big butterfly speaks
+    const MODE = CFG.revealMode || 'popup';
+    let lineIdx = 0, lastReveal = 0;
+    const nextLine = () => { const l = CFG.lines[lineIdx % CFG.lines.length]; lineIdx++; return l; };
+
+    function pollinate(card) {
+      if (!card) return;
+      let tag = card.querySelector('.pollen-line');
+      if (!tag) {
+        tag = document.createElement('p');
+        tag.className = 'pollen-line mono';
+        tag.dir = CFG.dir;
+        card.prepend(tag);
+      }
+      const line = nextLine();
+      tag.textContent = '';
+      let i = 0;
+      const type = () => { tag.textContent = '› ' + line.slice(0, ++i); if (i < line.length) setTimeout(type, REDUCED ? 0 : 22); };
+      type();
+    }
+    function fallLine() {
+      const d = document.createElement('div');
+      d.className = 'falling-line';
+      d.dir = CFG.dir;
+      d.textContent = nextLine();
+      document.body.appendChild(d);
+      const sx = Math.max(8, Math.min(innerWidth - d.offsetWidth - 8, x + W / 2 - d.offsetWidth / 2));
+      const sy = y + H * 0.7;
+      d.animate([
+        { transform: `translate(${sx}px, ${sy}px)`, opacity: 0 },
+        { transform: `translate(${sx}px, ${sy + 12}px)`, opacity: 1, offset: 0.12 },
+        { transform: `translate(${sx}px, ${sy + 70}px)`, opacity: 1, offset: 0.7 },
+        { transform: `translate(${sx}px, ${sy + 110}px)`, opacity: 0 },
+      ], { duration: REDUCED ? 3000 : 4800, easing: 'ease-out' }).onfinish = () => d.remove();
+    }
+    let statusEl, statusTimer;
+    function statusLine() {
+      if (!statusEl) {
+        statusEl = document.createElement('div');
+        statusEl.className = 'status-line-bar mono';
+        statusEl.dir = CFG.dir;
+        statusEl.setAttribute('aria-live', 'polite');
+        document.body.appendChild(statusEl);
+      }
+      const n = (lineIdx % CFG.lines.length) + 1;
+      const line = nextLine();
+      clearTimeout(statusTimer);
+      statusEl.classList.add('is-open');
+      let i = 0;
+      const head = `> ${CFG.head.replace('// ', '')} ${String(n).padStart(2, '0')}/${CFG.lines.length}
+  `;
+      const type = () => {
+        statusEl.textContent = head + line.slice(0, ++i);
+        if (i < line.length) setTimeout(type, REDUCED ? 0 : 24);
+        else statusTimer = setTimeout(() => statusEl.classList.remove('is-open'), 5000);
+      };
+      type();
+    }
+    function leadToHero() {
+      window.scrollTo({ top: 0, behavior: REDUCED ? 'auto' : 'smooth' });
+      setTimeout(landHero, REDUCED ? 0 : 900);
+    }
+
     const openNote = () => {
-      if (noteOpen || !shown) return;
+      if (!shown) return;
+      const now = performance.now();
+      if (MODE !== 'popup') {
+        if (now - lastReveal < 900) return;        // one line per hover, not per pixel
+        lastReveal = now;
+      }
+      if (MODE === 'pollen') {
+        const card = mode === 'perched' ? spot.el : cards.find(onScreen);
+        pollinate(card);
+        until = Math.max(until, now + 2500);
+        return;
+      }
+      if (MODE === 'falling') return fallLine();
+      if (MODE === 'status') return statusLine();
+      if (MODE === 'lead') return leadToHero();
+      if (noteOpen) return;
       noteOpen = true;
       el.classList.add('is-landed');
       Note.show(el, () => {
@@ -311,6 +394,7 @@
           mode = 'perched';
           x = tx; y = ty; vx = vy = 0;
           spot.el.classList.add('is-perched');
+          if (MODE === 'pollen') pollinate(spot.el);   // every landing leaves a line
           until = now + 2800 + Math.random() * 3200;
         }
 

@@ -1,0 +1,25 @@
+---
+// /lab/ only: switch how the flying butterfly reveals the philosophy.
+const modes = [
+  { id: 'popup',   label: 'Popup (current)', how: 'The note card opens next to the butterfly.' },
+  { id: 'pollen',  label: 'Pollinates cards', how: 'Every time it lands on a project card it types one line on that card. Hover it to drop the next line.' },
+  { id: 'falling', label: 'Falling words',   how: 'Hover it and the next line falls from its wings, then fades.' },
+  { id: 'status',  label: 'Status line',     how: 'Hover it and a terminal-style bar at the bottom types the next line.' },
+  { id: 'lead',    label: 'Leads to the big one', how: 'Hover it and the page scrolls to the top, where the big butterfly turns into the text.' },
+];
+---
+<details class="lab-panel" open>
+  <summary>LAB // philosophy reveal</summary>
+  <div class="lab-chips">
+    {modes.map((m) => <a href={`?reveal=${m.id}`} data-mode={m.id}>{m.label}</a>)}
+  </div>
+  {modes.map((m) => <p data-how={m.id} hidden>{m.how} Scroll down to meet the butterfly.</p>)}
+</details>
+<script is:inline>
+  (function () {
+    const cur = (window.BUTTERFLY && window.BUTTERFLY.revealMode) || 'pollen';
+    document.querySelectorAll('.lab-panel [data-mode]').forEach((a) => { if (a.dataset.mode === cur) a.setAttribute('aria-current', 'true'); });
+    document.querySelectorAll('.lab-panel [data-how]').forEach((p) => { p.hidden = p.dataset.how !== cur; });
+    if (innerWidth < 700) document.querySelector('.lab-panel').open = false;
+  })();
+</script>

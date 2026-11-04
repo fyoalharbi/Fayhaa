@@ -2,11 +2,12 @@
 // Home hero: dark stage with the live ASCII butterfly.
 // Hidden philosophy: hold still on its body (see public/js/butterfly.js).
 import '../styles/hero.css';
+import LabPanel from './LabPanel.astro';
 import { profile, philosophy, type Lang } from '../data/profile';
 import { ui, url, hasResume } from '../lib/site';
 
-interface Props { lang: Lang }
-const { lang } = Astro.props;
+interface Props { lang: Lang; lab?: boolean }
+const { lang, lab = false } = Astro.props;
 const t = ui[lang];
 
 const config = {
@@ -49,7 +50,15 @@ const config = {
   </div>
 </section>
 
-<script is:inline define:vars={{ config }}>window.BUTTERFLY = config;</script>
+<script is:inline define:vars={{ config, lab }}>
+  window.BUTTERFLY = config;
+  // /lab/: ?reveal=popup|pollen|falling|status|lead picks how the flyer reveals the philosophy
+  if (lab) {
+    const m = new URLSearchParams(location.search).get('reveal');
+    config.revealMode = ['popup', 'pollen', 'falling', 'status', 'lead'].includes(m) ? m : 'pollen';
+  }
+</script>
+{lab && <LabPanel />}
 <script is:inline defer src={url('js/ascii.js')}></script>
 <script is:inline defer src={url('js/flyer.js')}></script>
 <script is:inline defer src={url('js/butterfly.js')}></script>
