@@ -1,7 +1,8 @@
 ---
 // /lab/ only: switch how the flying butterfly reveals the philosophy.
 const modes = [
-  { id: 'popup',   label: 'Popup (current)', how: 'The note card opens next to the butterfly.' },
+  { id: 'link',    label: 'Click → blog (current)', how: 'Hovering makes it glow; clicking it opens the blog, which starts with the philosophy.' },
+  { id: 'popup',   label: 'Popup (old)', how: 'The note card opens next to the butterfly.' },
   { id: 'pollen',  label: 'Pollinates cards', how: 'Every time it lands on a project card it types one line on that card. Hover it to drop the next line.' },
   { id: 'falling', label: 'Falling words',   how: 'Hover it and the next line falls from its wings, then fades.' },
   { id: 'status',  label: 'Status line',     how: 'Hover it and a terminal-style bar at the bottom types the next line.' },
@@ -17,7 +18,7 @@ const modes = [
 </details>
 <script is:inline>
   (function () {
-    const cur = (window.BUTTERFLY && window.BUTTERFLY.revealMode) || 'pollen';
+    const cur = (window.BUTTERFLY && window.BUTTERFLY.revealMode) || 'link';
     document.querySelectorAll('.lab-panel [data-mode]').forEach((a) => { if (a.dataset.mode === cur) a.setAttribute('aria-current', 'true'); });
     document.querySelectorAll('.lab-panel [data-how]').forEach((p) => { p.hidden = p.dataset.how !== cur; });
     if (innerWidth < 700) document.querySelector('.lab-panel').open = false;

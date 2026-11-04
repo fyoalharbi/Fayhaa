@@ -411,3 +411,11 @@ html[lang='ar'] .mx-core { letter-spacing: 0; font-size: 0.7rem; }
 .post-tags { color: var(--accent); font-size: 0.72rem; }
 .post-note { margin-top: 10px; }
 .post-note a { color: var(--accent); }
+.philosophy-card {
+  margin: 8px 0 36px; padding: 24px 26px; border-radius: var(--radius);
+  background: var(--ink); color: var(--paper); scroll-margin-top: calc(var(--header-h) + 12px);
+}
+.philosophy-card .kicker { color: #ff8a8a; }
+.philosophy-card h2 { margin: 0 0 12px; font-size: clamp(1.4rem, 3vw, 1.9rem); }
+.philosophy-card p:not(.kicker) { max-width: 65ch; color: #e6e6e6; font-size: 1.05rem; }
+.philosophy-card p:last-child { margin-bottom: 0; }

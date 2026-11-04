@@ -229,7 +229,8 @@
     //   falling · the next line falls from its wings and fades
     //   status  · a terminal-style bar at the bottom types the next line
     //   lead    · scrolls back to the hero, where the big butterfly speaks
-    const MODE = CFG.revealMode || 'popup';
+    //   link    · (default) clicking it opens the blog, which starts with the philosophy
+    const MODE = CFG.revealMode || 'link';
     let lineIdx = 0, lastReveal = 0;
     const nextLine = () => { const l = CFG.lines[lineIdx % CFG.lines.length]; lineIdx++; return l; };
 
@@ -338,6 +339,7 @@
 
     const openNote = () => {
       if (!shown) return;
+      if (MODE === 'link') return;                  // hover/tap only glow; click navigates
       const now = performance.now();
       if (MODE !== 'popup') {
         if (now - lastReveal < 900) return;        // one line per hover, not per pixel
@@ -362,7 +364,14 @@
       });
     };
     el.addEventListener('pointerenter', (e) => { if (e.pointerType === 'mouse') openNote(); });
-    el.addEventListener('click', openNote);
+    el.addEventListener('click', () => {
+      if (MODE === 'link') { location.href = CFG.philosophyUrl; return; }
+      openNote();
+    });
+    if (MODE === 'link') {
+      el.setAttribute('aria-label', CFG.linkLabel);
+      el.title = CFG.linkLabel;
+    }
     window.addEventListener('pointermove', (e) => { px.x = e.clientX; px.y = e.clientY; }, { passive: true });
 
     // Digits fall off the wings: mostly 6/7 (the site's v0.0.67), sometimes a

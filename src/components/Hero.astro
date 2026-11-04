@@ -4,7 +4,7 @@
 import '../styles/hero.css';
 import LabPanel from './LabPanel.astro';
 import { profile, philosophy, type Lang } from '../data/profile';
-import { ui, url, hasResume } from '../lib/site';
+import { ui, url, langUrl, hasResume } from '../lib/site';
 
 interface Props { lang: Lang; lab?: boolean }
 const { lang, lab = false } = Astro.props;
@@ -19,6 +19,8 @@ const config = {
   email: profile.email,
   src: url('terminal/newbutterfly1.mp4'),
   hints: t.butterflyHints,
+  philosophyUrl: langUrl(lang, 'blog/#why-butterflies'),
+  linkLabel: lang === 'ar' ? 'ليش فراشات؟ اضغط عشان تقرأ' : 'Why butterflies? Click to read',
 };
 ---
 <section class="hero-stage">
@@ -55,7 +57,7 @@ const config = {
   // /lab/: ?reveal=popup|pollen|falling|status|lead picks how the flyer reveals the philosophy
   if (lab) {
     const m = new URLSearchParams(location.search).get('reveal');
-    config.revealMode = ['popup', 'pollen', 'falling', 'status', 'lead'].includes(m) ? m : 'pollen';
+    config.revealMode = ['link', 'popup', 'pollen', 'falling', 'status', 'lead'].includes(m) ? m : 'link';
   }
 </script>
 {lab && <LabPanel />}

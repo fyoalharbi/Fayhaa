@@ -71,6 +71,7 @@
 .flyer canvas { display: block; }
 .flyer.is-shown { opacity: 1; pointer-events: auto; }
 .flyer.is-landed { filter: drop-shadow(0 0 8px rgba(180, 20, 30, .3)); }
+.flyer:hover, .flyer:focus-visible { filter: drop-shadow(0 0 10px rgba(180, 20, 30, .45)); }
 
 /* Bits that drop from it */
 .bit {
