@@ -54,6 +54,10 @@ Write in Markdown here.
 
 It appears at `/blog/` (and `/ar/blog/`). A post can exist in one language only.
 
+## The CV
+
+The CV lives on an unlisted page (`src/pages/cv/<random>/`), linked from nowhere on the site and marked `noindex`. Edit the page to update it, then regenerate the PDF so the download matches: open the page in Chrome → Print → *Save as PDF*, paper A4, margins *None*, background graphics on, and save it over `public/cv/<random>/Fayhaa-Alharbi-CV.pdf`.
+
 ## Optional files in `public/`
 
 - `resume.pdf`: enables the résumé buttons and the terminal `resume` command
