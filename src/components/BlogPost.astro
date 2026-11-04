@@ -1,0 +1,36 @@
+---
+import { render } from 'astro:content';
+import Base from '../layouts/Base.astro';
+import { type Lang } from '../data/profile';
+import { ui, langUrl, getPosts, postSlug, formatDate, type Post } from '../lib/site';
+
+interface Props { post: Post; lang: Lang }
+const { post, lang } = Astro.props;
+const t = ui[lang];
+const d = post.data;
+const slug = postSlug(post);
+const { Content } = await render(post);
+// Language switch: this post's translation if there is one, else the other blog
+const other: Lang = lang === 'en' ? 'ar' : 'en';
+const translated = (await getPosts(other)).some((p) => postSlug(p) === slug);
+---
+<Base lang={lang} title={d.title} description={d.summary} path={translated ? `blog/${slug}/` : 'blog/'}>
+  <article class="post wrap">
+    <a class="back mono" href={langUrl(lang, 'blog/')}>{t.backToBlog}</a>
+    <header class="post-header">
+      <p class="mono muted"><time datetime={d.date.toISOString()}>{formatDate(d.date, lang)}</time></p>
+      <h1>{d.title}</h1>
+      <p class="lead">{d.summary}</p>
+      {(d.translated || d.original) && (
+        <p class="post-note mono muted">
+          {d.translated && <span>{t.translatedNote} </span>}
+          {d.original && <a href={d.original} target="_blank" rel="noopener">{t.originalOn}</a>}
+        </p>
+      )}
+    </header>
+    <div class="prose"><Content /></div>
+    {d.tags.length > 0 && (
+      <footer class="post-footer"><span class="post-tags mono">{d.tags.map((tag) => `#${tag}`).join('  ')}</span></footer>
+    )}
+  </article>
+</Base>

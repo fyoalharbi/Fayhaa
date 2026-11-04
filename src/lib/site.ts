@@ -4,6 +4,7 @@ import path from 'node:path';
 import { skills, type Lang } from '../data/profile';
 
 export type Project = CollectionEntry<'projects'>;
+export type Post = CollectionEntry<'posts'>;
 
 // ── URLS ─────────────────────────────────────
 const BASE = import.meta.env.BASE_URL.replace(/\/$/, '');
@@ -41,6 +42,12 @@ export async function getProjects(lang: Lang): Promise<Project[]> {
     b.data.date.valueOf() - a.data.date.valueOf());
 }
 
+export const postSlug = (p: Post) => p.id.split('/').slice(1).join('/');
+export async function getPosts(lang: Lang): Promise<Post[]> {
+  const all = await getCollection('posts', (p) => p.id.split('/')[0] === lang && (showDrafts || !p.data.draft));
+  return all.sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf());
+}
+
 /** Where a project card should link: its case study, else its best external link. */
 export function projectHref(p: Project): { href: string; external: boolean } {
   if (hasPage(p)) return { href: langUrl(projectLang(p), `projects/${projectSlug(p)}/`), external: false };
@@ -57,7 +64,14 @@ export const formatDate = (d: Date, lang: Lang) =>
 // ── UI STRINGS ───────────────────────────────
 export const ui = {
   en: {
-    nav: { projects: 'Projects', skills: 'Skills', about: 'About', contact: 'Contact' },
+    nav: { projects: 'Projects', skills: 'Skills', about: 'About', contact: 'Contact', blog: 'Blog' },
+    blogTitle: 'Blog',
+    blogLead: 'Notes on data, building with AI agents, and things I learn along the way.',
+    noPosts: 'No posts yet.',
+    readPost: 'Read post',
+    backToBlog: '← All posts',
+    translatedNote: 'Translated from the original Arabic post.',
+    originalOn: 'Originally posted on LinkedIn ↗',
     terminal: 'Terminal view',
     otherLang: 'العربية',
     viewProjects: 'View projects',
@@ -97,7 +111,14 @@ export const ui = {
     footer: 'Built with Astro & p5.js',
   },
   ar: {
-    nav: { projects: 'المشاريع', skills: 'المهارات', about: 'عني', contact: 'تواصل' },
+    nav: { projects: 'المشاريع', skills: 'المهارات', about: 'عني', contact: 'تواصل', blog: 'المدونة' },
+    blogTitle: 'المدونة',
+    blogLead: 'كتابات عن البيانات، والبناء مع وكلاء الذكاء الاصطناعي، وأشياء أتعلمها بالطريق.',
+    noPosts: 'ما فيه تدوينات للحين.',
+    readPost: 'اقرأ التدوينة',
+    backToBlog: '→ كل التدوينات',
+    translatedNote: 'مترجمة من التدوينة الأصلية.',
+    originalOn: 'نُشرت أصلاً على LinkedIn ↗',
     terminal: 'واجهة الطرفية',
     otherLang: 'English',
     viewProjects: 'شوف المشاريع',

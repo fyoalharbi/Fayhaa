@@ -35,6 +35,25 @@ It shows up automatically on the home page, `/projects/`, every skill page it's 
 
 Skills used in `skills: [...]` must exist in `src/data/profile.ts`.
 
+## Write a blog post
+
+Add `src/content/posts/en/<slug>.md` (and/or `ar/<slug>.md`):
+
+```md
+---
+title: My post
+date: 2026-11
+summary: One or two sentences for the blog list.
+tags: [AI, Data]
+original: https://www.linkedin.com/posts/...   # optional
+translated: false                              # true if it's a translation
+draft: false
+---
+Write in Markdown here.
+```
+
+It appears at `/blog/` (and `/ar/blog/`). A post can exist in one language only.
+
 ## Optional files in `public/`
 
 - `resume.pdf`: enables the résumé buttons and the terminal `resume` command

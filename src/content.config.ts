@@ -32,4 +32,21 @@ const projects = defineCollection({
   }),
 });
 
-export const collections = { projects };
+// Blog posts, one Markdown file per post per language:
+//   src/content/posts/en/<slug>.md   src/content/posts/ar/<slug>.md
+// A post can exist in one language only; the other language's blog just
+// won't list it.
+const posts = defineCollection({
+  loader: glob({ pattern: '**/*.md', base: './src/content/posts' }),
+  schema: z.object({
+    title: z.string(),
+    date: z.coerce.date(),
+    summary: z.string(),
+    tags: z.array(z.string()).default([]),
+    original: z.string().url().optional(),   // e.g. the LinkedIn post it started as
+    translated: z.boolean().default(false),  // true if this version is a translation
+    draft: z.boolean().default(false),
+  }),
+});
+
+export const collections = { projects, posts };

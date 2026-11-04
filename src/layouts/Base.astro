@@ -79,6 +79,7 @@ const terminalHref = url('terminal/') + (lang === 'ar' ? '?lang=ar' : '');
         <a href={langUrl(lang, '#skills')}>{t.nav.skills}</a>
         {(experience.length > 0 || education.length > 0) && <a href={langUrl(lang, '#experience')}>{t.experience}</a>}
         <a href={langUrl(lang, '#contact')}>{t.nav.contact}</a>
+        <a href={langUrl(lang, 'blog/')}>{t.nav.blog}</a>
       </nav>
       <div class="header-tools">
         <a class="lang-link" href={langUrl(other, path)} hreflang={other} lang={other}>{t.otherLang}</a>

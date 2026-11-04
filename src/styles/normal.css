@@ -400,3 +400,14 @@ html[lang='ar'] .mx-core { letter-spacing: 0; font-size: 0.7rem; }
   html:has(.hero-stage) { scroll-snap-type: none; }
   *, *::before, *::after { animation: none !important; transition: none !important; }
 }
+
+/* ── BLOG ── */
+.blog-index { max-width: 860px; }
+.post-list { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--rule); }
+.post-list a { display: block; padding: 22px 0; border-bottom: 1px solid var(--rule); text-decoration: none; }
+.post-list h2 { font-size: 1.35rem; margin: 4px 0 6px; }
+.post-list a:hover h2 { text-decoration: underline; }
+.post-list p { margin: 0 0 6px; color: #444; }
+.post-tags { color: var(--accent); font-size: 0.72rem; }
+.post-note { margin-top: 10px; }
+.post-note a { color: var(--accent); }
