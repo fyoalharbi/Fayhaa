@@ -419,3 +419,6 @@ html[lang='ar'] .mx-core { letter-spacing: 0; font-size: 0.7rem; }
 .philosophy-card h2 { margin: 0 0 12px; font-size: clamp(1.4rem, 3vw, 1.9rem); }
 .philosophy-card p:not(.kicker) { max-width: 65ch; color: #e6e6e6; font-size: 1.05rem; }
 .philosophy-card p:last-child { margin-bottom: 0; }
+
+.secret-tab { color: var(--accent) !important; font-size: 1rem; }
+.secret-tab[hidden] { display: none !important; }

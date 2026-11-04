@@ -1,6 +1,6 @@
 ---
 import Base from '../layouts/Base.astro';
-import { philosophy, type Lang } from '../data/profile';
+import { type Lang } from '../data/profile';
 import { ui, langUrl, getPosts, postSlug, formatDate } from '../lib/site';
 
 interface Props { lang: Lang }
@@ -14,11 +14,6 @@ const posts = await getPosts(lang);
       <h1>{t.blogTitle}</h1>
       <p class="muted">{t.blogLead}</p>
     </div>
-    <section id="why-butterflies" class="philosophy-card">
-      <p class="kicker mono">{t.howIWork}</p>
-      <h2>{philosophy.title[lang]}</h2>
-      {philosophy.paragraphs[lang].map((para) => <p>{para}</p>)}
-    </section>
 
     {posts.length === 0 && <p class="muted">{t.noPosts}</p>}
     <ol class="post-list">

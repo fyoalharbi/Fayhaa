@@ -1,0 +1,147 @@
+---
+// Secret philosophy page (/papillon/): a scroll-driven dialogue. A sticky
+// ASCII stage reacts to each line as it scrolls into view. Unlocked by
+// catching the flying butterfly; never linked for anyone who hasn't.
+import Base from '../layouts/Base.astro';
+import { philosophy, type Lang } from '../data/profile';
+import { url, langUrl } from '../lib/site';
+
+interface Props { lang: Lang }
+const { lang } = Astro.props;
+const lines = philosophy.lines[lang];
+const t = lang === 'ar'
+  ? { kicker: '// قناة_سرية', found: 'لقيت الفراشة.', scroll: 'انزل ↓', back: 'رجوع للموقع', end: 'طارت.' }
+  : { kicker: '// SECRET_CHANNEL', found: 'You caught the butterfly.', scroll: 'scroll ↓', back: 'Back to the site', end: 'it flew away.' };
+const FLOWERS = [' \\|/ \n-(@)-\n /|\\ \n  |  ', '  _  \n (@) \n  |/ \n \\|  ', ' .-. \n(@ @)\n  |  \n \\|/ '];
+---
+<Base lang={lang} title={philosophy.title[lang]} path="papillon/" noindex>
+  <div class="pap" dir={lang === 'ar' ? 'rtl' : 'ltr'}>
+    <div class="pap-stage" id="pap-stage" aria-hidden="true">
+      <div class="pap-flowers">{FLOWERS.map((f, i) => <pre class={`pap-flower f${i}`}>{f}</pre>)}</div>
+      <pre class="pap-bee">{'~(::)>'}</pre>
+      <div class="pap-fly" id="pap-fly"><canvas></canvas></div>
+      <p class="pap-counter mono"><span id="pap-n">00</span>/{String(lines.length).padStart(2, '0')}</p>
+    </div>
+
+    <div class="pap-script">
+      <header class="pap-intro">
+        <p class="mono pap-kicker">{t.kicker}</p>
+        <h1>{t.found}</h1>
+        <p class="mono muted">{t.scroll}</p>
+      </header>
+      {lines.map((line, i) => (
+        <section class="pap-step" data-i={i}>
+          <p class={i === lines.length - 1 ? 'pap-line is-last' : 'pap-line'} data-text={line}>{line}</p>
+        </section>
+      ))}
+      <footer class="pap-outro">
+        <p class="mono muted">{t.end}</p>
+        <a class="btn" href={langUrl(lang)}>{t.back}</a>
+      </footer>
+    </div>
+  </div>
+
+  <script is:inline define:vars={{ flyerSrc: url('js/flyer.js') }}>
+    (function () {
+      try { localStorage.setItem('fayhaa:papillon', '1'); } catch (e) {}
+      const REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches;
+      const stage = document.getElementById('pap-stage');
+      const counter = document.getElementById('pap-n');
+      const steps = [...document.querySelectorAll('.pap-step')];
+      // Scene cues per line (0-based): flowers, bee, bee wins, visiting, engine, flies off
+      const cue = (i) => ({
+        flowers: i >= 2, bee: i >= 3 && i <= 7, beeWins: i === 6,
+        visiting: i === 5 || i === 8 || i === 10, engine: i === 9, away: i >= 11,
+      });
+      const typed = new Set();
+      function type(p) {
+        if (typed.has(p)) return; typed.add(p);
+        const text = p.dataset.text; let n = 0; p.textContent = '';
+        const go = () => { p.textContent = text.slice(0, ++n); if (n < text.length) setTimeout(go, REDUCED ? 0 : 26); };
+        go();
+      }
+      function activate(i) {
+        const c = cue(i);
+        for (const k in c) stage.classList.toggle('is-' + k, c[k]);
+        counter.textContent = String(i + 1).padStart(2, '0');
+        steps.forEach((s, j) => s.classList.toggle('is-active', j === i));
+        type(steps[i].querySelector('.pap-line'));
+      }
+      function start() {
+        const io = new IntersectionObserver((entries) => {
+          entries.forEach((e) => { if (e.isIntersecting) activate(+e.target.dataset.i); });
+        }, { rootMargin: '-45% 0px -45% 0px' });
+        steps.forEach((s) => io.observe(s));
+        // The butterfly: the site's procedural flyer, drawn big
+        const bf = new window.AsciiFlyer(document.querySelector('#pap-fly canvas'), { cols: 31, rows: 21, cell: 7 });
+        let last = performance.now();
+        const loop = (now) => {
+          const dt = Math.min(0.05, (now - last) / 1000); last = now;
+          bf.frame(dt, { landed: stage.classList.contains('is-away') ? false : !stage.classList.contains('is-visiting'), climb: stage.classList.contains('is-away') ? 1 : 0 });
+          requestAnimationFrame(loop);
+        };
+        requestAnimationFrame(loop);
+      }
+      const s = document.createElement('script');
+      s.src = flyerSrc; s.onload = start; document.body.appendChild(s);
+    })();
+  </script>
+</Base>
+
+<style>
+  .pap { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); background: var(--ink); color: var(--paper); }
+  .pap-stage {
+    position: sticky; top: var(--header-h); height: calc(100svh - var(--header-h));
+    overflow: hidden; display: grid; place-items: center;
+    background: radial-gradient(circle at 50% 60%, #262626, var(--ink) 70%);
+  }
+  .pap-fly { position: relative; z-index: 2; transition: transform 1.2s cubic-bezier(.4,0,.2,1), filter .6s; }
+  .pap-stage.is-visiting .pap-fly { animation: pap-visit 3.6s ease-in-out infinite; }
+  .pap-stage.is-engine .pap-fly { filter: drop-shadow(0 0 18px rgba(255, 138, 138, .65)); }
+  .pap-stage.is-away .pap-fly { transform: translate(40vw, -70vh) rotate(25deg) scale(.4); }
+  @keyframes pap-visit {
+    0%, 100% { transform: translate(0, 0); }
+    30% { transform: translate(-28%, 22%) scale(.8); }
+    65% { transform: translate(28%, 26%) scale(.8); }
+  }
+  .pap-flowers {
+    position: absolute; inset-inline: 0; bottom: 8%; display: flex; justify-content: space-around;
+    opacity: 0; transform: translateY(30px); transition: opacity .8s, transform .8s;
+  }
+  .pap-stage.is-flowers .pap-flowers { opacity: 1; transform: none; }
+  .pap-flower { margin: 0; font: 700 15px/1.1 var(--font-mono); color: #9a9a9a; }
+  .pap-flower { direction: ltr; }
+  .pap-bee {
+    position: absolute; top: 18%; inset-inline-start: -20%; margin: 0; direction: ltr;
+    font: 700 20px var(--font-mono); color: #e6c34a; transition: inset-inline-start 1.4s ease, text-shadow .5s;
+  }
+  .pap-stage.is-bee .pap-bee { inset-inline-start: 12%; animation: pap-buzz .25s steps(2) infinite; }
+  .pap-stage.is-beeWins .pap-bee { text-shadow: 0 0 14px rgba(230, 195, 74, .9); }
+  @keyframes pap-buzz { 50% { transform: translateY(-2px); } }
+  .pap-counter { position: absolute; top: 18px; inset-inline-end: 22px; margin: 0; color: #ff8a8a; }
+
+  .pap-script { padding-inline: clamp(16px, 5vw, 64px); }
+  .pap-intro { min-height: calc(100svh - var(--header-h)); display: flex; flex-direction: column; justify-content: center; }
+  .pap-kicker { color: #ff8a8a; margin: 0 0 8px; }
+  .pap-intro h1 { font-size: clamp(2rem, 5vw, 3.2rem); margin: 0 0 12px; }
+  .pap-step { min-height: 70svh; display: flex; align-items: center; }
+  .pap-line {
+    margin: 0; font: 600 clamp(1.3rem, 2.6vw, 2rem)/1.35 var(--font-sans); color: #6f6f6f;
+    transition: color .4s; min-height: 2.7em;
+  }
+  .pap[dir='rtl'] .pap-line { font-family: var(--font-ar); }
+  .pap-step.is-active .pap-line { color: var(--paper); }
+  .pap-line.is-last { color: #ff8a8a; }
+  .pap-outro { min-height: 60svh; display: flex; flex-direction: column; justify-content: center; gap: 16px; align-items: flex-start; }
+  .pap-outro .btn { border-color: var(--paper); color: var(--paper); }
+
+  @media (max-width: 799px) {
+    .pap { grid-template-columns: 1fr; }
+    .pap-stage { height: 42svh; z-index: 3; }
+    .pap-step { min-height: 55svh; }
+    .pap-intro { min-height: 50svh; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .pap-fly, .pap-bee, .pap-flowers { transition: none; animation: none !important; }
+  }
+</style>

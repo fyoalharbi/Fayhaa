@@ -122,6 +122,21 @@ const terminalHref = url('terminal/') + (lang === 'ar' ? '?lang=ar' : '');
       watch('.site-footer', '--footer-h');
     })();
 
+    // Secret ✿ tab: only for visitors who caught the flying butterfly
+    // (added by script only, so the link never appears in the page source)
+    try {
+      if (localStorage.getItem('fayhaa:papillon') === '1') {
+        const nav = document.querySelector('.site-nav');
+        const ar = document.documentElement.lang === 'ar';
+        const a = document.createElement('a');
+        a.className = 'secret-tab';
+        a.href = nav.querySelector('a').getAttribute('href').replace(/#.*$/, '') + 'papillon/';
+        a.title = ar ? 'ليش فراشات؟' : 'Why butterflies?';
+        a.textContent = '✿';
+        nav.appendChild(a);
+      }
+    } catch (e) {}
+
     // Remember which view the visitor picked.
     document.addEventListener('click', (e) => {
       const a = e.target.closest && e.target.closest('[data-view]');
