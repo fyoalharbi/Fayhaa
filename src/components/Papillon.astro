@@ -1,8 +1,14 @@
 ---
-// Secret philosophy page (/papillon/): a scroll-told dialogue. A sticky ASCII
-// night garden acts out each line (flowers grow, pollen drifts, a bee arrives,
-// the butterfly visits flowers, glows, and flies away). Lines stay hidden until
-// they scroll into view, then type in. Unlocked by catching the flying butterfly.
+// Secret philosophy page (/papillon/): a scroll-told dialogue over a sticky
+// ASCII night garden. Scrollytelling rules it follows:
+//  - Scroll is the clock: words, flower growth, the act bar and the dawn are
+//    scrubbed by scroll position (reversible, reader sets the pace, no timers
+//    gating the text). Ambient motion (sway, wings, pollen) runs on its own.
+//  - One idea per line, one visible change in the garden per line.
+//  - A clear arc in five acts with a hook, a turn and a resolution (dawn,
+//    the butterfly leaves), then a call to action.
+//  - Progressive enhancement: the text is real DOM, readable without JS, with
+//    reduced motion, and by screen readers. Unlocked by catching the butterfly.
 import Base from '../layouts/Base.astro';
 import { philosophy, type Lang } from '../data/profile';
 import { url, langUrl } from '../lib/site';
@@ -10,9 +16,25 @@ import { url, langUrl } from '../lib/site';
 interface Props { lang: Lang }
 const { lang } = Astro.props;
 const lines = philosophy.lines[lang];
-const t = lang === 'ar'
-  ? { kicker: '// قناة_سرية', found: 'لقيت الفراشة.', scroll: 'انزل ↓', back: 'رجوع للموقع', end: 'طارت.' }
-  : { kicker: '// SECRET_CHANNEL', found: 'You caught the butterfly.', scroll: 'scroll ↓', back: 'Back to the site', end: 'it flew away.' };
+const ar = lang === 'ar';
+const t = ar
+  ? { kicker: '// قناة_سرية', found: 'لقيت الفراشة.', hint: '١٢ سطر · دقيقة وحدة', scroll: 'انزل', back: 'رجوع للموقع', blog: 'اقرأ المدونة', end: 'طارت. وأنت؟', visits: 'زيارات', pol: 'تلقيح', fly: 'فراشة', bee: 'نحلة' }
+  : { kicker: '// SECRET_CHANNEL', found: 'You caught the butterfly.', hint: '12 lines · about a minute', scroll: 'scroll', back: 'Back to the site', blog: 'Read the blog', end: 'It flew away. Your turn.', visits: 'visits', pol: 'pollinated', fly: 'butterfly', bee: 'bee' };
+
+// Five acts: the line each one starts on, and its name
+const ACTS = [
+  { from: 0, en: 'the question', ar: 'السؤال' },
+  { from: 2, en: 'the job', ar: 'المهمة' },
+  { from: 3, en: 'the bee', ar: 'النحلة' },
+  { from: 7, en: 'the difference', ar: 'الفرق' },
+  { from: 9, en: 'the engine', ar: 'المحرك' },
+];
+const ROMAN = ['I', 'II', 'III', 'IV', 'V'];
+const actOf = (i: number) => ACTS.reduce((a, act, k) => (i >= act.from ? k : a), 0);
+const actLen = ACTS.map((a, k) => (ACTS[k + 1]?.from ?? lines.length) - a.from);
+
+// Lines split into words so the reveal can be scrubbed word by word
+const words = lines.map((l) => l.split(' '));
 
 // Flowers: art rows ('@' = head), x position (%), and the line they grow on
 const ARTS = [
@@ -24,143 +46,243 @@ const ARTS = [
 ];
 const FLOWERS = [
   { x: 8, at: 2, a: 0 }, { x: 19, at: 5, a: 1 }, { x: 30, at: 8, a: 3 }, { x: 41, at: 2, a: 2 },
-  { x: 52, at: 5, a: 4 }, { x: 62, at: 2, a: 1 }, { x: 72, at: 8, a: 0 }, { x: 82, at: 5, a: 3 },
-  { x: 91, at: 8, a: 2 }, { x: 24, at: 8, a: 4 },
+  { x: 52, at: 5, a: 4 }, { x: 62, at: 3, a: 1 }, { x: 72, at: 8, a: 0 }, { x: 82, at: 4, a: 3 },
+  { x: 91, at: 8, a: 2 }, { x: 24, at: 9, a: 4 },
 ];
 const flowerHtml = FLOWERS.map((f) => ARTS[f.a].map((row) => row.replace('@', '<b>@</b>')).join('\n'));
 const GRASS_CHARS = ",.'`;\"'.,";
 const GRASS = Array.from({ length: 240 }, (_, i) => GRASS_CHARS[(i * 7 + (i >> 2)) % 9]).join('');
 const GRASS2 = GRASS.split('').reverse().join('');
-const STARS = Array.from({ length: 22 }, (_, i) => ({ x: (i * 37 + 11) % 97, y: (i * 23 + 7) % 46, c: i % 4 ? '.' : '+', d: (i % 7) * 0.6 }));
+const STARS = Array.from({ length: 26 }, (_, i) => ({ x: (i * 37 + 11) % 97, y: 4 + ((i * i * 13 + i * 29) % 44), c: i % 4 ? '.' : '+', d: (i % 7) * 0.6 }));
+const SUN = ' \\ | / \n-- O --\n / | \\ ';
 ---
 <Base lang={lang} title={philosophy.title[lang]} path="papillon/" noindex>
-  <div class="pap" dir={lang === 'ar' ? 'rtl' : 'ltr'}>
+  <div class="pap" id="pap" dir={ar ? 'rtl' : 'ltr'}>
     <div class="pap-stage" id="pap-stage" aria-hidden="true">
-      {STARS.map((s) => <span class="pap-star" style={`left:${s.x}%;top:${s.y}%;animation-delay:${s.d}s`}>{s.c}</span>)}
+      <div class="pap-sky">
+        {STARS.map((s) => <span class="pap-star" style={`left:${s.x}%;top:${s.y}%;animation-delay:${s.d}s`}>{s.c}</span>)}
+      </div>
+      <div class="pap-dawn"></div>
+      <pre class="pap-sun">{SUN}</pre>
       {FLOWERS.map((f, i) => (
-        <pre class="pap-flower" data-at={f.at} data-i={i} style={`left:${f.x}%;animation-delay:${-(i * 0.7)}s`} set:html={flowerHtml[i]}></pre>
+        <div class="pap-flower" data-at={f.at} style={`left:${f.x}%`}>
+          <pre style={`animation-delay:${-(i * 0.7)}s`} set:html={flowerHtml[i]}></pre>
+        </div>
       ))}
       <div class="pap-grass"><div>{GRASS}</div><div>{GRASS2}</div></div>
+      <div class="pap-glow" id="pap-glow"></div>
       <pre class="pap-bee" id="pap-bee">~(::)&gt;</pre>
       <div class="pap-fly" id="pap-fly"><canvas></canvas></div>
-      <p class="pap-counter mono"><span id="pap-n">00</span>/{String(lines.length).padStart(2, '0')}</p>
+
+      <div class="pap-hud mono">
+        <div class="pap-acts">
+          {ACTS.map((_, k) => <span style={`flex-grow:${actLen[k]}`}><i></i></span>)}
+        </div>
+        <p class="pap-act"><span id="pap-act-n">I</span> · <span id="pap-act-name">{ACTS[0][lang]}</span></p>
+      </div>
+
+      <div class="pap-tally mono" id="pap-tally">
+        <div><span>{t.fly}</span><b data-k="fv">0</b><em>{t.visits}</em><b data-k="fp">0</b><em>{t.pol}</em></div>
+        <div><span>{t.bee}</span><b data-k="bv">0</b><em>{t.visits}</em><b data-k="bp">0</b><em>{t.pol}</em></div>
+      </div>
     </div>
 
     <div class="pap-script">
       <header class="pap-intro">
         <p class="mono pap-kicker">{t.kicker}</p>
         <h1>{t.found}</h1>
-        <p class="mono muted">{t.scroll}</p>
+        <p class="mono muted">{t.hint}</p>
+        <p class="mono pap-cue">{t.scroll} <span aria-hidden="true">↓</span></p>
       </header>
-      {lines.map((line, i) => (
-        <section class="pap-step" data-i={i} aria-label={line}>
-          <p class={i === lines.length - 1 ? 'pap-line is-last' : 'pap-line'} data-text={line} aria-hidden="true"></p>
+      {lines.map((_, i) => (
+        <section class="pap-step" data-i={i}>
+          <div>
+            {ACTS.some((a) => a.from === i) && (
+              <p class="mono pap-chapter">{ROMAN[actOf(i)]} · {ACTS[actOf(i)][lang]}</p>
+            )}
+            <p class={i === lines.length - 1 ? 'pap-line is-last' : 'pap-line'} style={`--n:${words[i].length}`}>
+              {words[i].map((w, k) => <><span class="pap-w" style={`--k:${k}`}>{w}</span>{k < words[i].length - 1 ? ' ' : ''}</>)}
+            </p>
+          </div>
         </section>
       ))}
-      <footer class="pap-outro">
-        <p class="mono muted">{t.end}</p>
-        <a class="btn" href={langUrl(lang)}>{t.back}</a>
+      <footer class="pap-outro pap-step" data-i={lines.length}>
+        <p class="pap-end">{t.end}</p>
+        <div class="pap-cta">
+          <a class="btn" href={langUrl(lang, 'blog/')}>{t.blog}</a>
+          <a class="btn" href={langUrl(lang)}>{t.back}</a>
+        </div>
       </footer>
     </div>
   </div>
 
-  <script is:inline define:vars={{ flyerSrc: url('js/flyer.js') }}>
+  <script is:inline define:vars={{ flyerSrc: url('js/flyer.js'), ACTS, ROMAN, lang, N: lines.length }}>
     (function () {
       try { localStorage.setItem('fayhaa:papillon', '1'); } catch (e) {}
       const REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches;
+      const PHONE = matchMedia('(max-width: 799px)');
+      const root = document.getElementById('pap');
       const stage = document.getElementById('pap-stage');
-      const counter = document.getElementById('pap-n');
-      const steps = [...document.querySelectorAll('.pap-step')];
+      const steps = [...document.querySelectorAll('.pap-step')]; // lines + outro
+      const lineEls = steps.map((s) => s.querySelector('.pap-line'));
       const flowers = [...stage.querySelectorAll('.pap-flower')];
-      const flyEl = document.getElementById('pap-fly');
-      const beeEl = document.getElementById('pap-bee');
+      const segs = [...stage.querySelectorAll('.pap-acts i')];
+      const actN = document.getElementById('pap-act-n'), actName = document.getElementById('pap-act-name');
+      const flyEl = document.getElementById('pap-fly'), beeEl = document.getElementById('pap-bee'), glowEl = document.getElementById('pap-glow');
+      const tallyEls = Object.fromEntries([...stage.querySelectorAll('[data-k]')].map((b) => [b.dataset.k, b]));
+      root.classList.add('is-js');
 
-      // What the garden does on each line (0-based)
+      // One visible change per line. fly/bee: 'center' | 'away' | 'tour' | [flower, flower…] (hops between)
       const SCENES = [
-        { fly: 'center' }, { fly: 'center', flicker: 1 },
-        { fly: [3] }, { fly: [3], bee: [5] }, { fly: [0], bee: [5] },
-        { fly: 'tour', bee: [5] }, { fly: [3], bee: [5], beeGlow: 1 }, { fly: [3], bee: [5], dim: 1 },
-        { fly: 'tour', bee: [5] }, { fly: 'tour', bee: [7], engine: 1 },
-        { fly: 'center', bee: [7] }, { fly: 'away', bee: [7] },
+        { fly: 'center', spot: 1 },                          // why butterflies?
+        { fly: 'center', spot: 1, flicker: 1 },              // short lifespan
+        { fly: [3, 0], trail: 1 },                           // carries pollen between flowers
+        { fly: [3], bee: [5] },                              // the bee arrives
+        { fly: [3, 0], bee: [5, 7], trail: 1 },              // same task, side by side
+        { fly: 'tour', bee: [5, 7], tally: 1 },              // butterfly visits more
+        { fly: 'tour', bee: [5, 7], tally: 1, beeGlow: 1 },  // bee pollinates better
+        { fly: 'tour', bee: [5, 7], tally: 1, dim: 1 },      // not the best at the main job
+        { fly: 'tour', bee: [5, 7], trail: 1 },              // …but visits anyway, the garden spreads
+        { fly: 'center', bee: [7], engine: 1, spot: 1 },     // the creative engine
+        { fly: 'center', bee: [7, 5], spot: 1 },             // I'm not the best, but…
+        { fly: 'tour', bee: [7, 5], trail: 1 },              // I'll keep visiting flowers
+        { fly: 'away', bee: [7, 5] },                        // outro: flies off into the dawn
       ];
-      let step = -1, scene = { fly: 'center' }, tourAt = 0, tourIdx = 0;
+      const INTRO = { fly: 'center' };
+      let active = null, scene = INTRO, p = 0;
+      let hopAt = 0, hopIdx = 0, beeAt = 0, beeIdx = 0;
+      const tally = { fv: 0, fp: 0, bv: 0, bp: 0 };
+      const clamp = (v, a = 0, b = 1) => Math.max(a, Math.min(b, v));
+      const growth = (el) => +el.style.getPropertyValue('--g') || 0;
 
-      // Text: hidden until reached, then typed quickly
-      function type(p) {
-        if (p.dataset.done) return; p.dataset.done = '1';
-        const text = p.dataset.text; let n = 0;
-        const go = () => { n += 2; p.textContent = text.slice(0, n); if (n < text.length) setTimeout(go, REDUCED ? 0 : 14); };
-        go();
+      // ── Scroll is the clock ─────────────────────
+      function focusY() {
+        const r = stage.getBoundingClientRect();
+        // Desktop: middle of the viewport under the header. Phone: middle of the strip below the stage.
+        return PHONE.matches ? (r.bottom + innerHeight) / 2 : (r.top + innerHeight) / 2;
       }
-      function activate(i) {
-        if (i === step) return;
-        step = i; scene = SCENES[i] || SCENES[SCENES.length - 1];
-        counter.textContent = String(i + 1).padStart(2, '0');
-        steps.forEach((s, j) => { s.classList.toggle('is-active', j === i); s.classList.toggle('is-past', j < i); });
-        type(steps[i].querySelector('.pap-line'));
-        flowers.forEach((f) => f.classList.toggle('is-grown', +f.dataset.at <= i));
-        for (const k of ['flicker', 'dim', 'engine', 'beeGlow']) stage.classList.toggle('is-' + k, !!scene[k]);
-        tourAt = 0;
-      }
-      const io = new IntersectionObserver((es) => es.forEach((e) => { if (e.isIntersecting) activate(+e.target.dataset.i); }),
-        { rootMargin: '-40% 0px -40% 0px' });
-      steps.forEach((s) => io.observe(s));
+      function update() {
+        const f = focusY();
+        let a = -1, local = 0;
+        steps.forEach((s, i) => {
+          const r = s.getBoundingClientRect();
+          if (r.top <= f) { a = i; local = (f - r.top) / r.height; }
+          // Words arrive as the line rises into the reading zone, done before it reaches the focus line
+          const line = lineEls[i];
+          if (line) line.style.setProperty('--r', REDUCED ? 1 : clamp((f - r.top + r.height * 0.12) / (r.height * 0.36)).toFixed(3));
+        });
+        p = a < 0 ? 0 : Math.min(N + 1, a + clamp(local));
+        if (a !== active) setScene(a);
 
-      // Positions inside the stage
-      const headOf = (i) => {
+        // Flowers grow with the story (scrubbed, so scrolling back un-grows them)
+        flowers.forEach((el) => el.style.setProperty('--g', clamp((p - +el.dataset.at + 0.35) / 0.7).toFixed(3)));
+        // Act bar fills continuously
+        segs.forEach((seg, k) => {
+          const from = ACTS[k].from, to = ACTS[k + 1] ? ACTS[k + 1].from : N;
+          seg.style.transform = `scaleX(${clamp((p - from) / (to - from)).toFixed(3)})`;
+        });
+        // The tally is scrubbed too: the butterfly racks up 3x the visits, the bee pollinates more
+        const q = clamp(p - 5, 0, 2.5);
+        tally.fv = Math.round(q * 9); tally.fp = Math.floor(tally.fv / 5); tally.bv = tally.bp = Math.round(q * 3);
+        drawTally();
+        flowers[5].classList.toggle('is-pol', tally.bp >= 1); flowers[7].classList.toggle('is-pol', tally.bp >= 2);
+        // Night turns to dawn over the last act
+        stage.style.setProperty('--dawn', clamp((p - 9.5) / 3).toFixed(3));
+      }
+      function setScene(a) {
+        active = a;
+        scene = a < 0 ? INTRO : SCENES[Math.min(a, SCENES.length - 1)];
+        steps.forEach((s, j) => { s.classList.toggle('is-active', j === a); s.classList.toggle('is-past', j < a); });
+        const act = ACTS.reduce((x, act, k) => (Math.max(a, 0) >= act.from ? k : x), 0);
+        actN.textContent = ROMAN[act]; actName.textContent = ACTS[act][lang];
+        for (const k of ['flicker', 'dim', 'engine', 'beeGlow', 'tally', 'spot']) stage.classList.toggle('is-' + k, !!scene[k]);
+        hopAt = 0; beeAt = 0;
+      }
+      let ticking = false;
+      const onScroll = () => { if (!ticking) { ticking = true; requestAnimationFrame(() => { ticking = false; update(); }); } };
+      addEventListener('scroll', onScroll, { passive: true });
+      addEventListener('resize', onScroll);
+      update();
+
+      // ── Garden actors (ambient, time-based) ─────
+      function headOf(i) {
         const b = flowers[i].querySelector('b').getBoundingClientRect(), r = stage.getBoundingClientRect();
         return { x: b.left - r.left + b.width / 2, y: b.top - r.top };
-      };
-      const grown = () => flowers.map((f, i) => i).filter((i) => flowers[i].classList.contains('is-grown'));
+      }
+      const grown = () => flowers.map((_, i) => i).filter((i) => growth(flowers[i]) > 0.9);
+      function drawTally() { for (const k in tally) tallyEls[k].textContent = tally[k]; }
+      function puff(x, y, cls, dx, dy, ms) {
+        const d = document.createElement('span');
+        d.className = 'pap-pollen' + (cls ? ' ' + cls : '');
+        d.textContent = Math.random() < 0.2 ? '*' : '·';
+        d.style.left = x + 'px'; d.style.top = y + 'px';
+        stage.appendChild(d);
+        d.animate([{ transform: 'translate(0,0)', opacity: 0 }, { opacity: 1, offset: 0.15 },
+          { transform: `translate(${dx}px, ${dy}px)`, opacity: 0 }], { duration: ms, easing: 'ease-out' }).onfinish = () => d.remove();
+      }
+      // Where an actor should be: the stage centre, off-screen, or the head of the flower it is on
+      function target(spec, idx, isBee) {
+        const r = stage.getBoundingClientRect();
+        if (spec === 'center') return { x: r.width / 2, y: r.height * 0.36, hop: false };
+        if (spec === 'away') return { x: r.width + 120, y: -260, hop: false };
+        const list = spec === 'tour' ? grown() : spec.filter((i) => isBee || growth(flowers[i]) > 0.3);
+        if (!list.length) return { x: r.width / 2, y: r.height * 0.36, hop: false };
+        const h = headOf(list[idx % list.length]);
+        return { x: h.x, y: h.y, hop: list.length > 1 };
+      }
 
       function start() {
         const bf = new window.AsciiFlyer(flyEl.querySelector('canvas'), { cols: 31, rows: 21, cell: 6 });
         const W = bf.width, H = bf.height;
         const r0 = stage.getBoundingClientRect();
-        let fx = r0.width / 2 - W / 2, fy = r0.height * 0.28, bx = -160, by = 80, lastT = performance.now();
+        let fx = r0.width / 2 - W / 2, fy = r0.height * 0.36 - H / 2, bx = -160, by = 80, lastT = performance.now(), trailAt = 0;
 
-        // Pollen drifting up from open flowers (red during the "engine" line)
+        // Pollen drifting up from open flowers (denser and red once the engine starts)
+        let tick = 0;
         setInterval(() => {
-          if (REDUCED || step < 2 || document.hidden) return;
+          tick++;
+          if (REDUCED || document.hidden || active < 2 || (!scene.engine && tick % 2)) return;
           const g = grown(); if (!g.length) return;
           const h = headOf(g[(Math.random() * g.length) | 0]);
-          const d = document.createElement('span');
-          d.className = 'pap-pollen' + (scene.engine ? ' is-red' : '');
-          d.textContent = Math.random() < 0.2 ? '*' : '·';
-          d.style.left = h.x + 'px'; d.style.top = h.y + 'px';
-          stage.appendChild(d);
-          d.animate([{ transform: 'translate(0,0)', opacity: 0 }, { opacity: 1, offset: 0.2 },
-            { transform: `translate(${(Math.random() - 0.5) * 80}px, ${-60 - Math.random() * 80}px)`, opacity: 0 }],
-            { duration: 2600 + Math.random() * 1600, easing: 'ease-out' }).onfinish = () => d.remove();
-        }, 240);
+          puff(h.x, h.y, scene.engine ? 'is-red' : '', (Math.random() - 0.5) * 80, -60 - Math.random() * 80, 2600 + Math.random() * 1600);
+        }, 120);
 
         function loop(now) {
           requestAnimationFrame(loop);
           const dt = Math.min(0.05, (now - lastT) / 1000); lastT = now;
-          const r = stage.getBoundingClientRect();
-          // Butterfly target for this line
-          let tx = r.width / 2 - W / 2, ty = r.height * 0.28;
-          if (scene.fly === 'away') { tx = r.width + 80; ty = -H - 60; }
-          else if (scene.fly === 'tour') {
-            const g = grown();
-            if (g.length) {
-              tourAt += dt;
-              if (tourAt > 1.1) { tourAt = 0; tourIdx = (tourIdx + 1 + ((Math.random() * 2) | 0)) % g.length; }
-              const h = headOf(g[tourIdx % g.length]); tx = h.x - W / 2; ty = h.y - H * 0.75;
-            }
-          } else if (Array.isArray(scene.fly)) {
-            const h = headOf(scene.fly[0]); tx = h.x - W / 2; ty = h.y - H * 0.75;
+
+          // Butterfly: hops between its flowers; each hop is a visit
+          const tour = scene.fly === 'tour', away = scene.fly === 'away', centre = scene.fly === 'center';
+          const tf = target(scene.fly, hopIdx, false);
+          hopAt += dt;
+          if (tf.hop && hopAt > (tour ? 0.6 : 1.6)) {
+            hopAt = 0; hopIdx += tour ? 1 + ((Math.random() * 3) | 0) : 1;
           }
-          const k = REDUCED ? 1 : Math.min(1, dt * (scene.fly === 'away' ? 1.6 : 3));
+          const tx = tf.x - W / 2, ty = centre ? tf.y - H / 2 : away ? tf.y : tf.y - H * 0.75;
+          const k = REDUCED ? 1 : Math.min(1, dt * (away ? 1.4 : tour ? 4 : 3));
           fx += (tx - fx) * k; fy += (ty - fy) * k;
-          const rest = Math.hypot(tx - fx, ty - fy) < 6 && scene.fly !== 'tour' && scene.fly !== 'away';
-          flyEl.style.transform = `translate(${fx}px, ${fy + (rest ? 0 : Math.sin(now / 160) * 3)}px)`;
-          bf.frame(dt, { landed: rest, climb: scene.fly === 'away' ? 1 : 0 });
-          // Bee
-          let btx = -160, bty = r.height * 0.2;
-          if (scene.bee) { const h = headOf(scene.bee[0]); btx = h.x - 30; bty = h.y - 26; }
+          const rest = Math.hypot(tx - fx, ty - fy) < 6 && !away;
+          flyEl.style.transform = `translate(${fx}px, ${fy + (rest || REDUCED ? 0 : Math.sin(now / 160) * 3)}px)`;
+          glowEl.style.transform = `translate(${fx + W / 2}px, ${fy + H / 2}px)`;
+          bf.frame(dt, { landed: rest, climb: away ? 1 : 0 });
+
+          // Pollen trail behind the butterfly while it carries pollen
+          trailAt += dt;
+          if (scene.trail && !rest && !REDUCED && trailAt > 0.09) {
+            trailAt = 0; puff(fx + W / 2, fy + H * 0.6, '', (Math.random() - 0.5) * 10, 10 + Math.random() * 14, 1400);
+          }
+
+          // Bee: slower, fewer visits, but every visit pollinates
+          let btx = -160, bty = stage.getBoundingClientRect().height * 0.2;
+          if (scene.bee) {
+            beeAt += dt;
+            if (scene.bee.length > 1 && beeAt > 1.9) {
+              beeAt = 0; beeIdx++;
+            }
+            const h = headOf(scene.bee[beeIdx % scene.bee.length]); btx = h.x - 30; bty = h.y - 26;
+          }
           bx += (btx - bx) * Math.min(1, dt * 2.2); by += (bty - by) * Math.min(1, dt * 2.2);
-          beeEl.style.transform = `translate(${bx + Math.sin(now / 90) * 3}px, ${by + Math.cos(now / 70) * 3}px)`;
+          beeEl.style.transform = `translate(${bx + (REDUCED ? 0 : Math.sin(now / 90) * 3)}px, ${by + (REDUCED ? 0 : Math.cos(now / 70) * 3)}px)`;
         }
         requestAnimationFrame(loop);
       }
@@ -173,65 +295,119 @@ const STARS = Array.from({ length: 22 }, (_, i) => ({ x: (i * 37 + 11) % 97, y: 
 <style>
   .pap { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr); background: #111; color: var(--paper); }
   .pap-stage {
+    --dawn: 0;
     position: sticky; top: var(--header-h); height: calc(100svh - var(--header-h)); overflow: hidden;
     background: radial-gradient(ellipse at 50% 110%, #1f2a1f 0%, #141814 40%, #0d0d0f 75%);
   }
+  .pap-sky { position: absolute; inset: 0; opacity: calc(1 - var(--dawn)); }
   .pap-star { position: absolute; color: #6d6d7a; font: 12px var(--font-mono); animation: pap-twinkle 3.2s ease-in-out infinite; }
   @keyframes pap-twinkle { 50% { opacity: .2; } }
+  .pap-dawn {
+    position: absolute; inset: 0; opacity: var(--dawn); pointer-events: none;
+    background: linear-gradient(to top, rgba(255, 150, 110, .38), rgba(255, 190, 140, .12) 45%, rgba(120, 110, 160, .08) 75%, transparent);
+  }
+  .pap-sun {
+    position: absolute; inset-inline-end: 14%; bottom: 9%; margin: 0; direction: ltr;
+    font: 700 clamp(16px, 1.8vw, 22px)/1.05 var(--font-mono); color: #ffc48a;
+    text-shadow: 0 0 18px rgba(255, 180, 120, .7);
+    transform: translateY(calc((1 - var(--dawn)) * 160%)); opacity: var(--dawn);
+  }
 
   .pap-grass {
-    position: absolute; left: 0; right: 0; bottom: 0; height: 9%; overflow: hidden; direction: ltr;
+    position: absolute; left: 0; right: 0; bottom: 0; height: 9%; overflow: hidden; direction: ltr; z-index: 1;
     font: 700 13px/1.1 var(--font-mono); color: #3f6b3f; white-space: pre; padding-top: 4px;
-    border-top: 1px solid #263a26;
+    border-top: 1px solid #263a26; background: #111611;
   }
   .pap-flower {
-    position: absolute; bottom: 8.5%; margin: 0; direction: ltr; transform-origin: 50% 100%;
-    font: 700 clamp(18px, 2vw, 24px)/1.05 var(--font-mono); color: #5f8f5f; text-align: center;
-    transform: translateX(-50%) scaleY(0); opacity: 0;
-    transition: transform 1s cubic-bezier(.3, 1.4, .5, 1), opacity .6s;
+    --g: 0;
+    position: absolute; bottom: 8.5%; transform-origin: 50% 100%; z-index: 1;
+    transform: translateX(-50%) scaleY(var(--g)); opacity: var(--g);
   }
-  .pap-flower.is-grown { transform: translateX(-50%) scaleY(1); opacity: 1; animation: pap-sway 4.5s ease-in-out infinite alternate; }
-  .pap-flower :global(b) { color: #ff8a8a; text-shadow: 0 0 8px rgba(255, 138, 138, .5); }
-  @keyframes pap-sway { from { transform: translateX(-50%) rotate(-3deg); } to { transform: translateX(-50%) rotate(3deg); } }
+  .pap-flower pre {
+    margin: 0; direction: ltr; transform-origin: 50% 100%; text-align: center;
+    font: 700 clamp(18px, 2vw, 24px)/1.05 var(--font-mono); color: #5f8f5f;
+    animation: pap-sway 4.5s ease-in-out infinite alternate;
+  }
+  .pap-flower :global(b) { color: #ff8a8a; text-shadow: 0 0 8px rgba(255, 138, 138, .5); transition: color .6s, text-shadow .6s; }
+  .pap-flower.is-pol :global(b) { color: #e6c34a; text-shadow: 0 0 12px rgba(230, 195, 74, .8); }
+  .pap-stage.is-engine .pap-flower :global(b) { color: #ff5f5f; text-shadow: 0 0 16px rgba(255, 95, 95, .9); }
+  @keyframes pap-sway { from { transform: rotate(-3deg); } to { transform: rotate(3deg); } }
 
+  .pap-glow {
+    position: absolute; top: 0; left: 0; width: 0; height: 0; z-index: 2; pointer-events: none;
+    box-shadow: 0 0 120px 70px rgba(255, 138, 138, .14); border-radius: 50%; opacity: 0; transition: opacity .8s;
+  }
+  .pap-stage.is-spot .pap-glow { opacity: 1; }
+  .pap-stage.is-engine .pap-glow { box-shadow: 0 0 160px 100px rgba(255, 95, 95, .22); }
   .pap-fly { position: absolute; top: 0; left: 0; z-index: 3; will-change: transform; transition: filter .6s, opacity .6s; }
   .pap-stage.is-flicker .pap-fly { animation: pap-flick 1.2s steps(2) infinite; }
   @keyframes pap-flick { 50% { opacity: .35; } }
-  .pap-stage.is-dim .pap-fly { opacity: .45; }
+  .pap-stage.is-dim .pap-fly { opacity: .4; }
   .pap-stage.is-engine .pap-fly { filter: drop-shadow(0 0 16px rgba(255, 138, 138, .8)); }
 
   .pap-bee { position: absolute; top: 0; left: 0; z-index: 2; margin: 0; direction: ltr; font: 700 18px var(--font-mono); color: #e6c34a; transition: text-shadow .5s; }
   .pap-stage.is-beeGlow .pap-bee { text-shadow: 0 0 14px rgba(230, 195, 74, .95); }
-  .pap-stage :global(.pap-pollen) { position: absolute; z-index: 1; pointer-events: none; color: #e6d27a; font: 700 12px var(--font-mono); }
+  .pap-stage :global(.pap-pollen) { position: absolute; z-index: 2; pointer-events: none; color: #e6d27a; font: 700 12px var(--font-mono); }
   .pap-stage :global(.pap-pollen.is-red) { color: #ff8a8a; }
-  .pap-counter { position: absolute; top: 16px; inset-inline-end: 20px; margin: 0; color: #ff8a8a; z-index: 4; }
+
+  /* HUD: act progress + the visits/pollinated tally */
+  .pap-hud { position: absolute; top: 16px; inset-inline: 20px; z-index: 4; }
+  .pap-acts { display: flex; gap: 4px; }
+  .pap-acts span { height: 3px; background: #2a2a2e; overflow: hidden; }
+  .pap-acts i { display: block; height: 100%; background: #ff8a8a; transform: scaleX(0); transform-origin: 0 50%; }
+  .pap[dir='rtl'] .pap-acts i { transform-origin: 100% 50%; }
+  .pap-act { margin: 8px 0 0; color: #ff8a8a; font-size: .8rem; letter-spacing: .04em; }
+  .pap-tally {
+    position: absolute; top: 58px; inset-inline-start: 20px; z-index: 4; font-size: .8rem; color: #bdbdc6;
+    display: grid; gap: 4px; padding: 10px 12px; border: 1px solid #2a2a2e; background: rgba(13, 13, 15, .75);
+    opacity: 0; transform: translateY(-6px); transition: opacity .4s, transform .4s;
+  }
+  .pap-stage.is-tally .pap-tally { opacity: 1; transform: none; }
+  .pap-tally div { display: grid; grid-template-columns: 6.5em 2.5em auto 2.5em auto; gap: 6px; align-items: baseline; }
+  .pap-tally b { color: var(--paper); text-align: end; font-variant-numeric: tabular-nums; }
+  .pap-tally div:first-child b:first-of-type { color: #ff8a8a; }
+  .pap-tally div:last-child b:last-of-type { color: #e6c34a; }
+  .pap-tally em { font-style: normal; color: #77777f; }
 
   /* The story column */
   .pap-script { padding-inline: clamp(16px, 4vw, 48px); border-inline-start: 1px solid #222; }
-  .pap-intro { min-height: calc(70svh - var(--header-h)); display: flex; flex-direction: column; justify-content: center; }
+  .pap-intro { min-height: calc(100svh - var(--header-h)); display: flex; flex-direction: column; justify-content: center; }
   .pap-kicker { color: #ff8a8a; margin: 0 0 8px; }
   .pap-intro h1 { font-size: clamp(1.8rem, 3.6vw, 2.8rem); margin: 0 0 10px; }
-  .pap-step { min-height: 46svh; display: flex; align-items: center; }
-  .pap-line {
-    margin: 0; min-height: 2.6em; font: 600 clamp(1.2rem, 2.1vw, 1.75rem)/1.35 var(--font-sans);
-    color: var(--paper); opacity: 0; transform: translateY(14px); transition: opacity .35s, transform .35s;
-  }
+  .pap-cue { margin-top: 28px; color: #ff8a8a; }
+  .pap-cue span { display: inline-block; animation: pap-bob 1.6s ease-in-out infinite; }
+  @keyframes pap-bob { 50% { transform: translateY(5px); } }
+  .pap-step { min-height: 52svh; display: flex; align-items: center; }
+  .pap-chapter { margin: 0 0 10px; color: #ff8a8a; font-size: .78rem; letter-spacing: .06em; text-transform: uppercase; opacity: .85; transition: opacity .4s; }
+  .pap-line { margin: 0; font: 600 clamp(1.25rem, 2.1vw, 1.8rem)/1.38 var(--font-sans); color: var(--paper); transition: opacity .4s; }
   .pap[dir='rtl'] .pap-line { font-family: var(--font-ar); }
-  .pap-step.is-active .pap-line { opacity: 1; transform: none; }
-  .pap-step.is-past .pap-line { opacity: .3; transform: none; }
   .pap-line.is-last { color: #ff8a8a; }
-  .pap-outro { min-height: 55svh; display: flex; flex-direction: column; justify-content: center; gap: 16px; align-items: flex-start; }
-  .pap-outro .btn { border-color: var(--paper); color: var(--paper); }
+  /* Word reveal, scrubbed by --r (0..1) from the scroll script */
+  .pap.is-js .pap-w {
+    --o: clamp(0, calc(var(--r, 0) * (var(--n) + 1) - var(--k)), 1);
+    display: inline-block; opacity: var(--o);
+    transform: translateY(calc((1 - var(--o)) * .45em)); filter: blur(calc((1 - var(--o)) * 3px));
+  }
+  .pap.is-js .pap-step.is-past .pap-line, .pap.is-js .pap-step.is-past .pap-chapter { opacity: .3; }
+  .pap-outro { min-height: calc(100svh - var(--header-h)); flex-direction: column; justify-content: center; gap: 20px; align-items: flex-start; }
+  .pap-end { margin: 0; font: 600 clamp(1.25rem, 2.1vw, 1.8rem)/1.38 var(--font-sans); }
+  .pap[dir='rtl'] .pap-end { font-family: var(--font-ar); }
+  .pap-cta { display: flex; flex-wrap: wrap; gap: 12px; }
+  .pap-cta .btn { border-color: var(--paper); color: var(--paper); }
+  .pap-cta .btn:first-child { background: #ff8a8a; border-color: #ff8a8a; color: #111; }
 
   @media (max-width: 799px) {
     .pap { grid-template-columns: 1fr; }
-    .pap-stage { height: 58svh; z-index: 3; }
+    .pap-stage { height: 56svh; z-index: 3; border-bottom: 1px solid #222; }
     .pap-script { border: 0; }
-    .pap-step { min-height: 38svh; }
-    .pap-intro { min-height: 30svh; }
-    .pap-flower { font-size: 14px; }
+    .pap-step { min-height: 40svh; }
+    .pap-intro, .pap-outro { min-height: 44svh; }
+    .pap-flower pre { font-size: 14px; }
+    .pap-tally { top: 52px; inset-inline-start: 12px; font-size: .7rem; padding: 6px 8px; }
+    .pap-hud { inset-inline: 12px; top: 12px; }
   }
   @media (prefers-reduced-motion: reduce) {
-    .pap-flower, .pap-fly, .pap-line { transition: none; animation: none !important; }
+    .pap-flower pre, .pap-fly, .pap-cue span, .pap-star { animation: none !important; }
+    .pap.is-js .pap-w { filter: none; transform: none; }
   }
 </style>
