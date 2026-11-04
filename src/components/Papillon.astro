@@ -1,7 +1,8 @@
 ---
-// Secret philosophy page (/papillon/): a scroll-driven dialogue. A sticky
-// ASCII stage reacts to each line as it scrolls into view. Unlocked by
-// catching the flying butterfly; never linked for anyone who hasn't.
+// Secret philosophy page (/papillon/): a scroll-told dialogue. A sticky ASCII
+// night garden acts out each line (flowers grow, pollen drifts, a bee arrives,
+// the butterfly visits flowers, glows, and flies away). Lines stay hidden until
+// they scroll into view, then type in. Unlocked by catching the flying butterfly.
 import Base from '../layouts/Base.astro';
 import { philosophy, type Lang } from '../data/profile';
 import { url, langUrl } from '../lib/site';
@@ -12,13 +13,35 @@ const lines = philosophy.lines[lang];
 const t = lang === 'ar'
   ? { kicker: '// قناة_سرية', found: 'لقيت الفراشة.', scroll: 'انزل ↓', back: 'رجوع للموقع', end: 'طارت.' }
   : { kicker: '// SECRET_CHANNEL', found: 'You caught the butterfly.', scroll: 'scroll ↓', back: 'Back to the site', end: 'it flew away.' };
-const FLOWERS = [' \\|/ \n-(@)-\n /|\\ \n  |  ', '  _  \n (@) \n  |/ \n \\|  ', ' .-. \n(@ @)\n  |  \n \\|/ '];
+
+// Flowers: art rows ('@' = head), x position (%), and the line they grow on
+const ARTS = [
+  ['\\|/', '-@-', '/|\\', ' | ', ' | ', ' | '],
+  [' _ ', '(@)', ' |/', ' | ', '\\| '],
+  ['.-.', '(@)', "'-'", ' | ', ' |/', '\\| ', ' | '],
+  [' * ', '*@*', ' * ', ' | ', '\\| ', ' | '],
+  ['(@)', ' | ', '\\|/', ' | '],
+];
+const FLOWERS = [
+  { x: 8, at: 2, a: 0 }, { x: 19, at: 5, a: 1 }, { x: 30, at: 8, a: 3 }, { x: 41, at: 2, a: 2 },
+  { x: 52, at: 5, a: 4 }, { x: 62, at: 2, a: 1 }, { x: 72, at: 8, a: 0 }, { x: 82, at: 5, a: 3 },
+  { x: 91, at: 8, a: 2 }, { x: 24, at: 8, a: 4 },
+];
+const flowerHtml = FLOWERS.map((f) => ARTS[f.a].map((row) => row.replace('@', '<b>@</b>')).join('\n'));
+const GRASS_CHARS = ",.'`;\"'.,";
+const GRASS = Array.from({ length: 240 }, (_, i) => GRASS_CHARS[(i * 7 + (i >> 2)) % 9]).join('');
+const GRASS2 = GRASS.split('').reverse().join('');
+const STARS = Array.from({ length: 22 }, (_, i) => ({ x: (i * 37 + 11) % 97, y: (i * 23 + 7) % 46, c: i % 4 ? '.' : '+', d: (i % 7) * 0.6 }));
 ---
 <Base lang={lang} title={philosophy.title[lang]} path="papillon/" noindex>
   <div class="pap" dir={lang === 'ar' ? 'rtl' : 'ltr'}>
     <div class="pap-stage" id="pap-stage" aria-hidden="true">
-      <div class="pap-flowers">{FLOWERS.map((f, i) => <pre class={`pap-flower f${i}`}>{f}</pre>)}</div>
-      <pre class="pap-bee">{'~(::)>'}</pre>
+      {STARS.map((s) => <span class="pap-star" style={`left:${s.x}%;top:${s.y}%;animation-delay:${s.d}s`}>{s.c}</span>)}
+      {FLOWERS.map((f, i) => (
+        <pre class="pap-flower" data-at={f.at} data-i={i} style={`left:${f.x}%;animation-delay:${-(i * 0.7)}s`} set:html={flowerHtml[i]}></pre>
+      ))}
+      <div class="pap-grass"><div>{GRASS}</div><div>{GRASS2}</div></div>
+      <pre class="pap-bee" id="pap-bee">~(::)&gt;</pre>
       <div class="pap-fly" id="pap-fly"><canvas></canvas></div>
       <p class="pap-counter mono"><span id="pap-n">00</span>/{String(lines.length).padStart(2, '0')}</p>
     </div>
@@ -30,8 +53,8 @@ const FLOWERS = [' \\|/ \n-(@)-\n /|\\ \n  |  ', '  _  \n (@) \n  |/ \n \\|  ', 
         <p class="mono muted">{t.scroll}</p>
       </header>
       {lines.map((line, i) => (
-        <section class="pap-step" data-i={i}>
-          <p class={i === lines.length - 1 ? 'pap-line is-last' : 'pap-line'} data-text={line}>{line}</p>
+        <section class="pap-step" data-i={i} aria-label={line}>
+          <p class={i === lines.length - 1 ? 'pap-line is-last' : 'pap-line'} data-text={line} aria-hidden="true"></p>
         </section>
       ))}
       <footer class="pap-outro">
@@ -48,38 +71,97 @@ const FLOWERS = [' \\|/ \n-(@)-\n /|\\ \n  |  ', '  _  \n (@) \n  |/ \n \\|  ', 
       const stage = document.getElementById('pap-stage');
       const counter = document.getElementById('pap-n');
       const steps = [...document.querySelectorAll('.pap-step')];
-      // Scene cues per line (0-based): flowers, bee, bee wins, visiting, engine, flies off
-      const cue = (i) => ({
-        flowers: i >= 2, bee: i >= 3 && i <= 7, beeWins: i === 6,
-        visiting: i === 5 || i === 8 || i === 10, engine: i === 9, away: i >= 11,
-      });
-      const typed = new Set();
+      const flowers = [...stage.querySelectorAll('.pap-flower')];
+      const flyEl = document.getElementById('pap-fly');
+      const beeEl = document.getElementById('pap-bee');
+
+      // What the garden does on each line (0-based)
+      const SCENES = [
+        { fly: 'center' }, { fly: 'center', flicker: 1 },
+        { fly: [3] }, { fly: [3], bee: [5] }, { fly: [0], bee: [5] },
+        { fly: 'tour', bee: [5] }, { fly: [3], bee: [5], beeGlow: 1 }, { fly: [3], bee: [5], dim: 1 },
+        { fly: 'tour', bee: [5] }, { fly: 'tour', bee: [7], engine: 1 },
+        { fly: 'center', bee: [7] }, { fly: 'away', bee: [7] },
+      ];
+      let step = -1, scene = { fly: 'center' }, tourAt = 0, tourIdx = 0;
+
+      // Text: hidden until reached, then typed quickly
       function type(p) {
-        if (typed.has(p)) return; typed.add(p);
-        const text = p.dataset.text; let n = 0; p.textContent = '';
-        const go = () => { p.textContent = text.slice(0, ++n); if (n < text.length) setTimeout(go, REDUCED ? 0 : 26); };
+        if (p.dataset.done) return; p.dataset.done = '1';
+        const text = p.dataset.text; let n = 0;
+        const go = () => { n += 2; p.textContent = text.slice(0, n); if (n < text.length) setTimeout(go, REDUCED ? 0 : 14); };
         go();
       }
       function activate(i) {
-        const c = cue(i);
-        for (const k in c) stage.classList.toggle('is-' + k, c[k]);
+        if (i === step) return;
+        step = i; scene = SCENES[i] || SCENES[SCENES.length - 1];
         counter.textContent = String(i + 1).padStart(2, '0');
-        steps.forEach((s, j) => s.classList.toggle('is-active', j === i));
+        steps.forEach((s, j) => { s.classList.toggle('is-active', j === i); s.classList.toggle('is-past', j < i); });
         type(steps[i].querySelector('.pap-line'));
+        flowers.forEach((f) => f.classList.toggle('is-grown', +f.dataset.at <= i));
+        for (const k of ['flicker', 'dim', 'engine', 'beeGlow']) stage.classList.toggle('is-' + k, !!scene[k]);
+        tourAt = 0;
       }
+      const io = new IntersectionObserver((es) => es.forEach((e) => { if (e.isIntersecting) activate(+e.target.dataset.i); }),
+        { rootMargin: '-40% 0px -40% 0px' });
+      steps.forEach((s) => io.observe(s));
+
+      // Positions inside the stage
+      const headOf = (i) => {
+        const b = flowers[i].querySelector('b').getBoundingClientRect(), r = stage.getBoundingClientRect();
+        return { x: b.left - r.left + b.width / 2, y: b.top - r.top };
+      };
+      const grown = () => flowers.map((f, i) => i).filter((i) => flowers[i].classList.contains('is-grown'));
+
       function start() {
-        const io = new IntersectionObserver((entries) => {
-          entries.forEach((e) => { if (e.isIntersecting) activate(+e.target.dataset.i); });
-        }, { rootMargin: '-45% 0px -45% 0px' });
-        steps.forEach((s) => io.observe(s));
-        // The butterfly: the site's procedural flyer, drawn big
-        const bf = new window.AsciiFlyer(document.querySelector('#pap-fly canvas'), { cols: 31, rows: 21, cell: 7 });
-        let last = performance.now();
-        const loop = (now) => {
-          const dt = Math.min(0.05, (now - last) / 1000); last = now;
-          bf.frame(dt, { landed: stage.classList.contains('is-away') ? false : !stage.classList.contains('is-visiting'), climb: stage.classList.contains('is-away') ? 1 : 0 });
+        const bf = new window.AsciiFlyer(flyEl.querySelector('canvas'), { cols: 31, rows: 21, cell: 6 });
+        const W = bf.width, H = bf.height;
+        const r0 = stage.getBoundingClientRect();
+        let fx = r0.width / 2 - W / 2, fy = r0.height * 0.28, bx = -160, by = 80, lastT = performance.now();
+
+        // Pollen drifting up from open flowers (red during the "engine" line)
+        setInterval(() => {
+          if (REDUCED || step < 2 || document.hidden) return;
+          const g = grown(); if (!g.length) return;
+          const h = headOf(g[(Math.random() * g.length) | 0]);
+          const d = document.createElement('span');
+          d.className = 'pap-pollen' + (scene.engine ? ' is-red' : '');
+          d.textContent = Math.random() < 0.2 ? '*' : '·';
+          d.style.left = h.x + 'px'; d.style.top = h.y + 'px';
+          stage.appendChild(d);
+          d.animate([{ transform: 'translate(0,0)', opacity: 0 }, { opacity: 1, offset: 0.2 },
+            { transform: `translate(${(Math.random() - 0.5) * 80}px, ${-60 - Math.random() * 80}px)`, opacity: 0 }],
+            { duration: 2600 + Math.random() * 1600, easing: 'ease-out' }).onfinish = () => d.remove();
+        }, 240);
+
+        function loop(now) {
           requestAnimationFrame(loop);
-        };
+          const dt = Math.min(0.05, (now - lastT) / 1000); lastT = now;
+          const r = stage.getBoundingClientRect();
+          // Butterfly target for this line
+          let tx = r.width / 2 - W / 2, ty = r.height * 0.28;
+          if (scene.fly === 'away') { tx = r.width + 80; ty = -H - 60; }
+          else if (scene.fly === 'tour') {
+            const g = grown();
+            if (g.length) {
+              tourAt += dt;
+              if (tourAt > 1.1) { tourAt = 0; tourIdx = (tourIdx + 1 + ((Math.random() * 2) | 0)) % g.length; }
+              const h = headOf(g[tourIdx % g.length]); tx = h.x - W / 2; ty = h.y - H * 0.75;
+            }
+          } else if (Array.isArray(scene.fly)) {
+            const h = headOf(scene.fly[0]); tx = h.x - W / 2; ty = h.y - H * 0.75;
+          }
+          const k = REDUCED ? 1 : Math.min(1, dt * (scene.fly === 'away' ? 1.6 : 3));
+          fx += (tx - fx) * k; fy += (ty - fy) * k;
+          const rest = Math.hypot(tx - fx, ty - fy) < 6 && scene.fly !== 'tour' && scene.fly !== 'away';
+          flyEl.style.transform = `translate(${fx}px, ${fy + (rest ? 0 : Math.sin(now / 160) * 3)}px)`;
+          bf.frame(dt, { landed: rest, climb: scene.fly === 'away' ? 1 : 0 });
+          // Bee
+          let btx = -160, bty = r.height * 0.2;
+          if (scene.bee) { const h = headOf(scene.bee[0]); btx = h.x - 30; bty = h.y - 26; }
+          bx += (btx - bx) * Math.min(1, dt * 2.2); by += (bty - by) * Math.min(1, dt * 2.2);
+          beeEl.style.transform = `translate(${bx + Math.sin(now / 90) * 3}px, ${by + Math.cos(now / 70) * 3}px)`;
+        }
         requestAnimationFrame(loop);
       }
       const s = document.createElement('script');
@@ -89,59 +171,67 @@ const FLOWERS = [' \\|/ \n-(@)-\n /|\\ \n  |  ', '  _  \n (@) \n  |/ \n \\|  ', 
 </Base>
 
 <style>
-  .pap { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); background: var(--ink); color: var(--paper); }
+  .pap { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr); background: #111; color: var(--paper); }
   .pap-stage {
-    position: sticky; top: var(--header-h); height: calc(100svh - var(--header-h));
-    overflow: hidden; display: grid; place-items: center;
-    background: radial-gradient(circle at 50% 60%, #262626, var(--ink) 70%);
+    position: sticky; top: var(--header-h); height: calc(100svh - var(--header-h)); overflow: hidden;
+    background: radial-gradient(ellipse at 50% 110%, #1f2a1f 0%, #141814 40%, #0d0d0f 75%);
   }
-  .pap-fly { position: relative; z-index: 2; transition: transform 1.2s cubic-bezier(.4,0,.2,1), filter .6s; }
-  .pap-stage.is-visiting .pap-fly { animation: pap-visit 3.6s ease-in-out infinite; }
-  .pap-stage.is-engine .pap-fly { filter: drop-shadow(0 0 18px rgba(255, 138, 138, .65)); }
-  .pap-stage.is-away .pap-fly { transform: translate(40vw, -70vh) rotate(25deg) scale(.4); }
-  @keyframes pap-visit {
-    0%, 100% { transform: translate(0, 0); }
-    30% { transform: translate(-28%, 22%) scale(.8); }
-    65% { transform: translate(28%, 26%) scale(.8); }
-  }
-  .pap-flowers {
-    position: absolute; inset-inline: 0; bottom: 8%; display: flex; justify-content: space-around;
-    opacity: 0; transform: translateY(30px); transition: opacity .8s, transform .8s;
-  }
-  .pap-stage.is-flowers .pap-flowers { opacity: 1; transform: none; }
-  .pap-flower { margin: 0; font: 700 15px/1.1 var(--font-mono); color: #9a9a9a; }
-  .pap-flower { direction: ltr; }
-  .pap-bee {
-    position: absolute; top: 18%; inset-inline-start: -20%; margin: 0; direction: ltr;
-    font: 700 20px var(--font-mono); color: #e6c34a; transition: inset-inline-start 1.4s ease, text-shadow .5s;
-  }
-  .pap-stage.is-bee .pap-bee { inset-inline-start: 12%; animation: pap-buzz .25s steps(2) infinite; }
-  .pap-stage.is-beeWins .pap-bee { text-shadow: 0 0 14px rgba(230, 195, 74, .9); }
-  @keyframes pap-buzz { 50% { transform: translateY(-2px); } }
-  .pap-counter { position: absolute; top: 18px; inset-inline-end: 22px; margin: 0; color: #ff8a8a; }
+  .pap-star { position: absolute; color: #6d6d7a; font: 12px var(--font-mono); animation: pap-twinkle 3.2s ease-in-out infinite; }
+  @keyframes pap-twinkle { 50% { opacity: .2; } }
 
-  .pap-script { padding-inline: clamp(16px, 5vw, 64px); }
-  .pap-intro { min-height: calc(100svh - var(--header-h)); display: flex; flex-direction: column; justify-content: center; }
+  .pap-grass {
+    position: absolute; left: 0; right: 0; bottom: 0; height: 9%; overflow: hidden; direction: ltr;
+    font: 700 13px/1.1 var(--font-mono); color: #3f6b3f; white-space: pre; padding-top: 4px;
+    border-top: 1px solid #263a26;
+  }
+  .pap-flower {
+    position: absolute; bottom: 8.5%; margin: 0; direction: ltr; transform-origin: 50% 100%;
+    font: 700 clamp(18px, 2vw, 24px)/1.05 var(--font-mono); color: #5f8f5f; text-align: center;
+    transform: translateX(-50%) scaleY(0); opacity: 0;
+    transition: transform 1s cubic-bezier(.3, 1.4, .5, 1), opacity .6s;
+  }
+  .pap-flower.is-grown { transform: translateX(-50%) scaleY(1); opacity: 1; animation: pap-sway 4.5s ease-in-out infinite alternate; }
+  .pap-flower :global(b) { color: #ff8a8a; text-shadow: 0 0 8px rgba(255, 138, 138, .5); }
+  @keyframes pap-sway { from { transform: translateX(-50%) rotate(-3deg); } to { transform: translateX(-50%) rotate(3deg); } }
+
+  .pap-fly { position: absolute; top: 0; left: 0; z-index: 3; will-change: transform; transition: filter .6s, opacity .6s; }
+  .pap-stage.is-flicker .pap-fly { animation: pap-flick 1.2s steps(2) infinite; }
+  @keyframes pap-flick { 50% { opacity: .35; } }
+  .pap-stage.is-dim .pap-fly { opacity: .45; }
+  .pap-stage.is-engine .pap-fly { filter: drop-shadow(0 0 16px rgba(255, 138, 138, .8)); }
+
+  .pap-bee { position: absolute; top: 0; left: 0; z-index: 2; margin: 0; direction: ltr; font: 700 18px var(--font-mono); color: #e6c34a; transition: text-shadow .5s; }
+  .pap-stage.is-beeGlow .pap-bee { text-shadow: 0 0 14px rgba(230, 195, 74, .95); }
+  .pap-stage :global(.pap-pollen) { position: absolute; z-index: 1; pointer-events: none; color: #e6d27a; font: 700 12px var(--font-mono); }
+  .pap-stage :global(.pap-pollen.is-red) { color: #ff8a8a; }
+  .pap-counter { position: absolute; top: 16px; inset-inline-end: 20px; margin: 0; color: #ff8a8a; z-index: 4; }
+
+  /* The story column */
+  .pap-script { padding-inline: clamp(16px, 4vw, 48px); border-inline-start: 1px solid #222; }
+  .pap-intro { min-height: calc(70svh - var(--header-h)); display: flex; flex-direction: column; justify-content: center; }
   .pap-kicker { color: #ff8a8a; margin: 0 0 8px; }
-  .pap-intro h1 { font-size: clamp(2rem, 5vw, 3.2rem); margin: 0 0 12px; }
-  .pap-step { min-height: 70svh; display: flex; align-items: center; }
+  .pap-intro h1 { font-size: clamp(1.8rem, 3.6vw, 2.8rem); margin: 0 0 10px; }
+  .pap-step { min-height: 46svh; display: flex; align-items: center; }
   .pap-line {
-    margin: 0; font: 600 clamp(1.3rem, 2.6vw, 2rem)/1.35 var(--font-sans); color: #6f6f6f;
-    transition: color .4s; min-height: 2.7em;
+    margin: 0; min-height: 2.6em; font: 600 clamp(1.2rem, 2.1vw, 1.75rem)/1.35 var(--font-sans);
+    color: var(--paper); opacity: 0; transform: translateY(14px); transition: opacity .35s, transform .35s;
   }
   .pap[dir='rtl'] .pap-line { font-family: var(--font-ar); }
-  .pap-step.is-active .pap-line { color: var(--paper); }
+  .pap-step.is-active .pap-line { opacity: 1; transform: none; }
+  .pap-step.is-past .pap-line { opacity: .3; transform: none; }
   .pap-line.is-last { color: #ff8a8a; }
-  .pap-outro { min-height: 60svh; display: flex; flex-direction: column; justify-content: center; gap: 16px; align-items: flex-start; }
+  .pap-outro { min-height: 55svh; display: flex; flex-direction: column; justify-content: center; gap: 16px; align-items: flex-start; }
   .pap-outro .btn { border-color: var(--paper); color: var(--paper); }
 
   @media (max-width: 799px) {
     .pap { grid-template-columns: 1fr; }
-    .pap-stage { height: 42svh; z-index: 3; }
-    .pap-step { min-height: 55svh; }
-    .pap-intro { min-height: 50svh; }
+    .pap-stage { height: 58svh; z-index: 3; }
+    .pap-script { border: 0; }
+    .pap-step { min-height: 38svh; }
+    .pap-intro { min-height: 30svh; }
+    .pap-flower { font-size: 14px; }
   }
   @media (prefers-reduced-motion: reduce) {
-    .pap-fly, .pap-bee, .pap-flowers { transition: none; animation: none !important; }
+    .pap-flower, .pap-fly, .pap-line { transition: none; animation: none !important; }
   }
 </style>
