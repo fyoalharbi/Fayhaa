@@ -31,7 +31,7 @@ const steps = lines.map((line, i) => ({ line, shot: SHOTS[i] || 'wide' }));
       <p class="g3-hint">{t.hint}</p>
     </div>
 
-    <section class="g3-box" id="g3-box" aria-live="polite" data-state="intro">
+    <section class="g3-box is-enter" id="g3-box" aria-live="polite" data-state="intro">
       <p class="g3-who mono" id="g3-who"></p>
       <p class="g3-line" id="g3-line">{t.ask}</p>
       <div class="g3-row">
@@ -97,6 +97,9 @@ const steps = lines.map((line, i) => ({ line, shot: SHOTS[i] || 'wide' }));
         step = -1; box.dataset.state = 'off';
         if (g) g.setShot(null);
       }
+      // Greeting decodes in as the box finishes rising
+      { const ask = lineEl.textContent; lineEl.textContent = ''; setTimeout(() => decode(lineEl, ask), REDUCED ? 0 : 1000); }
+      setTimeout(() => box.classList.remove('is-enter'), REDUCED ? 0 : 2300);   // after the whole entrance has played
       nextBtn.addEventListener('click', () => show(step >= steps.length ? 0 : step + 1));
       skipBtn.addEventListener('click', stop);
       addEventListener('keydown', (e) => {
@@ -138,6 +141,16 @@ const steps = lines.map((line, i) => ({ line, shot: SHOTS[i] || 'wide' }));
     padding: 10px 14px 9px; background: rgba(10, 11, 12, .68); border-inline-start: 1px solid #ff8a8a66;
     transition: opacity .4s, transform .4s;
   }
+  /* Entrance on page load: the veil fades up, the side line draws in, then the text decodes */
+  .g3-box.is-enter { animation: g3-rise .7s cubic-bezier(.2, .8, .2, 1) .5s both; }
+  .g3-box.is-enter::before {
+    content: ''; position: absolute; inset-block: 0; inset-inline-start: -1px; width: 1px; background: #ff8a8a;
+    transform-origin: 50% 100%; animation: g3-draw .6s ease-out .9s both;
+  }
+  .g3-box.is-enter .g3-row { animation: g3-fade .5s ease-out 1.6s both; }
+  @keyframes g3-rise { from { opacity: 0; transform: translate(-50%, 14px); filter: blur(3px); } to { opacity: 1; transform: translate(-50%, 0); filter: none; } }
+  @keyframes g3-draw { from { transform: scaleY(0); opacity: 1; } 70% { opacity: 1; } to { transform: scaleY(1); opacity: 0; } }
+  @keyframes g3-fade { from { opacity: 0; } to { opacity: 1; } }
   .g3-box[data-state='off'] { opacity: 0; transform: translate(-50%, 10px); pointer-events: none; }
   .g3-who { margin: 0 0 4px; min-height: 1em; color: #77777f; font: .7rem/1.2 var(--font-mono); letter-spacing: .06em; }
   .g3-line { margin: 0; min-height: 2.7em; font: .9rem/1.45 var(--font-mono); color: #cfcfcf; }
@@ -166,7 +179,7 @@ const steps = lines.map((line, i) => ({ line, shot: SHOTS[i] || 'wide' }));
   .g3-box[data-state='end'] .g3-blog { display: inline-flex !important; }
   .g3-box[data-state='end'] .g3-skip { display: none; }
   .g3[dir='rtl'] .btn, .g3[dir='rtl'] .g3-who { letter-spacing: 0; font-family: var(--font-ar); font-size: .8rem; }   /* keep Arabic letters joined */
-  @media (prefers-reduced-motion: reduce) { .g3-line::after { animation: none; } }
+  @media (prefers-reduced-motion: reduce) { .g3-line::after, .g3-box.is-enter, .g3-box.is-enter::before, .g3-box.is-enter .g3-row { animation: none; } }
   @media (max-width: 600px) {
     .g3-box { bottom: 12px; }
     .g3-dots i { width: 5px; }
