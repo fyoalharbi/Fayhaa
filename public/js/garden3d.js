@@ -54,10 +54,18 @@
   }
 
   // ── Layout ──
-  const pathX = (z) => 0.7 * Math.sin(z * 0.19) + 0.35 * Math.sin(z * 0.083 + 1.1);   // a gentle, unhurried curve
-  const pathW = (z) => 0.5 + 0.07 * Math.sin(z * 0.7) + 0.04 * Math.sin(z * 1.9 + 2);   // half width
+  const pathXe = (z) => 0.7 * Math.sin(z * 0.19) + 0.35 * Math.sin(z * 0.083 + 1.1);   // a gentle, unhurried curve
+  const pathWe = (z) => 0.5 + 0.07 * Math.sin(z * 0.7) + 0.04 * Math.sin(z * 1.9 + 2);   // half width
+  const treeTopE = (z) => 3.4 + 0.9 * Math.sin(z * 0.31) + 0.6 * Math.sin(z * 0.83 + 1) + 0.3 * Math.sin(z * 2.1);
   const TREES = 5.2;
-  const treeTop = (z) => 3.4 + 0.9 * Math.sin(z * 0.31) + 0.6 * Math.sin(z * 0.83 + 1) + 0.3 * Math.sin(z * 2.1);
+  // Per-frame lookup tables: the ray-caster asks for these tens of thousands of times a frame
+  const TAB = { z0: 0, step: 0.04, n: 1400, x: new Float32Array(1400), w: new Float32Array(1400), top: new Float32Array(1400) };
+  function fillTables(zTop) {
+    TAB.z0 = zTop;
+    for (let i = 0; i < TAB.n; i++) { const z = zTop - i * TAB.step; TAB.x[i] = pathXe(z); TAB.w[i] = pathWe(z); TAB.top[i] = treeTopE(z); }
+  }
+  const look = (arr, fn) => (z) => { const f = (TAB.z0 - z) / TAB.step; if (f < 0 || f >= TAB.n - 1) return fn(z); const i = f | 0; return arr[i] + (arr[i + 1] - arr[i]) * (f - i); };
+  const pathX = look(TAB.x, pathXe), pathW = look(TAB.w, pathWe), treeTop = look(TAB.top, treeTopE);
   const dapple = (x, z) => Math.sin(x * 2.3 + z * 1.1) * Math.sin(z * 1.6 - x * 0.8 + 1.2) + 0.5 * Math.sin(x * 5.1 - z * 3.7);
   const EYE = 0.92, SEG = 1, ARCH_EVERY = 9;
 
@@ -180,7 +188,18 @@
       if (document.fonts) document.fonts.ready.then(() => this.resize());
       this.bindInput();
       this.last = performance.now();
-      const loop = (now) => { requestAnimationFrame(loop); this.frame(Math.min(0.05, (now - this.last) / 1000), now / 1000); this.last = now; };
+      this.quality = 0; this.slow = 0; this.fast = 0;
+      const loop = (now) => {
+        requestAnimationFrame(loop);
+        const t0 = performance.now();
+        this.frame(Math.min(0.05, (now - this.last) / 1000), now / 1000);
+        this.last = now;
+        // Keep it smooth on slower machines: step the glyph size up (fewer cells) when frames run long
+        const ms = performance.now() - t0;
+        this.slow = ms > 20 ? this.slow + 1 : 0; this.fast = ms < 8 ? this.fast + 1 : 0;
+        if (this.slow > 20 && this.quality < 4) { this.quality++; this.slow = 0; this.resize(); }
+        else if (this.fast > 240 && this.quality > 0) { this.quality--; this.fast = 0; this.resize(); }
+      };
       requestAnimationFrame(loop);
     }
 
@@ -192,10 +211,11 @@
     }
 
     resize() {
-      const r = this.canvas.getBoundingClientRect(), d = Math.min(devicePixelRatio || 1, 2);
+      // Rendered at 1× pixel density: the glyphs stay sharp enough, and it is 4× cheaper on hi-DPI screens
+      const r = this.canvas.getBoundingClientRect(), d = 1;
       this.W = r.width; this.H = r.height;
       this.canvas.width = r.width * d; this.canvas.height = r.height * d;
-      this.fs = r.width < 600 ? 7 : 8;
+      this.fs = (r.width < 600 ? 7 : 8) + (this.quality || 0);
       this.cw = this.fs * 0.6; this.chH = this.fs * 1.05;
       this.COLS = Math.ceil(r.width / this.cw); this.ROWS = Math.ceil(r.height / this.chH);
       this.buildAtlas(d);
@@ -314,6 +334,7 @@
       this.pauseT -= dt; this.idle += dt;
       if (this.walking && this.pauseT <= 0) this.camZ -= dt * 0.3;
       if (!this.dragging() && this.idle > 2.5) { this.lookYaw *= 1 - Math.min(1, dt * 0.7); this.lookPitch *= 1 - Math.min(1, dt * 0.7); }
+      fillTables(this.camZ + 8);
       const cz = this.camZ, cx = pathX(cz) + 0.05 * Math.sin(t * 0.21);
       const cy = EYE + (this.walking && !this.reduced && this.pauseT <= 0 ? Math.sin(t * 3.4) * 0.007 : 0);
       const ahead = 2.4, wantYaw = Math.atan2(pathX(cz - ahead) - cx, ahead);
