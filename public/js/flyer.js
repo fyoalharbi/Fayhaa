@@ -1,15 +1,19 @@
 // ─────────────────────────────────────────────
 //  PROCEDURAL ASCII BUTTERFLY — digitized
 //
-//  Two views, both built from shapes (not video):
+//  Three views, all built from shapes (not video):
 //    • TOP view while flying: wings foreshortened by cos(flap)
 //    • SIDE view while perched: wings folded up, legs on the flower
+//    • SIDE FLIGHT (opt-in, { side: true }): seen from the side, the wings
+//      sweep up over the back and down under the body; glides hold them flat
 //  The wing fill is a live stream of 0/1 bits; it glitches now and
 //  then (rows slip sideways, a red ghost copy offsets).
 //
-//    const bf = new AsciiFlyer(canvas, { cols: 23, rows: 17, cell: 4 });
-//    bf.frame(dt, { landed, climb, perched, facing });  // every frame
+//    const bf = new AsciiFlyer(canvas, { cols: 23, rows: 17, cell: 4, font: 1.3, side: false });
+//    bf.frame(dt, { landed, climb, perched, facing, glide });  // every frame
+//      → { open, ink, down }  (down: 0..1 strength of the current downstroke)
 //    bf.seat(perched) → { x, y } px inside the canvas that touches the flower
+//                       (side flight: the body centre)
 // ─────────────────────────────────────────────
 (function () {
   // ── TOP VIEW wings (x outward from body 0..1, y down -1..1) ──
@@ -27,6 +31,13 @@
   ];
   const BODY_ROW_FROM_BOTTOM = 3; // body row; the two rows under it are legs
 
+  // ── SIDE FLIGHT wings, relative to a body on the middle row (u forward, v down).
+  // Drawn at full height when raised; the stroke scales them through flat to hanging.
+  const FLY_WINGS = [
+    { cx: 0.12, cy: -0.54, a: 0.36, b: 0.52, rot: 0.30, spot: [0.16, -0.70, 0.13] },  // forewing
+    { cx: -0.18, cy: -0.26, a: 0.30, b: 0.30, rot: 0.25, spot: [-0.22, -0.30, 0.10] }, // hindwing
+  ];
+
   function ellipseHit(wings, x, y, squash = 1) {
     let best = null;
     for (const w of wings) {
@@ -42,10 +53,13 @@
   const flip = (ch, mirror) => (!mirror ? ch : ch === '/' ? '\\' : ch === '\\' ? '/' : ch);
 
   class AsciiFlyer {
-    constructor(canvas, { cols = 23, rows = 17, cell = 4 } = {}) {
+    constructor(canvas, { cols = 23, rows = 17, cell = 4, font = 1.3, side = false } = {}) {
       this.canvas = canvas;
       this.ctx = canvas.getContext('2d');
       this.cols = cols; this.rows = rows; this.cell = cell;
+      this.fontScale = font;      // glyph size / cell; < 1 leaves air between letters
+      this.sideFlight = side;
+      this.stroke = 1;            // side flight: +1 wings up … 0 flat … -0.6 hanging
       this.width = cols * cell;
       this.height = rows * cell;
       const d = Math.min(window.devicePixelRatio || 1, 2);
@@ -68,9 +82,9 @@
     /** Pixel (inside the canvas) that should sit on the perch point. */
     seat(perched) {
       // Perched: bottom of the leg row.  Flying: just below the thorax.
-      return perched
-        ? { x: this.width / 2, y: (this.rows - BODY_ROW_FROM_BOTTOM + 3) * this.cell - 1 }
-        : { x: this.width / 2, y: this.height * 0.52 };
+      if (perched) return { x: this.width / 2, y: (this.rows - BODY_ROW_FROM_BOTTOM + 3) * this.cell - 1 };
+      if (this.sideFlight) return { x: this.width / 2, y: ((this.rows - 1) / 2) * this.cell + this.cell / 2 };
+      return { x: this.width / 2, y: this.height * 0.52 };
     }
 
     /** Pick ink that contrasts with whatever is underneath the butterfly. */
@@ -169,6 +183,40 @@
       return [bit ? '1' : '0', 'ink'];
     }
 
+    // ── one cell, SIDE FLIGHT (u mirrored to face forward, body on v = 0) ──
+    flyCell(c, r, u, v, bit, mirror) {
+      const colStep = 2 / (this.cols - 1), rowStep = 2 / (this.rows - 1);
+      const bodyRow = (this.rows - 1) / 2;
+      if (r === bodyRow) {
+        if (u > 0.34 && u < 0.46) return ['0', 'ink'];
+        if (u > 0.06 && u <= 0.34) return ['8', 'ink'];
+        if (u > -0.46 && u <= 0.06) return [c % 2 ? '=' : '-', 'ink'];
+      }
+      // Antennae, swept forward and up from the head
+      const t = (u - 0.44) / 0.28;
+      if (t > 0 && t <= 1 && Math.abs(v - (-rowStep - 0.32 * t)) < rowStep * 0.55) return [t > 0.85 ? '°' : flip('/', mirror), 'ink'];
+      // Legs tucked under the thorax
+      if (r === bodyRow + 1 && Math.abs(u - 0.2) < colStep * 0.6) return [',', 'ink'];
+
+      const s = this.stroke;
+      if (Math.abs(s) < 0.16) {
+        // Wings flat (gliding, or mid-stroke): a thin line just above the body
+        if (r === bodyRow - 1 && u > -0.34 && u < 0.4) return [bit ? '=' : '-', 'ink'];
+        return null;
+      }
+      const vf = v / s;                    // un-scale the stroke
+      if (vf > 0.02) return null;          // only on the side the wings are on
+      const hit = ellipseHit(FLY_WINGS, u, vf);
+      if (!hit) return null;
+      const [sx, sy, sr] = hit.w.spot;
+      if (Math.hypot(u - sx, vf - sy) < sr) return ['1', 'accent'];
+      if (hit.d > 0.78) return [':', 'ink'];
+      const th = Math.atan2(-vf, u - 0.1);
+      const k = (th * 4) / Math.PI;
+      if (Math.abs(k - Math.round(k)) < 0.1 && hit.d > 0.1) return [Math.abs(s) < 0.45 ? '-' : '|', 'ink'];
+      return [bit ? '1' : '0', 'ink'];
+    }
+
     /**
      * Advance + draw.
      *   perched → side view (facing ±1), slow fold/unfold
@@ -176,11 +224,21 @@
      *   climb   → faster beats; random short glides while cruising
      */
     frame(dt, state = {}) {
-      const { landed = false, climb = 0, perched = false, facing = 1 } = state;
-      const view = perched ? 'side' : 'top';
+      const { landed = false, climb = 0, perched = false, facing = 1, glide = false } = state;
+      const view = perched ? 'side' : this.sideFlight ? 'fly' : 'top';
       if (view !== this.view) { this.view = view; this.glitch = 0.22; }
 
-      if (perched || landed) this.phase += dt * 1.5;
+      let down = 0;
+      if (view === 'fly') {
+        // Flap: wings sweep from over the back (+1) to under the body (-0.6).
+        // Glide: ease to just above flat and hold.
+        if (glide) this.stroke += (0.1 - this.stroke) * Math.min(1, dt * 7);
+        else {
+          this.phase += dt * (2 * Math.PI) * (5.5 + climb * 2.5);
+          this.stroke = 0.2 + 0.8 * Math.cos(this.phase);
+          down = Math.max(0, Math.sin(this.phase));
+        }
+      } else if (perched || landed) this.phase += dt * 1.5;
       else if (this.glide > 0) {
         this.glide -= dt;
         this.phase += (0 - Math.sin(this.phase)) * dt * 4;
@@ -207,7 +265,7 @@
       const { cols, rows, cell } = this;
       const hc = (cols - 1) / 2, hr = (rows - 1) / 2;
       ctx.clearRect(0, 0, this.width, this.height);
-      ctx.font = `700 ${cell * 1.3}px "JetBrains Mono", ui-monospace, monospace`;
+      ctx.font = `700 ${cell * this.fontScale}px "JetBrains Mono", ui-monospace, monospace`;
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
 
@@ -222,10 +280,10 @@
           let u = (c - hc) / hc;
           const bit = this.bits[r * cols + c];
           let out;
-          if (view === 'side') {
+          if (view === 'side' || view === 'fly') {
             const mirror = facing < 0;
             if (mirror) u = -u;
-            out = this.sideCell(c, r, u, v, squash, bit, mirror);
+            out = view === 'side' ? this.sideCell(c, r, u, v, squash, bit, mirror) : this.flyCell(c, r, u, v, bit, mirror);
           } else {
             out = this.topCell(c, r, u, v, open, under, bit);
           }
@@ -246,7 +304,7 @@
         if (col !== current) { ctx.fillStyle = col; current = col; }
         ctx.fillText(cells[i], cells[i + 2], cells[i + 3]);
       }
-      return { open, ink: this.ink };
+      return { open, ink: this.ink, down };
     }
   }
 
