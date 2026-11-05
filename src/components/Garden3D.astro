@@ -1,7 +1,7 @@
 ---
-// Hidden 3D cottage-garden walk (/papillon/garden/): an endless flagstone path
-// through overflowing borders and rose arches, rendered in ASCII in real time
-// (public/js/garden3d.js).
+// Hidden 3D cottage garden (/papillon/garden/): one garden plot with a flagstone
+// path, borders and a rose arch, seen from an orbiting camera, rendered in ASCII
+// in real time (public/js/garden3d.js).
 // Reached from the end of the secret philosophy page.
 import Base from '../layouts/Base.astro';
 import { type Lang } from '../data/profile';
@@ -11,8 +11,8 @@ interface Props { lang: Lang }
 const { lang } = Astro.props;
 const ar = lang === 'ar';
 const t = ar
-  ? { title: 'الحديقة', kicker: '// GARDEN_3D', hint: 'اسحب لتتلفت · مرّر لتمشي', pause: 'وقّف', walk: 'امشِ', back: 'رجوع للقصة' }
-  : { title: 'The garden', kicker: '// GARDEN_3D', hint: 'drag to look around · scroll to walk', pause: 'Pause', walk: 'Walk', back: 'Back to the story' };
+  ? { title: 'الحديقة', kicker: '// GARDEN_3D', hint: 'اسحب لتدور · مرّر للتقريب', pause: 'وقّف الدوران', walk: 'دوّر', back: 'رجوع للقصة' }
+  : { title: 'The garden', kicker: '// GARDEN_3D', hint: 'drag to orbit · scroll to zoom', pause: 'Pause', walk: 'Spin', back: 'Back to the story' };
 ---
 <Base lang={lang} title={t.title} path="papillon/garden/" noindex>
   <div class="g3" dir={ar ? 'rtl' : 'ltr'}>
@@ -35,9 +35,9 @@ const t = ar
       s.onload = () => {
         const g = new window.Garden3D(document.getElementById('g3-canvas'));
         const btn = document.getElementById('g3-walk');
-        const label = () => { btn.textContent = g.walking ? btn.dataset.pause : btn.dataset.walk; };
+        const label = () => { btn.textContent = g.spinning ? btn.dataset.pause : btn.dataset.walk; };
         label();
-        btn.addEventListener('click', () => { g.setWalking(!g.walking); label(); });
+        btn.addEventListener('click', () => { g.setSpinning(!g.spinning); label(); });
       };
       document.body.appendChild(s);
     })();
