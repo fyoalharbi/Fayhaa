@@ -1,250 +1,244 @@
 // ─────────────────────────────────────────────
-//  3D ASCII COTTAGE GARDEN (orbit view)
+//  3D ASCII GARDEN
 //
-//  One cottage-garden plot at golden hour, circled by an orbiting camera:
-//  an old flagstone path (moss and flowering thyme in the joints, fallen rose
-//  petals) curving to a bird bath; borders of catmint, alyssum, pinks, phlox,
-//  daisies and rose bushes; hollyhocks, foxgloves, delphiniums and lavender
-//  at the back, alliums and tulips between them; a wooden rose arch. A low
-//  sun lights every plant from one side and casts soft shadows across the
-//  path. Butterflies and a bee work the flowers.
+//  A tiny point renderer: every surface (ground, stems, leaves, petals, wings)
+//  is a cloud of points with a normal. Each frame the points are projected
+//  through an orbiting perspective camera into a character grid with a depth
+//  buffer; lighting picks the brightness, the surface picks the glyph. Fills
+//  use the same live 0/1 bit stream as the 2D garden.
 //
-//  How it is drawn (on the GPU via WebGL when available: the CPU fills a
-//  grid of glyph + colour per cell; a shader draws the letters):
-//   • Ground and path are ray-cast per character cell.
-//   • Plants, the arch and the bird bath are impostors: shapes filled
-//     in screen space with textures fixed to the object, plus blossoms fixed
-//     in 3D, so everything stays put as you orbit and shrinks cleanly.
-//
-//    const g = new Garden3D(canvas);
-//    g.setSpinning(true | false);   drag to orbit, scroll to zoom
+//    const g = new Garden3D(canvas, { follow: false });
+//    g.toggleFollow();   // camera chases the white butterfly
 // ─────────────────────────────────────────────
 (function () {
-  const BASE = {
-    stone: '#cfc8ba', stone2: '#bda98f', stone3: '#a3a9ae', sun: '#f6dcae', moss: '#6a9a48', thyme: '#d8b8ee',
-    ground: '#365c2c', grass: '#4e7f3a', leafD: '#2b5a2c', leaf: '#45833b', leafL: '#74b056', leafS: '#a6cf74', stem: '#5f9a4f',
-    treeD: '#22472a', tree: '#335f33', treeL: '#5e8f48', bark: '#6b5444',
-    wall: '#e6e0d2', wallS: '#9d978b', roof: '#4e403c', window: '#ffd98a', frame: '#f4f0e6', wood: '#8a6a4c',
-    water: '#9cc8e4', bath: '#cdc6ba',
-    pink: '#ff8fbd', rose: '#ff6f9e', roseD: '#c83c6a', magenta: '#e0549c', blush: '#ffc6d8', white: '#faf8f0', cream: '#f4e4be',
-    lavender: '#b49cf4', blue: '#7f9cff', violet: '#9a6ad8', red: '#ff4b4b', coral: '#ff806a', yellow: '#ffe066', eye: '#5a2040',
-    body: '#ffffff', dark: '#3a2c08', glass: '#e7f0ff', gold: '#ffd24a', wing: '#ffffff', wingY: '#fff27a', wingB: '#9fd8ff', trail: '#fff6c8', mote: '#ffe9a8',
-  };
-  const NAMES = Object.keys(BASE);
-  const C = Object.fromEntries(NAMES.map((n, i) => [n, i]));
-  const LEVELS = [0.16, 0.3, 0.45, 0.6, 0.76, 0.9, 1];
-  const NL = LEVELS.length;
+  // ── Palette: base colours × 4 brightness levels ──
+  const BASE = ['#3f6b3f', '#6f9f6f', '#4f8a4f', '#e6c34a', '#ff8a8a', '#f4f4f4', '#cfcfcf', '#8a8a9a',
+    '#e6d27a', '#8ac6ff', '#c49aff', '#7fe0b0', '#ffb070', '#6a5214', '#d7e6ff',
+    '#2f5a3a', '#e8e4d0', '#d4ff7a', '#ffc0d0', '#b8913a'];
+  const C = { ground: 0, stem: 1, leaf: 2, gold: 3, pink: 4, white: 5, body: 6, star: 7, pollen: 8, blue: 9, violet: 10, mint: 11, orange: 12, dark: 13, glass: 14,
+    grass2: 15, moon: 16, firefly: 17, blush: 18, amber: 19 };
+  const LEVELS = [0.3, 0.5, 0.75, 1];
   const PAL = [];
-  for (const n of NAMES) {
-    const v = parseInt(BASE[n].slice(1), 16), r = v >> 16, g = (v >> 8) & 255, b = v & 255;
+  for (const h of BASE) {
+    const n = parseInt(h.slice(1), 16), r = n >> 16, g = (n >> 8) & 255, b = n & 255;
     for (const l of LEVELS) PAL.push(`rgb(${(r * l) | 0},${(g * l) | 0},${(b * l) | 0})`);
   }
-  const CH = ['.', ',', "'", '`', ':', ';', '|', '0', '1', '@', 'o', '8', '=', '-', '*', '+', '/', '\\', '°', '#', '%', '&', '~', '^', 'v', '"', '(', ')', '_', 'O', 'U', 'W', 'V', 'w', 'c', 'Y', '{', '}', '<', '>', 'x', '[', ']'];
+  const CH = ['.', ',', "'", '`', ':', ';', '|', '0', '1', '@', 'o', '8', '=', '-', '*', '+', '/', '\\', '°', '#', '%', '&'];
   const K = Object.fromEntries(CH.map((c, i) => [c, i]));
+  const BIT = -1;                          // glyph slot meaning "use this point's live bit"
+  const GRASS = [K['.'], K[','], K["'"], K['`'], K[';']];
 
-  const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
-  const levelOf = (lum) => clamp((lum * NL) | 0, 0, NL - 1);
-  const norm = (v) => { const l = Math.hypot(v[0], v[1], v[2]) || 1; return [v[0] / l, v[1] / l, v[2] / l]; };
-  function hash2(a, b) {
-    let h = (Math.imul(a | 0, 374761393) + Math.imul(b | 0, 668265263)) | 0;
-    h = Math.imul(h ^ (h >>> 13), 1274126177);
-    return ((h ^ (h >>> 16)) >>> 0) / 4294967296;
-  }
-  function rng(seed) {
-    let a = seed | 0;
-    return () => { a = (a + 0x6d2b79f5) | 0; let t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
-  }
+  const L = norm([0.45, 1, 0.35]);       // light direction
+  function norm(v) { const l = Math.hypot(v[0], v[1], v[2]) || 1; return [v[0] / l, v[1] / l, v[2] / l]; }
+  const rand = (a, b) => a + Math.random() * (b - a);
+  const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 
-  // ── The plot ──
-  const Z0 = 4.6, Z1 = -2.6;                               // the path runs from the front to the bird bath
-  const pathXe = (z) => 0.55 * Math.sin(z * 0.42) + 0.15 * Math.sin(z * 1.1 + 1);
-  const pathWe = (z) => 0.48 + 0.06 * Math.sin(z * 0.8) + 0.03 * Math.sin(z * 2.1 + 2);
-  const LUT_Z0 = 9, LUT_STEP = 0.02, LUT_N = 1000;          // covers z from 9 down to −11
-  const LUT_X = new Float32Array(LUT_N), LUT_W = new Float32Array(LUT_N);
-  for (let i = 0; i < LUT_N; i++) { LUT_X[i] = pathXe(LUT_Z0 - i * LUT_STEP); LUT_W[i] = pathWe(LUT_Z0 - i * LUT_STEP); }
-  const pathX = (z) => { const i = ((LUT_Z0 - z) / LUT_STEP) | 0; return i >= 0 && i < LUT_N ? LUT_X[i] : pathXe(z); };
-  const pathW = (z) => { const i = ((LUT_Z0 - z) / LUT_STEP) | 0; return i >= 0 && i < LUT_N ? LUT_W[i] : pathWe(z); };
-  const BATH = [pathX(Z1 - 0.7), Z1 - 0.7];                // bird bath in a small round paved circle
-  const PLOT_R = 6.4, CENTER = [0, 0.55, -0.4], ARCH_Z = 1.1;
-  const SUN = norm([-0.62, 0.5, -0.6]);                     // low evening sun, behind and to the left
-  const stoneAt = (x, z) => {
-    const s = 0.34, gx = Math.floor(x / s), gz = Math.floor(z / s);
-    let f1 = 9, f2 = 9, id = 0, px0 = 0, pz0 = 0;
-    for (let i = -1; i <= 1; i++) for (let j = -1; j <= 1; j++) {
-      const cx = gx + i, cz = gz + j;
-      const px = (cx + 0.15 + 0.7 * hash2(cx, cz)) * s, pz = (cz + 0.15 + 0.7 * hash2(cz + 71, cx - 13)) * s;
-      const d = (x - px) * (x - px) + (z - pz) * (z - pz);
-      if (d < f1) { f2 = f1; f1 = d; id = hash2(cx * 3 + 1, cz * 7 + 2); px0 = px; pz0 = pz; } else if (d < f2) f2 = d;
-    }
-    ST.edge = Math.sqrt(f2) - Math.sqrt(f1); ST.id = id; ST.ex = x - px0; ST.ez = z - pz0;
+  // ── Static scene: a list of points (x y z nx ny nz colour glyph swayAmp phase fogless ao) ──
+  const F = 12;
+  const PHONE = typeof matchMedia !== 'undefined' && matchMedia('(max-width: 700px), (pointer: coarse)').matches;
+  const KEEP = PHONE ? 0.12 : 0.3;         // share of points kept: the surfaces are far denser than the glyph grid
+  function Cloud() { this.d = []; }
+  Cloud.prototype.add = function (x, y, z, nx, ny, nz, col, ch, sway = 0, ph = 0, fogless = 0, ao = 1) {
+    if (!fogless && Math.random() > KEEP) return;
+    this.d.push(x, y, z, nx, ny, nz, col, ch, sway, ph, fogless, ao);
   };
-  const ST = { edge: 0, id: 0, ex: 0, ez: 0 };
-  const onPath = (x, z) => {
-    const bx = x - BATH[0], bz = z - BATH[1];
-    if (bx * bx + bz * bz < 1.1) return true;
-    return z < Z0 && z > Z1 - 0.6 && Math.abs(x - pathX(z)) < pathW(z) + (hash2(Math.floor(x * 6), Math.floor(z * 6)) - 0.5) * 0.12;
-  };
+  // Darker near the ground, like light that does not reach the bottom of the grass
+  const aoAt = (y) => 0.45 + 0.55 * clamp(y / 0.9, 0, 1);
 
-  // ── Planting ──
-  const EDGE = [
-    { bloom: ['lavender', 'blue'], leaf: 'leafL', rx: [0.28, 0.38], ry: [0.2, 0.3], density: 70, size: [0.022, 0.03], style: 'spikelet' },  // catmint
-    { bloom: ['white', 'cream'], leaf: 'leaf', rx: [0.24, 0.34], ry: [0.12, 0.18], density: 90, size: [0.018, 0.024], style: 'dot' },       // alyssum
-    { bloom: ['pink', 'blush', 'magenta'], leaf: 'leafS', rx: [0.22, 0.32], ry: [0.14, 0.2], density: 55, size: [0.026, 0.034], style: 'star' }, // pinks
-    { bloom: ['violet', 'lavender'], leaf: 'leaf', rx: [0.3, 0.42], ry: [0.2, 0.3], density: 45, size: [0.03, 0.038], style: 'cup' },        // cranesbill
+  // Petals: each one is its own curved blade around a domed centre
+  const KINDS = [
+    { n: 12, len: 0.3, w: 0.045, up: 0.12, droop: 0.16, r0: 0.055, name: 'daisy' },
+    { n: 6, len: 0.22, w: 0.1, up: 1.15, droop: -0.04, r0: 0.03, name: 'tulip' },
+    { n: 8, len: 0.27, w: 0.075, up: 0.42, droop: 0.04, r0: 0.05, name: 'cosmos' },
   ];
-  const MID = [
-    { bloom: ['pink', 'blush', 'white', 'magenta'], leaf: 'leaf', rx: [0.42, 0.58], ry: [0.5, 0.7], density: 55, size: [0.04, 0.052], style: 'star' },  // phlox
-    { bloom: ['rose', 'pink', 'coral', 'cream', 'blush'], leaf: 'leafD', rx: [0.45, 0.62], ry: [0.55, 0.8], density: 14, size: [0.075, 0.1], style: 'rose' },
-    { bloom: ['white'], leaf: 'leafL', rx: [0.36, 0.5], ry: [0.42, 0.6], density: 40, size: [0.04, 0.05], style: 'daisy' },
-  ];
-  const TALL = [
-    { name: 'hollyhock', bloom: ['pink', 'white', 'magenta', 'blush', 'red'], h: [1.6, 2.2], r: 0.08, shape: 'cup' },
-    { name: 'foxglove', bloom: ['magenta', 'pink', 'white'], h: [1.0, 1.45], r: 0.045, shape: 'bell' },
-    { name: 'delphinium', bloom: ['blue', 'violet', 'lavender'], h: [1.2, 1.7], r: 0.04, shape: 'star' },
-    { name: 'lavender', bloom: ['lavender', 'violet'], h: [0.55, 0.75], r: 0.022, shape: 'dot' },
-    { name: 'allium', bloom: ['violet', 'lavender'], h: [0.95, 1.25], r: 0.11, shape: 'globe' },
-  ];
-  const TULIP = { bloom: ['red', 'pink', 'yellow', 'white', 'coral'], h: [0.32, 0.48], r: 0.05 };
-  const pick = (r, a) => a[(r() * a.length) | 0];
-  const span = (r, [a, b]) => a + r() * (b - a);
-  function mound(r, x, z, sp, colName) {
-    const rx = span(r, sp.rx), ry = span(r, sp.ry), n = Math.round(sp.density * rx * 2), blooms = [];
-    for (let i = 0; i < n; i++) {
-      const a = r() * Math.PI * 2, e = Math.acos(1 - r() * (sp.style === 'rose' ? 0.95 : 0.85));
-      const bud = sp.style === 'rose' && r() < 0.25;
-      blooms.push(Math.sin(e) * Math.cos(a) * rx, Math.cos(e) * ry, Math.sin(e) * Math.sin(a) * rx * 0.85, span(r, sp.size) * (bud ? 0.45 : 1),
-        C[sp.bloom.length > 2 && r() < 0.15 ? pick(r, sp.bloom) : colName], bud ? 1 : 0, r() * 6.28);
-    }
-    return { x, z, rx, ry, leaf: C[sp.leaf], col: C[colName], style: sp.style, blooms: new Float32Array(blooms), seed: (r() * 1e6) | 0 };
-  }
-  function plant() {
-    const r = rng(20251105), mounds = [], spikes = [], trees = [], petals = [];
-    const free = (x, z, rad, list) => !list.some((m) => Math.hypot(m.x - x, m.z - z) < rad + (m.rx || 0) * 0.6);
-    for (const side of [-1, 1]) {
-      // Edge: low mounds that lean over the stones
-      let k = 0;
-      for (let z = Z0 - 0.3; z > Z1 - 0.2; z -= 0.5 + r() * 0.25, k++) {
-        const sp = EDGE[(Math.floor((z + 9) / 1.8) + (side > 0 ? 2 : 0)) % EDGE.length];
-        mounds.push(mound(r, pathX(z) + side * (pathW(z) + span(r, [0.08, 0.26])), z, sp, pick(r, sp.bloom)));
-      }
-      // Middle: phlox, daisies, rose bushes
-      for (let z = Z0 - 0.6; z > Z1 - 0.6; z -= 0.72 + r() * 0.3) {
-        const sp = r() < 0.35 ? MID[1] : r() < 0.5 ? MID[2] : MID[0];
-        const x = pathX(z) + side * (pathW(z) + span(r, [0.75, 1.25]));
-        if (Math.abs(z - ARCH_Z) < 0.35 && Math.abs(x - pathX(ARCH_Z)) < 1.2) continue;
-        const m = mound(r, x, z, sp, pick(r, sp.bloom));
-        mounds.push(m);
-        if (sp.style === 'rose') for (let i = 0; i < 6; i++) {           // petals dropped on the path
-          const pz = z + (r() - 0.5) * 0.8, px = pathX(pz) + side * pathW(pz) * (0.3 + r() * 0.6);
-          petals.push(px, pz, m.col);
+  function addHead(s, x, h, z, k, col, ph) {
+    const sp = KINDS[k];
+    for (let j = 0; j < sp.n; j++) {
+      const a = (j / sp.n) * Math.PI * 2 + (k === 1 ? 0 : rand(-0.06, 0.06));
+      const dx = Math.cos(a), dz = Math.sin(a), px = -dz, pz = dx;
+      const lenJ = sp.len * rand(0.9, 1.08);
+      for (let t = 0; t <= 1.001; t += 0.035) {
+        const radial = sp.r0 + t * lenJ * Math.cos(sp.up), vert = t * lenJ * Math.sin(sp.up) - sp.droop * t * t;
+        const slope = Math.atan2(lenJ * Math.sin(sp.up) - 2 * sp.droop * t, lenJ * Math.cos(sp.up));
+        const nx = -dx * Math.sin(slope), ny = Math.cos(slope), nz = -dz * Math.sin(slope);
+        const width = sp.w * Math.pow(Math.sin(Math.PI * Math.min(1, t * 1.04 + 0.04)), 0.65) * (k === 1 ? 0.7 + 0.5 * t : 1);
+        for (let w = -1; w <= 1.001; w += 0.14) {
+          const edge = Math.abs(w) > 0.86 || t > 0.96;
+          s.add(x + dx * radial + px * w * width, h + vert, z + dz * radial + pz * w * width, nx, ny, nz,
+            col, edge ? K[':'] : BIT, h, ph, 0, 1.3);
         }
       }
-      // Tulips in small groups between the edge and the middle row
-      for (let z = Z0 - 0.5; z > Z1; z -= 1.1 + r() * 0.6) {
-        const col = C[pick(r, TULIP.bloom)], cx = pathX(z) + side * (pathW(z) + span(r, [0.45, 0.7]));
-        for (let i = 0; i < 4; i++) spikes.push({ x: cx + (r() - 0.5) * 0.35, z: z + (r() - 0.5) * 0.35, h: span(r, TULIP.h), col, shape: 'tulip', florets: [0, TULIP.r, r() * 6.28, 0], ph: r() * 6.28 });
-      }
-      // Back: clumps of tall spikes, each with a leafy rosette, and big mounds between
-      for (let z = Z0 - 1; z > Z1 - 0.8; z -= 1.0 + r() * 0.5) {
-        const tall = pick(r, TALL), col = C[pick(r, tall.bloom)], cx = pathX(z) + side * (pathW(z) + span(r, [1.7, 2.4]));
-        const n = tall.name === 'lavender' ? 5 : tall.name === 'allium' ? 4 : 3;
-        for (let i = 0; i < n; i++) {
-          const florets = [], h = span(r, tall.h), x = cx + (r() - 0.5) * 0.5, zz = z + (r() - 0.5) * 0.5;
-          const step = tall.r * (tall.shape === 'cup' ? 1.7 : tall.shape === 'dot' ? 1.6 : 1.35);
-          if (tall.shape === 'globe') florets.push(h, tall.r, 0, 0);       // one round head on a bare stem
-          else for (let y = h * (tall.name === 'lavender' ? 0.6 : 0.45); y < h; y += step) {
-            const kk = (y - h * 0.45) / (h * 0.55);
-            florets.push(y, tall.r * (1 - kk * 0.5), r() * 6.28, r() < 0.12 && tall.shape !== 'dot' ? 1 : 0);
-          }
-          spikes.push({ x, z: zz, h, col: C[pick(r, tall.bloom)] === col || r() < 0.7 ? col : C[pick(r, tall.bloom)], shape: tall.shape, florets, ph: r() * 6.28 });
-          if (tall.name !== 'lavender' && tall.name !== 'allium') mounds.push({ x, z: zz, rx: 0.2, ry: 0.16, leaf: C.leaf, col: C.leaf, style: 'none', blooms: new Float32Array(0), seed: (r() * 1e6) | 0 });
-        }
-      }
-      for (let z = Z0 - 0.4; z > Z1 - 1.5; z -= 1.4 + r()) {
-        const x = pathX(z) + side * (pathW(z) + span(r, [2.6, 3.6]));
-        mounds.push(mound(r, x, z, r() < 0.4 ? MID[1] : MID[0], pick(r, ['pink', 'white', 'rose', 'blush', 'cream'])));
+    }
+    // Domed centre
+    for (let e = 0; e <= Math.PI / 2; e += 0.25) for (let a = 0; a < Math.PI * 2; a += 0.35) {
+      const rr = 0.06 * Math.cos(e);
+      s.add(x + Math.cos(a) * rr, h + 0.035 * Math.sin(e) + 0.01, z + Math.sin(a) * rr, Math.cos(a) * Math.cos(e), Math.sin(e), Math.sin(a) * Math.cos(e),
+        C.gold, e > 1.2 ? K['@'] : K.o, h, ph, 0, 1.3);
+    }
+  }
+
+  function buildScene() {
+    const s = new Cloud(), heads = [];
+    // Ground: a jittered disc of grass glyphs that thins out toward the edge
+    const R = 6.4;
+    for (let i = 0; i < 12000; i++) {
+      const r = R * Math.sqrt(Math.random()), a = Math.random() * Math.PI * 2;
+      if (r > 4.8 && Math.random() < (r - 4.8) / 1.6) continue;
+      s.add(r * Math.cos(a), 0, r * Math.sin(a), 0, 1, 0, Math.random() < 0.35 ? C.grass2 : C.ground, GRASS[(Math.random() * GRASS.length) | 0], 0, 0, 0, rand(0.42, 0.68));
+    }
+    // Grass blades: a few leaning segments each
+    for (let i = 0; i < 1800; i++) {
+      const r = 5.4 * Math.sqrt(Math.random()), a = Math.random() * Math.PI * 2, x = r * Math.cos(a), z = r * Math.sin(a);
+      const h = rand(0.06, 0.24), lean = rand(-0.05, 0.05), seg = 4;
+      for (let k = 1; k <= seg; k++) {
+        const t = k / seg;
+        s.add(x + lean * t * t, h * t, z + lean * t * t * 0.6, 0.3, 0.6, 0.3, Math.random() < 0.5 ? C.stem : C.leaf, K[k === seg ? "'" : '|'], h * t, a, 0, 0.75 * aoAt(h * t * 3));
       }
     }
-    return { mounds, spikes, trees, petals: new Float32Array(petals) };
-  }
-
-  // Soft shadow map on the ground, cast away from the low sun (static scene: built once)
-  const SM_RES = 0.08, SM_N = 200, SM_O = -SM_N * SM_RES / 2;
-  function shadowMap(P) {
-    const m = new Float32Array(SM_N * SM_N).fill(1);
-    const shx = -SUN[0] / SUN[1], shz = -SUN[2] / SUN[1];
-    const blob = (x, z, rad, h, dark) => {
-      for (let s = 0; s <= 1; s += 0.25) {
-        const cx = x + shx * h * s * 0.9, cz = z + shz * h * s * 0.9, rr = rad * (1 - s * 0.25);
-        const i0 = Math.floor((cx - rr - SM_O) / SM_RES), i1 = Math.ceil((cx + rr - SM_O) / SM_RES);
-        const j0 = Math.floor((cz - rr - SM_O) / SM_RES), j1 = Math.ceil((cz + rr - SM_O) / SM_RES);
-        for (let i = Math.max(0, i0); i <= Math.min(SM_N - 1, i1); i++) for (let j = Math.max(0, j0); j <= Math.min(SM_N - 1, j1); j++) {
-          const d = Math.hypot(SM_O + i * SM_RES - cx, SM_O + j * SM_RES - cz) / rr;
-          if (d < 1) { const v = 1 - dark * (1 - d * d); const k = j * SM_N + i; if (v < m[k]) m[k] = v; }
+    // Stars and a moon
+    for (let i = 0; i < 320; i++) {
+      const a = Math.random() * Math.PI * 2, e = rand(0.1, 1.35), r = 40;
+      s.add(r * Math.cos(a) * Math.cos(e), r * Math.sin(e), r * Math.sin(a) * Math.cos(e), 0, -1, 0, C.star, Math.random() < 0.18 ? K['+'] : K['.'], 0, 0, 1);
+    }
+    {
+      const dir = norm([-0.55, 0.45, -0.7]), D = 38, mr = 2.1;
+      const ax = norm([dir[2], 0, -dir[0]]), ay = [dir[1] * ax[2] - dir[2] * ax[1], dir[2] * ax[0] - dir[0] * ax[2], dir[0] * ax[1] - dir[1] * ax[0]];
+      for (let rr = 0; rr <= mr; rr += 0.12) for (let a = 0; a < Math.PI * 2; a += 0.12 / Math.max(rr, 0.12)) {
+        const cx = Math.cos(a) * rr, cy = Math.sin(a) * rr;
+        const crater = Math.hypot(cx + 0.6, cy - 0.4) < 0.45 || Math.hypot(cx - 0.7, cy + 0.6) < 0.35;
+        s.add(dir[0] * D + ax[0] * cx + ay[0] * cy, dir[1] * D + ax[1] * cx + ay[1] * cy, dir[2] * D + ax[2] * cx + ay[2] * cy, 0, 1, 0,
+          C.moon, rr > mr - 0.15 ? K[':'] : crater ? K.o : BIT, 0, 0, 1);
+      }
+    }
+    // The hive, where the bee lives
+    const hive = { x: -2.3, z: 1.7 };
+    for (let y = 0; y <= 0.58; y += 0.022) {
+      const rad = 0.34 * Math.sqrt(Math.max(0, 1 - (y / 0.62) ** 2)) + 0.03;
+      for (let a = 0; a < Math.PI * 2; a += 0.05 / rad) {
+        const door = Math.abs(((a + Math.PI) % (Math.PI * 2)) - Math.PI) < 0.32 && y < 0.13;
+        const band = ((y / 0.075) | 0) % 2;
+        s.add(hive.x + Math.cos(a) * rad, y, hive.z + Math.sin(a) * rad, Math.cos(a), 0.4, Math.sin(a),
+          door ? C.dark : band ? C.amber : C.gold, door ? K['0'] : band ? K['='] : BIT, 0, 0, 0, aoAt(y + 0.3));
+      }
+    }
+    // Flowers
+    const PETALS = [C.pink, C.blue, C.violet, C.gold, C.mint, C.orange, C.blush, C.white];
+    const placed = [[hive.x, hive.z]];
+    let tries = 0;
+    while (placed.length < 25 && tries++ < 800) {
+      const r = 4.3 * Math.sqrt(Math.random()), a = Math.random() * Math.PI * 2;
+      const x = r * Math.cos(a), z = r * Math.sin(a);
+      if (placed.some((p) => Math.hypot(p[0] - x, p[1] - z) < 0.72)) continue;
+      placed.push([x, z]);
+      const h = rand(0.65, 1.45), ph = Math.random() * 6.28, col = PETALS[placed.length % PETALS.length];
+      const kind = placed.length % 3;
+      // Stem: a thin tube with a gentle bend
+      const bend = rand(-0.1, 0.1), bendA = Math.random() * 6.28;
+      for (let t = 0; t <= 1; t += 0.018) {
+        const y = t * h, ob = Math.sin(t * Math.PI) * bend;
+        for (let q = 0; q < 3; q++) {
+          const qa = (q / 3) * Math.PI * 2;
+          s.add(x + Math.cos(bendA) * ob + Math.cos(qa) * 0.012, y, z + Math.sin(bendA) * ob + Math.sin(qa) * 0.012, Math.cos(qa), 0.2, Math.sin(qa),
+            C.stem, t > 0.4 && Math.random() < 0.25 ? K[':'] : K['|'], y, ph, 0, aoAt(y));
         }
       }
-    };
-    for (const o of P.mounds) blob(o.x, o.z, o.rx * 1.05, o.ry, 0.45);
-    for (const s of P.spikes) blob(s.x, s.z, 0.12, s.h, 0.3);
-    const ax = pathX(ARCH_Z), aw = pathW(ARCH_Z) + 0.3;
-    for (let a = 0; a <= Math.PI; a += 0.2) blob(ax + Math.cos(a) * aw, ARCH_Z, 0.18, 1.7 + Math.sin(a) * 0.5, 0.35);
-    return m;
+      // Two curved leaves with a midrib
+      for (let l = 0; l < 2; l++) {
+        const ly = h * rand(0.18, 0.5), la = Math.random() * Math.PI * 2, len = rand(0.32, 0.48);
+        const dx = Math.cos(la), dz = Math.sin(la);
+        for (let u = 0; u <= 1; u += 0.025) for (let w = -1; w <= 1.001; w += 0.13) {
+          const width = Math.pow(Math.sin(u * Math.PI), 0.8) * 0.085;
+          const py = ly + u * len * 0.55 - u * u * len * 0.38;
+          s.add(x + dx * u * len - dz * w * width, py, z + dz * u * len + dx * w * width, -dx * 0.5, 0.85, -dz * 0.5,
+            C.leaf, Math.abs(w) < 0.1 ? K['-'] : Math.abs(w) > 0.8 || u > 0.95 ? K[':'] : BIT, py, ph, 0, aoAt(py));
+        }
+      }
+      addHead(s, x, h, z, kind, col, ph);
+      heads.push({ x, y: h + (kind === 1 ? 0.12 : 0.04), z, ph, col });
+    }
+    // Rounded bushes between the flowers and around the edge of the plot
+    const BLOOM = [C.blue, C.violet, C.pink, C.blush, C.white, -1, -1];
+    for (let b = 0, tries = 0; b < 14 && tries < 600; tries++) {
+      const r = 1.2 + 3.6 * Math.sqrt(Math.random()), a = Math.random() * Math.PI * 2;
+      const x = r * Math.cos(a), z = r * Math.sin(a), rad = rand(0.32, 0.6), hgt = rad * rand(0.75, 1.05);
+      if (placed.some((p) => Math.hypot(p[0] - x, p[1] - z) < rad + 0.3)) continue;
+      placed.push([x, z]); b++;
+      const bloom = BLOOM[(Math.random() * BLOOM.length) | 0], ph = Math.random() * 6.28;
+      const step = 0.036 * Math.sqrt(KEEP) * 1.15;      // denser candidates: bushes keep a full, solid surface
+      for (let e = 0; e <= Math.PI / 2 + 0.05; e += step / rad) {
+        const ring = Math.cos(e) * rad;
+        for (let q = 0; q < Math.PI * 2; q += step / Math.max(ring, 0.04)) {
+          const nx = Math.cos(q) * Math.cos(e), ny = Math.sin(e), nz = Math.sin(q) * Math.cos(e);
+          const lump = 1 + 0.08 * Math.sin(q * 5 + ph) * Math.sin(e * 4 + ph);      // a slightly lumpy outline
+          const px = x + nx * rad * lump, py = ny * hgt * lump, pz = z + nz * rad * lump;
+          const cl = bloom >= 0 && Math.sin(q * 7 + ph) * Math.sin(e * 6 + ph * 2) > 0.55 && e > 0.25;
+          const hh = Math.random();
+          s.add(px, py, pz, nx, ny, nz, cl ? bloom : hh < 0.3 ? C.leaf : C.stem, cl ? (hh < 0.4 ? K['@'] : K.o) : hh < 0.45 ? K['%'] : hh < 0.8 ? K['&'] : K['#'], py * 0.3, ph, 0, aoAt(py + 0.25));
+        }
+      }
+      heads.push({ x, y: hgt + 0.02, z, ph, col: bloom >= 0 ? bloom : C.stem });
+    }
+    return { pts: new Float32Array(s.d), heads, hive: { x: hive.x, y: 0.66, z: hive.z } };
   }
-  const shadeAt = (SM, x, z) => {
-    const i = Math.floor((x - SM_O) / SM_RES), j = Math.floor((z - SM_O) / SM_RES);
-    return i >= 0 && j >= 0 && i < SM_N && j < SM_N ? SM[j * SM_N + i] : 1;
-  };
 
-  // Butterfly wing template: fill, edge band, spots, veins
-  const WING = (() => {
+  // ── Butterfly template (body frame: u forward, w outward from the body) ──
+  function wingTemplate() {
     const pts = [];
     const fore = { cu: 0.07, cw: 0.21, a: 0.15, b: 0.2, rot: 0.5, spot: [0.12, 0.3, 0.045] };
     const hind = { cu: -0.09, cw: 0.15, a: 0.11, b: 0.13, rot: -0.4, spot: [-0.1, 0.2, 0.03] };
-    for (let u = -0.26; u <= 0.3; u += 0.016) for (let w = 0.02; w <= 0.44; w += 0.016) {
+    for (let u = -0.26; u <= 0.3; u += 0.009) for (let w = 0.02; w <= 0.44; w += 0.009) {
       let best = null;
       for (const e of [fore, hind]) {
         const du = u - e.cu, dw = w - e.cw, cs = Math.cos(e.rot), sn = Math.sin(e.rot);
-        const pu = du * cs - dw * sn, pw = du * sn + dw * cs, d = (pu * pu) / (e.a * e.a) + (pw * pw) / (e.b * e.b);
+        const pu = du * cs - dw * sn, pw = du * sn + dw * cs;
+        const d = (pu * pu) / (e.a * e.a) + (pw * pw) / (e.b * e.b);
         if (d < 1 && (!best || d < best.d)) best = { d, e };
       }
       if (!best) continue;
-      const [su, sw, sr] = best.e.spot, th = Math.atan2(u, w), kv = (th * 5) / Math.PI;
-      const kind = Math.hypot(u - su, w - sw) < sr ? 2 : best.d > 0.8 ? 1 : best.d > 0.58 ? 4 : Math.abs(kv - Math.round(kv)) < 0.09 && w > 0.06 ? 3 : 0;
-      pts.push(u, w, kind);                  // 0 fill · 1 edge · 2 spot · 3 vein · 4 outer band
+      const [su, sw, sr] = best.e.spot;
+      const spot = Math.hypot(u - su, w - sw) < sr;
+      pts.push(u, w, spot ? 2 : best.d > 0.78 ? 1 : 0);   // 0 fill, 1 edge, 2 spot
     }
     return new Float32Array(pts);
-  })();
+  }
 
   class Garden3D {
-    constructor(canvas) {
+    constructor(canvas, opts = {}) {
       this.canvas = canvas;
       this.glr = this.initGL();
       if (!this.glr) this.ctx = canvas.getContext('2d');
       this.reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
-      this.spinning = !this.reduced;
-      // Portrait phones look down from higher and closer, so the garden fills the tall screen
-      const tall = canvas.clientWidth < canvas.clientHeight * 0.8;
-      this.yaw = 0.55; this.pitch = tall ? 0.7 : 0.36; this.dist = tall ? 7.2 : 8.4; this.idle = 0;
-      const P = plant();
-      this.mounds = P.mounds; this.spikes = P.spikes; this.petals = P.petals;
-      this.SM = shadowMap(P);
-      this.flowerTops = this.mounds.filter((m) => m.style !== 'none' && Math.hypot(m.x, m.z - CENTER[2]) < 4);
-      this.bits = Uint8Array.from({ length: 4096 }, () => (Math.random() < 0.5 ? 1 : 0));
-      const wingCols = [['wing', 'red', 'dark'], ['wingY', 'dark', 'dark'], ['wingB', 'dark', 'blue']];
-      this.flyers = wingCols.map(([w, s, band], i) => ({
-        wingC: C[w], spotC: C[s], bandC: C[band], scale: i === 0 ? 0.62 : 0.52,
-        p: [Math.random() * 2 - 1, 1.2, Z0 - 2 - i * 2], v: [0, 0, 0], yaw: -Math.PI / 2, trail: [],
-        phase: Math.random() * 6, glide: 0, perched: false, perchT: 0, dwell: 2, target: null, wand: 0, w: [0, 0, 0], flap: 0.5, hopT: 0,
+      const sc = buildScene();
+      this.pts = sc.pts; this.heads = sc.heads; this.hive = sc.hive;
+      this.nStatic = this.pts.length / F;
+      this.bits = Uint8Array.from({ length: this.nStatic + 12000 }, () => (Math.random() < 0.5 ? 1 : 0));
+      this.wing = wingTemplate();
+
+      // Camera (orbit)
+      this.yaw = 0.6; this.pitch = 0.46; this.dist = 6; this.tgt = [0, 0.7, 0];
+      this.follow = !!opts.follow; this.idle = 0;
+
+      // Butterflies: the white one is "ours"
+      const cols = [[C.white, C.pink], [C.blue, C.white], [C.violet, C.gold], [C.orange, C.dark]];
+      this.flyers = cols.map(([wingC, spotC], i) => ({
+        wingC, spotC, scale: i === 0 ? 0.85 : rand(0.55, 0.72),
+        p: [rand(-2, 2), rand(1.2, 2.2), rand(-2, 2)], v: [0, 0, 0], yaw: Math.random() * 6.28,
+        phase: Math.random() * 6, glide: 0, perched: false, perchT: 0, target: (Math.random() * this.heads.length) | 0,
+        wand: 0, w: [0, 0, 0], flap: 0.5, hopT: 0,
       }));
-      this.bee = { p: [1, 0.7, 0], v: [0, 0, 0], target: null, t: 0, yaw: 0, trail: [] };
-      this.motes = Array.from({ length: 60 }, () => ({ p: [(Math.random() - 0.5) * 8, 0.2 + Math.random() * 2.6, CENTER[2] + (Math.random() - 0.5) * 8], ph: Math.random() * 6.28, sp: 0.4 + Math.random() }));
+      // One bee, busy and direct
+      this.bee = { p: [this.hive.x, this.hive.y, this.hive.z], v: [0, 0, 0], target: 0, t: 0, yaw: 0, visits: 0, home: false };
+      // Fireflies blinking low over the grass
+      this.flies = Array.from({ length: 28 }, () => ({ p: [rand(-4, 4), rand(0.15, 0.7), rand(-4, 4)], ph: Math.random() * 6.28, sp: rand(0.6, 1.4) }));
+      // Pollen motes drifting up from the flowers
+      this.motes = Array.from({ length: 70 }, () => this.newMote(true));
+
       this.resize();
       addEventListener('resize', () => this.resize());
-      if (document.fonts) document.fonts.ready.then(() => this.resize());
+      if (document.fonts) document.fonts.ready.then(() => this.resize());   // re-render glyphs once the mono font is in
       this.bindInput();
       this.last = performance.now();
-      this.quality = 0; this.slow = 0;
-      this.minGap = 1000 / 61; this.avg = 8;
+      this.minGap = 1000 / 61; this.avg = 8; this.quality = 0;
       const loop = (now) => {
         requestAnimationFrame(loop);
         if (now - this.last < this.minGap) return;
@@ -252,25 +246,35 @@
         this.frame(Math.min(0.05, (now - this.last) / 1000), now / 1000);
         this.last = now;
         this.avg = this.avg * 0.95 + (performance.now() - t0) * 0.05;
-        if (this.avg > 13 && this.minGap < 30) { this.minGap = 1000 / 31; this.avg = 8; }                // 30 fps
-        else if (this.avg > 20 && this.quality < 3) { this.quality++; this.avg = 8; this.resize(); }      // fewer cells
+        if (this.avg > 13 && this.minGap < 30) { this.minGap = 1000 / 31; this.avg = 8; }
+        else if (this.avg > 22 && this.quality < 3) { this.quality++; this.avg = 8; this.resize(); }
       };
       requestAnimationFrame(loop);
     }
 
-    setSpinning(on) { this.spinning = on; return on; }
+    newMote(any) {
+      const h = this.heads[(Math.random() * this.heads.length) | 0];
+      return { x: h.x + rand(-0.1, 0.1), y: h.y + (any ? rand(0, 1.5) : 0), z: h.z + rand(-0.1, 0.1), vy: rand(0.08, 0.22), life: rand(4, 9), age: any ? rand(0, 4) : 0, dx: rand(-0.05, 0.05), dz: rand(-0.05, 0.05) };
+    }
 
     resize() {
-      const r = this.canvas.getBoundingClientRect();
-      const d = this.glr ? Math.min(devicePixelRatio || 1, 2) : 1;
-      this.W = r.width; this.H = r.height; this.dpr = d;
-      this.canvas.width = Math.round(r.width * d); this.canvas.height = Math.round(r.height * d);
-      this.fs = (r.width < 600 ? 9 : 10) + (this.quality || 0);
-      this.cw = this.fs * 0.6; this.chH = this.fs * 1.08;
+      const r = this.canvas.getBoundingClientRect(), d = Math.min(devicePixelRatio || 1, 2);
+      this.W = r.width; this.H = r.height; this.dpr = this.glr ? d : 1;
+      this.fs = (r.width < 600 ? 8 : 8) + (this.quality || 0);
+      this.cw = this.fs * 0.6; this.chH = this.fs * 1.05;
+      if (this.glr) {
+        this.canvas.width = Math.round(r.width * d); this.canvas.height = Math.round(r.height * d);
+        this.glAtlas();
+        const n = this.COLS * this.ROWS;
+        this.zb = new Float32Array(n); this.gl = new Int8Array(n); this.co = new Int16Array(n);
+        return;
+      }
+      this.canvas.width = r.width * d; this.canvas.height = r.height * d;
+      this.ctx.setTransform(d, 0, 0, d, 0, 0);
       this.COLS = Math.ceil(r.width / this.cw); this.ROWS = Math.ceil(r.height / this.chH);
-      if (this.glr) this.glAtlas(); else this.buildAtlas();
       const n = this.COLS * this.ROWS;
       this.zb = new Float32Array(n); this.gl = new Int8Array(n); this.co = new Int16Array(n);
+      this.buildAtlas(d);
     }
 
     // ── WebGL renderer: the fragment shader looks up which glyph and colour its cell
@@ -344,13 +348,15 @@
       g.uniform2f(R.u.gridSize, this.COLS, this.ROWS);
       R.data = new Uint8Array(this.COLS * this.ROWS * 4);
     }
-    // CPU fallback: glyphs in every colour as sparse pixel lists, blitted into one image
-    buildAtlas() {
-      const gw = Math.ceil(this.cw) + 1, gh = Math.ceil(this.chH) + 1;
+
+    // Every glyph in every palette colour, rendered once per resize, kept as sparse
+    // pixel lists (offset in the frame buffer, RGBA) so drawing is a few array writes
+    buildAtlas(d) {
+      const gw = Math.ceil(this.cw * d) + 1, gh = Math.ceil(this.chH * d) + 1;
       const c = document.createElement('canvas');
       c.width = gw * CH.length; c.height = gh * PAL.length;
       const x = c.getContext('2d', { willReadFrequently: true });
-      x.font = `700 ${this.fs}px "JetBrains Mono", ui-monospace, monospace`;
+      x.font = `700 ${this.fs * d}px "JetBrains Mono", ui-monospace, monospace`;
       x.textBaseline = 'top'; x.direction = 'ltr';
       PAL.forEach((col, ci) => { x.fillStyle = col; CH.forEach((ch, gi) => x.fillText(ch, gi * gw, ci * gh)); });
       const px = new Uint32Array(x.getImageData(0, 0, c.width, c.height).data.buffer);
@@ -364,9 +370,15 @@
         slots.push(list.length ? Int32Array.from(list) : null);
       }
       const img = this.ctx.createImageData(W, H);
-      this.atlas = { slots, img, buf: new Uint32Array(img.data.buffer), W };
-      this.ROWS = Math.min(this.ROWS, Math.floor((H - gh) / this.chH));
-      this.COLS = Math.min(this.COLS, Math.floor((W - gw) / this.cw));
+      this.atlas = { slots, img, buf: new Uint32Array(img.data.buffer), W, d };
+      // Keep glyphs inside the buffer (no wrap past the right edge or the last row)
+      this.ROWS = Math.min(this.ROWS, Math.floor((H - gh) / (this.chH * d)));
+      const cols = Math.min(this.COLS, Math.floor((W - gw) / (this.cw * d)));
+      if (cols !== this.COLS) {             // keep the grid width in step with the depth buffer
+        this.COLS = cols;
+        const n = cols * this.ROWS;
+        this.zb = new Float32Array(n); this.gl = new Int8Array(n); this.co = new Int16Array(n);
+      }
     }
 
     bindInput() {
@@ -376,408 +388,193 @@
       c.addEventListener('pointermove', (e) => {
         if (!drag) return;
         this.yaw -= (e.clientX - drag.x) * 0.006;
-        this.pitch = clamp(this.pitch + (e.clientY - drag.y) * 0.004, 0.1, 1.1);
+        this.pitch = clamp(this.pitch + (e.clientY - drag.y) * 0.004, 0.05, 1.2);
         drag = { x: e.clientX, y: e.clientY }; this.idle = 0;
       });
       const end = () => { drag = null; };
       c.addEventListener('pointerup', end); c.addEventListener('pointercancel', end);
-      c.addEventListener('wheel', (e) => { e.preventDefault(); this.dist = clamp(this.dist * Math.exp(e.deltaY * 0.001), 2.5, 14); this.idle = 0; }, { passive: false });
+      c.addEventListener('wheel', (e) => { e.preventDefault(); this.dist = clamp(this.dist * Math.exp(e.deltaY * 0.001), 2.2, 12); this.idle = 0; }, { passive: false });
       this.dragging = () => !!drag;
     }
 
-    // ── Butterflies and the bee ──
-    pickFlower(near) {
-      const c = this.flowerTops.filter((m) => !near || Math.hypot(m.x - near.x, m.z - near.z) < 2.5);
-      return c[(Math.random() * c.length) | 0];
-    }
+    toggleFollow() { this.follow = !this.follow; this.idle = 0; return this.follow; }
+
+    // ── Natural flight: wander + steer + glides + perching (same rules as the 2D page) ──
     stepFlyer(b, dt, t) {
-      if (!b.target) b.target = this.pickFlower();
-      const h = b.target, seat = [h.x, h.ry + 0.02, h.z];
+      const h = this.heads[b.target];
+      const seat = [h.x, h.y + 0.05, h.z];
       const d = [seat[0] - b.p[0], seat[1] - b.p[1], seat[2] - b.p[2]], dl = Math.hypot(d[0], d[1], d[2]);
       b.hopT += dt;
       if (b.perched) {
-        b.perchT += dt; b.p = seat.slice(); b.flap = 1.25 + 0.22 * Math.sin(t * 1.4 + b.phase);
-        if (b.perchT > b.dwell) { b.perched = false; b.hopT = 0; b.target = this.pickFlower(Math.random() < 0.7 ? h : null); b.v = [Math.cos(b.yaw) * 0.3, 0.8, Math.sin(b.yaw) * 0.3]; }
+        b.perchT += dt;
+        b.p = seat;
+        b.flap = 1.25 + 0.22 * Math.sin(t * 1.4 + b.phase);   // wings folded, slowly breathing
+        if (b.perchT > b.dwell) {                           // move on: sometimes far, sometimes next door
+          b.perched = false; b.hopT = 0;
+          b.target = (Math.random() * this.heads.length) | 0;
+          b.v = [Math.cos(b.yaw) * 0.4, 0.9, Math.sin(b.yaw) * 0.4];
+        }
         return;
       }
-      if (b.hopT > 10) { b.target = this.pickFlower(); b.hopT = 0; }
+      if (b.hopT > 12) { b.target = (Math.random() * this.heads.length) | 0; b.hopT = 0; }
       b.wand -= dt;
-      if (b.wand <= 0) { b.wand = 0.15 + Math.random() * 0.45; b.w = [(Math.random() * 2 - 1) * 0.7, (Math.random() * 2 - 1) * 0.5 + 0.1, (Math.random() * 2 - 1) * 0.7]; }
-      const arrive = Math.min(1, dl), wob = 0.25 + 0.75 * arrive, st = Math.min(1, dt * (dl < 0.35 ? 6 : 2.2));
-      for (let k = 0; k < 3; k++) b.v[k] += ((d[k] / (dl || 1)) * 1.1 * arrive + b.w[k] * wob + (k === 1 && dl > 0.8 ? 0.25 : 0) - b.v[k]) * st;
-      if (b.glide > 0) { b.glide -= dt; b.v[1] -= 0.5 * dt; } else if (dl > 1 && Math.random() < dt * 0.5) b.glide = 0.3 + Math.random() * 0.4;
+      if (b.wand <= 0) { b.wand = rand(0.15, 0.6); b.w = [rand(-1, 1) * 0.9, rand(-0.6, 0.9), rand(-1, 1) * 0.9]; }
+      const arrive = Math.min(1, dl / 1.2), speed = 1.5;
+      const wob = 0.25 + 0.75 * arrive;
+      const st = Math.min(1, dt * (dl < 0.4 ? 6 : 2.2));
+      for (let k = 0; k < 3; k++) {
+        const want = (d[k] / (dl || 1)) * speed * arrive + b.w[k] * wob + (k === 1 && dl > 1 ? 0.25 : 0);
+        b.v[k] += (want - b.v[k]) * st;
+      }
+      if (b.glide > 0) { b.glide -= dt; b.v[1] -= 0.6 * dt; }
+      else if (dl > 1.2 && Math.random() < dt * 0.5) b.glide = rand(0.3, 0.7);
       for (let k = 0; k < 3; k++) b.p[k] += b.v[k] * dt;
-      b.p[1] = Math.max(0.3, b.p[1]);
+      if (b.p[1] < 0.25) b.v[1] += 3 * dt;
+      // Flap: fast beats, a lift on each downstroke, flat wings while gliding
       if (b.glide > 0) b.flap += (0.12 - b.flap) * Math.min(1, dt * 8);
-      else { b.phase += dt * 2 * Math.PI * 6; b.flap = 0.35 + 0.8 * Math.sin(b.phase); b.p[1] += Math.max(0, Math.cos(b.phase)) * 0.008; }
-      if (Math.hypot(b.v[0], b.v[2]) > 0.1) { const da = ((Math.atan2(b.v[2], b.v[0]) - b.yaw + Math.PI * 3) % (Math.PI * 2)) - Math.PI; b.yaw += da * Math.min(1, dt * 6); }
-      if (dl < 0.05) { b.perched = true; b.perchT = 0; b.glide = 0; b.dwell = 1.8 + Math.random() * 2.5; }
+      else { b.phase += dt * 2 * Math.PI * 6; b.flap = 0.35 + 0.8 * Math.sin(b.phase); b.p[1] += Math.max(0, Math.cos(b.phase)) * 0.012; }
+      const hv = Math.hypot(b.v[0], b.v[2]);
+      if (hv > 0.12) {                       // turn smoothly toward the direction of travel
+        const da = ((Math.atan2(b.v[2], b.v[0]) - b.yaw + Math.PI * 3) % (Math.PI * 2)) - Math.PI;
+        b.yaw += da * Math.min(1, dt * 6);
+      }
+      if (dl < 0.06) { b.perched = true; b.perchT = 0; b.glide = 0; b.dwell = rand(1.8, 4.5); }
     }
+
     stepBee(dt, t) {
       const e = this.bee;
-      if (!e.target) e.target = this.flowerTops[0];
-      const h = e.target, seat = [h.x + Math.sin(t * 2) * h.rx * 0.4, h.ry + 0.08, h.z];
+      if (!this.near) {                          // flowers closest to the hive: the bee's patch
+        this.near = this.heads.map((h, i) => [Math.hypot(h.x - this.hive.x, h.z - this.hive.z), i]).sort((a, b) => a[0] - b[0]).slice(0, 5).map((x) => x[1]);
+      }
+      const h = e.home ? this.hive : this.heads[this.near[e.target % this.near.length]];
+      const seat = e.home ? [h.x, h.y * 0.25, h.z + 0.36] : [h.x, h.y + 0.08, h.z];
       const d = [seat[0] - e.p[0], seat[1] - e.p[1], seat[2] - e.p[2]], dl = Math.hypot(d[0], d[1], d[2]);
       e.t += dt;
-      if (dl < 0.1 && e.t > 1.4) {
+      if (dl < 0.08 && e.t > (e.home ? 3 : 1.1)) {
         e.t = 0;
-        const c = this.flowerTops.filter((m) => m !== h && Math.hypot(m.x - h.x, m.z - h.z) < 1.4);
-        if (c.length) e.target = c[(Math.random() * c.length) | 0];
+        if (e.home) { e.home = false; e.visits = 0; }
+        else if (++e.visits >= 5) e.home = true;
+        else e.target += 1 + ((Math.random() * 2) | 0);
       }
-      const arrive = Math.min(1, dl / 0.4);
-      for (let k = 0; k < 3; k++) { e.v[k] += ((d[k] / (dl || 1)) * 1.6 * arrive - e.v[k]) * Math.min(1, dt * 5); e.p[k] += e.v[k] * dt; }
-      e.p[1] += Math.sin(t * 9) * 0.003;
-      if (Math.hypot(e.v[0], e.v[2]) > 0.15) e.yaw = Math.atan2(e.v[2], e.v[0]);
+      const arrive = Math.min(1, dl / 0.5);
+      for (let k = 0; k < 3; k++) e.v[k] += ((d[k] / (dl || 1)) * 2.2 * arrive - e.v[k]) * Math.min(1, dt * 5);
+      for (let k = 0; k < 3; k++) e.p[k] += e.v[k] * dt;
+      e.p[1] += Math.sin(t * 9) * 0.004;
+      if (Math.hypot(e.v[0], e.v[2]) > 0.2) e.yaw = Math.atan2(e.v[2], e.v[0]);
     }
 
     frame(dt, t) {
-      const { COLS, ROWS, zb, gl, co, SM } = this;
-      // ── Orbit camera ──
-      this.idle += dt;
-      if (this.spinning && !this.dragging() && this.idle > 2) this.yaw += dt * 0.06;
-      const cp = Math.cos(this.pitch);
-      const cam = [CENTER[0] + this.dist * Math.sin(this.yaw) * cp, CENTER[1] + this.dist * Math.sin(this.pitch), CENTER[2] + this.dist * Math.cos(this.yaw) * cp];
-      const f = norm([CENTER[0] - cam[0], CENTER[1] - cam[1], CENTER[2] - cam[2]]);
-      const r = norm([-f[2], 0, f[0]]);
-      const u = [r[1] * f[2] - r[2] * f[1], r[2] * f[0] - r[0] * f[2], r[0] * f[1] - r[1] * f[0]];
-      const FOC = Math.min(this.H, this.W * 1.75) * (this.W < this.H ? 0.95 : 1.1), ax = this.cw / FOC, ay = this.chH / FOC, hc = COLS / 2, hr = ROWS / 2;
-      const fogOf = (z) => clamp(1.25 - z / 26, 0.35, 1);
-      // Where the sun is on screen: plants are lit on that side
-      const sunX = SUN[0] * r[0] + SUN[1] * r[1] + SUN[2] * r[2], sunY = SUN[0] * u[0] + SUN[1] * u[1] + SUN[2] * u[2];
-      const litAt = (uu, vv, base, k) => clamp(base + k * (uu * sunX - vv * sunY * 0.9), 0.15, 1);
-      zb.fill(0); gl.fill(-1);
-
-      // ── 1. Ray-cast: ground and path ──
-      for (let sy = 0; sy < ROWS; sy++) {
-        const b = (hr - sy - 0.5) * ay;
-        for (let sx = 0; sx < COLS; sx++) {
-          const a = (sx + 0.5 - hc) * ax;
-          const dx = f[0] + r[0] * a + u[0] * b, dy = f[1] + r[1] * a + u[1] * b, dz = f[2] + r[2] * a + u[2] * b;
-          const i = sy * COLS + sx;
-          let tHit = 1e9, glyph = -1, col = 0, lum = 0;
-          // Ground
-          if (dy < -1e-4) {
-            const tg = -cam[1] / dy;
-            if (tg < tHit) {
-              const x = cam[0] + dx * tg, z = cam[2] + dz * tg;
-              const qx = x - CENTER[0], qz = (z - CENTER[2]) * 0.9, rr2 = qx * qx + qz * qz, RR = PLOT_R + 1.6;
-              if (rr2 < RR * RR) {
-                const rr = Math.sqrt(rr2);
-                tHit = tg;
-                const sh = shadeAt(SM, x, z), far = clamp((PLOT_R + 1.6 - rr) / 2, 0.15, 1);
-                if (onPath(x, z)) {
-                  stoneAt(x, z);
-                  const edge = ST.edge, id = ST.id, ex = ST.ex, ez = ST.ez;
-                  if (edge < 0.035) {
-                    const th = hash2(Math.floor(x * 40), Math.floor(z * 40));
-                    if (th < 0.14) { glyph = K['*']; col = C.thyme; lum = 0.85; }        // thyme flowering in the joints
-                    else { glyph = th < 0.55 ? K[','] : K['.']; col = C.moss; lum = 0.6; }
-                  } else {
-                    // Each stone shaded on its own, a sun-catching edge, a little wear
-                    const rim = edge < 0.075, facing = -(ex * SUN[0] + ez * SUN[2]) > 0;
-                    col = sh > 0.85 && id > 0.55 ? C.sun : id < 0.38 ? C.stone : id < 0.72 ? C.stone2 : C.stone3;
-                    lum = (0.68 + 0.26 * id) * (rim ? (facing ? 1.15 : 0.8) : 1);
-                    const tex = hash2(Math.floor(x * 30), Math.floor(z * 30));
-                    glyph = rim ? K[':'] : tex < 0.05 ? K['.'] : lum > 0.8 ? K['='] : K['-'];
-                  }
-                } else {
-                  // Grass and ground cover between the beds
-                  const hh = hash2(Math.floor(x * 11), Math.floor(z * 11));
-                  if (hh < 0.34) {
-                    glyph = hh < 0.17 ? K[','] : K["'"]; col = hh < 0.12 ? C.grass : C.ground;
-                    lum = 0.55 + 0.3 * hh;
-                  } else glyph = -2;
-                }
-                lum *= (0.35 + 0.65 * sh) * far;
-              }
-            }
-          }
-          if (tHit < 1e8) {
-            zb[i] = 1 / tHit;
-            if (glyph >= 0) { gl[i] = glyph; co[i] = col * NL + levelOf(lum * fogOf(tHit)); }
-          }
-        }
+      const { ctx, COLS, ROWS, zb, gl, co } = this;
+      if (this.reduced) dt *= 0.5;
+      // Flip a few bits: the live data stream
+      for (let i = 0; i < 400; i++) this.bits[(Math.random() * this.bits.length) | 0] ^= 1;
+      for (const b of this.flyers) this.stepFlyer(b, dt, t);
+      this.stepBee(dt, t);
+      for (const m of this.motes) {
+        m.age += dt; m.y += m.vy * dt; m.x += Math.sin(t + m.dx * 50) * 0.002 + m.dx * dt; m.z += m.dz * dt;
+        if (m.age > m.life) Object.assign(m, this.newMote(false));
       }
 
-      // ── 2. Impostors, depth-tested ──
-      const proj = (x, y, z) => {
-        const qx = x - cam[0], qy = y - cam[1], qz = z - cam[2];
-        const zc = qx * f[0] + qy * f[1] + qz * f[2];
-        if (zc < 0.15) return null;
-        return [hc + (qx * r[0] + qy * r[1] + qz * r[2]) / zc / ax, hr - (qx * u[0] + qy * u[1] + qz * u[2]) / zc / ay, zc];
-      };
-      const putCell = (sx, sy, zc, col, glyph, lum, fog = true) => {
-        sx |= 0; sy |= 0;
+      // Camera: idle auto-orbit; follow mode eases toward the white butterfly
+      this.idle += dt;
+      if (!this.dragging() && this.idle > 2.5 && !this.reduced) this.yaw += dt * 0.09;
+      const want = this.follow ? this.flyers[0].p : [0, 0.7, 0];
+      for (let k = 0; k < 3; k++) this.tgt[k] += (want[k] - this.tgt[k]) * Math.min(1, dt * 2.5);
+      const dist = this.follow ? Math.min(this.dist, 2.6) : this.dist;
+      const cp = Math.cos(this.pitch);
+      const cam = [this.tgt[0] + dist * Math.sin(this.yaw) * cp, this.tgt[1] + dist * Math.sin(this.pitch), this.tgt[2] + dist * Math.cos(this.yaw) * cp];
+      const f = norm([this.tgt[0] - cam[0], this.tgt[1] - cam[1], this.tgt[2] - cam[2]]);
+      const r = norm([-f[2], 0, f[0]]);                       // right = forward × up
+      const u = [r[1] * f[2] - r[2] * f[1], r[2] * f[0] - r[0] * f[2], r[0] * f[1] - r[1] * f[0]];
+      const FOC = Math.min(this.H, this.W * 1.2) * 1.05, cwI = 1 / this.cw, chI = 1 / this.chH, hc = COLS / 2, hr = ROWS / 2;
+      zb.fill(0);
+      const bits = this.bits;
+
+      // Project one point into the grid (depth test, lighting → brightness level)
+      const put = (x, y, z, nx, ny, nz, col, ch, fogless, bitIdx, ao = 1) => {
+        const dx = x - cam[0], dy = y - cam[1], dz = z - cam[2];
+        const zc = dx * f[0] + dy * f[1] + dz * f[2];
+        if (zc < 0.15) return;
+        const sx = (hc + ((dx * r[0] + dy * r[1] + dz * r[2]) / zc) * FOC * cwI) | 0;
+        const sy = (hr - ((dx * u[0] + dy * u[1] + dz * u[2]) / zc) * FOC * chI) | 0;
         if (sx < 0 || sy < 0 || sx >= COLS || sy >= ROWS) return;
         const i = sy * COLS + sx, iz = 1 / zc;
         if (iz <= zb[i]) return;
-        zb[i] = iz; gl[i] = glyph; co[i] = col * NL + levelOf(fog ? lum * fogOf(zc) : lum);
-      };
-      const put = (x, y, z, col, glyph, lum) => { const p = proj(x, y, z); if (p) putCell(p[0], p[1], p[2], col, glyph, lum); };
-      const line = (A, B, col, glyph, lum) => {
-        if (!A || !B) return;
-        const n = Math.max(1, Math.ceil(Math.max(Math.abs(B[0] - A[0]), Math.abs(B[1] - A[1]))));
-        for (let s = 0; s <= n; s++) { const k = s / n; putCell(A[0] + (B[0] - A[0]) * k, A[1] + (B[1] - A[1]) * k, A[2] + (B[2] - A[2]) * k, col, glyph, lum); }
-      };
-      const cpu = (zc) => 1 / (zc * ax);
-      const aspect = ax / ay;
-
-      // Foliage cell: leaf tips at the rim (oriented), dense leaves inside, dark gaps
-      let LC = 0, LG = 0, LL = 0;           // leafCell writes here (no per-cell allocations)
-      const leafCell = (uu, vv, d, hq, lit, base) => {
-        // Calm foliage: one dense glyph shaded by the light, leaf tips only on the rim
-        if (d > 0.8 && hq < 0.3) LG = uu < -0.3 ? K['/'] : uu > 0.3 ? K['\\'] : K['^'];
-        else LG = lit > 0.62 ? K['%'] : K['#'];
-        LC = lit > 0.8 ? C.leafS : lit > 0.6 ? C.leafL : base;
-        LL = hq > 0.95 ? lit * 0.6 : lit;
+        zb[i] = iz;
+        const lum = (0.35 + 0.65 * Math.abs(nx * L[0] + ny * L[1] + nz * L[2])) * ao;
+        const fog = fogless ? 0.55 : clamp(1.3 - zc / 13, 0.15, 1);
+        gl[i] = ch === BIT ? (bits[bitIdx % bits.length] ? K['1'] : K['0']) : ch;
+        co[i] = col * 4 + Math.min(3, Math.max(0, (lum * fog * 4.2 - 0.4) | 0));
       };
 
-      // Blossoms, by style
-      const TWO_PI = Math.PI * 2;
-      const blossom = (p, rad, col, lum, style, rot = 0) => {
-        const rc = rad * cpu(p[2]);
-        if (rc < 0.75) {
-          const g = style === 'rose' ? K['@'] : style === 'dot' ? (rc > 0.35 ? K['°'] : K['.']) : style === 'cup' ? K.o : style === 'spikelet' ? K[':'] : style === 'tulip' ? K.U : K['*'];
-          putCell(p[0], p[1], p[2], col, g, lum); return;
-        }
-        const ry = rc * aspect;
-        for (let yy = Math.floor(p[1] - ry); yy <= p[1] + ry; yy++) for (let xx = Math.floor(p[0] - rc); xx <= p[0] + rc; xx++) {
-          const uu = (xx + 0.5 - p[0]) / rc, vv = (yy + 0.5 - p[1]) / (ry || 1), d = uu * uu + vv * vv;
-          if (d > 1) continue;
-          const th = Math.atan2(vv, uu) + rot, dr = Math.sqrt(d);
-          let g, c = col, L = lum * (1.05 - 0.25 * (vv + 0.3));
-          if (style === 'rose') {
-            // Spiralled petals: a dark heart, curled inner petals, open outer petals
-            const sw = ((th / TWO_PI) * 2 + dr * 1.8) % 1;
-            if (dr < 0.22) { g = K['@']; L *= 0.75; }
-            else if (dr < 0.6) g = sw < 0.5 ? K.c : K.o;
-            else if (dr < 0.86) g = uu < 0 ? K['('] : K[')'];
-            else { g = K[':']; L *= 1.1; }
-          } else if (style === 'star') {
-            // Five-lobed florets with a pale eye (phlox, pinks)
-            const lobe = 0.55 + 0.45 * Math.abs(Math.cos(2.5 * th));
-            if (dr > lobe) continue;
-            if (dr < 0.22) { g = K.o; c = C.eye; } else g = K['*'];
-          } else if (style === 'daisy') {
-            if (dr < 0.32) { g = K['@']; c = C.gold; }
-            else {
-              if (Math.abs(Math.sin(th * 6)) < 0.45) continue;
-              const a8 = (((th % Math.PI) + Math.PI) % Math.PI) / Math.PI;
-              g = a8 < 0.125 || a8 > 0.875 ? K['-'] : a8 < 0.375 ? K['\\'] : a8 < 0.625 ? K['|'] : K['/'];
-            }
-          } else if (style === 'cup') {
-            // Open cups (hollyhock, cranesbill): dark centre, round petals, a rim
-            if (dr < 0.24) { g = K['@']; c = C.eye; }
-            else if (dr < 0.7) g = K.O;
-            else g = uu < -0.3 ? K['('] : uu > 0.3 ? K[')'] : K[':'];
-          } else if (style === 'tulip') {
-            // A closed cup: rounded sides, three petal tips on top
-            if (vv < -0.55) { if (Math.abs(uu) > 0.2 && Math.abs(uu) < 0.75) continue; g = K['^']; }
-            else g = uu < -0.55 ? K['('] : uu > 0.55 ? K[')'] : vv > 0.6 ? K['_'] : K.U;
-            L *= 1 - 0.2 * Math.max(0, uu * sunX);
-          } else if (style === 'globe') {
-            // Allium: a sphere of tiny star-florets, lit on the sun side
-            g = hash2(xx * 7 + ((p[0] * 3) | 0), yy * 13) < 0.55 ? K['*'] : K['+'];
-            L = clamp(lum * (0.75 + 0.35 * (uu * sunX - vv * sunY)), 0.2, 1.1);
-          } else if (style === 'spikelet') g = dr < 0.5 ? K[':'] : K['.'];
-          else g = dr < 0.5 ? K['°'] : K['.'];
-          putCell(xx, yy, p[2] - rad * (1 - d), c, g, clamp(L, 0, 1.2));
-        }
-      };
-
-      // Mounds: foliage, then blossoms
-      for (const m of this.mounds) {
-        const c = proj(m.x, m.ry * 0.5, m.z);
-        if (!c) continue;
-        const rcx = Math.min(70, m.rx * cpu(c[2])), ryc = Math.min(70, m.ry * 0.5 * cpu(c[2]) * aspect);
-        if (rcx < 0.8) { putCell(c[0], c[1], c[2], m.style === 'none' ? m.leaf : m.col, K['*'], 0.85); continue; }
-        const res = Math.max(0.025, Math.pow(2, Math.ceil(Math.log2(1 / cpu(c[2])))));
-        // Clip to the screen, and test depth before doing any shading work
-        const y0 = Math.max(0, Math.floor(c[1] - ryc)), y1 = Math.min(ROWS - 1, c[1] + ryc);
-        const x0 = Math.max(0, Math.floor(c[0] - rcx)), x1 = Math.min(COLS - 1, c[0] + rcx);
-        const iry = 1 / (ryc || 1), irx = 1 / rcx, dk = m.rx * 0.7;
-        for (let yy = y0; yy <= y1; yy++) {
-          const vv = (yy + 0.5 - c[1]) * iry, vq = Math.floor((vv * m.ry) / res) - m.seed, v2 = vv > 0 ? vv * vv * 0.6 : vv * vv;
-          for (let xx = x0; xx <= x1; xx++) {
-            const uu = (xx + 0.5 - c[0]) * irx, d = uu * uu + v2;
-            if (d > 1) continue;
-            const depth = c[2] - Math.sqrt(1 - d) * dk, i = yy * COLS + xx;
-            if (1 / depth <= zb[i]) continue;
-            const hq = hash2(Math.floor((uu * m.rx) / res) + m.seed, vq);
-            if (d > 0.86 + 0.14 * hq) continue;
-            leafCell(uu, vv, d, hq, litAt(uu, vv, 0.62, 0.34), m.leaf);
-            zb[i] = 1 / depth; gl[i] = LG; co[i] = LC * NL + levelOf(LL * fogOf(depth));
-          }
-        }
-        const B = m.blooms;
-        for (let k = 0; k < B.length; k += 7) {
-          const p = proj(m.x + B[k], B[k + 1], m.z + B[k + 2]);
-          if (!p) continue;
-          const lit = 0.78 + 0.28 * (B[k + 1] / m.ry), q = [p[0], p[1], p[2] - m.rx * 0.6 * (B[k + 1] / m.ry)];
-          if (B[k + 5]) { blossom(q, B[k + 3], C.roseD, lit, 'cup'); continue; }       // rose buds
-          blossom(q, B[k + 3], B[k + 4], lit, m.style, B[k + 6]);
-        }
+      // Static scene with sway
+      const P = this.pts;
+      for (let n = 0, o = 0; n < this.nStatic; n++, o += F) {
+        const sway = P[o + 8], sw = sway ? Math.sin(t * 1.3 + P[o + 9]) * 0.04 * sway : 0;
+        put(P[o] + sw, P[o + 1], P[o + 2] + sw * 0.6, P[o + 3], P[o + 4], P[o + 5], P[o + 6], P[o + 7], P[o + 10], n, P[o + 11]);
       }
-
-      // Tall spikes: stem, florets (cups, spotted bells, stars, lavender beads), a tip
-      for (const s of this.spikes) {
-        const sw = Math.sin(t * 1.1 + s.ph) * 0.03;
-        const base = proj(s.x, 0, s.z), top = proj(s.x + sw, s.h, s.z);
-        if (!base || !top) continue;
-        line(base, top, C.stem, K['|'], 0.55);
-        const rcTip = 0.03 * cpu(top[2]);
-        if (s.shape === 'cup' || s.shape === 'bell' || s.shape === 'star') putCell(top[0], top[1] - 1, top[2], C.leafL, rcTip > 0.5 ? K['^'] : K["'"], 0.7);
-        for (let j = 0; j < s.florets.length; j += 4) {
-          const y = s.shape === 'tulip' ? s.h : s.florets[j], rr = s.florets[j + 1], a = s.florets[j + 2], bud = s.florets[j + 3], k = y / s.h;
-          const p = proj(s.x + sw * k + Math.cos(a) * rr * 0.5, y, s.z + Math.sin(a) * rr * 0.5);
-          if (!p) continue;
-          const rc = rr * cpu(p[2]), L = 0.98 - k * 0.15;
-          if (bud) { putCell(p[0], p[1], p[2] - 0.02, C.leafL, K.o, 0.75); continue; }
-          if (s.shape === 'bell') {
-            if (rc < 0.9) { putCell(p[0], p[1], p[2] - 0.02, s.col, K.v, L); continue; }
-            const w = Math.ceil(rc), hgt = Math.ceil(rc * aspect * 1.4);
-            for (let yy = 0; yy <= hgt; yy++) for (let xx = -w; xx <= w; xx++) {
-              const edgeX = Math.abs(xx) >= w - 0.5, mouth = yy === hgt;
-              const spot = !edgeX && !mouth && hash2(xx + j * 7, yy + j) < 0.25;
-              putCell(p[0] + xx, p[1] + yy - 1, p[2] - 0.02, spot ? C.eye : s.col, mouth ? K['_'] : edgeX ? (xx < 0 ? K['('] : K[')']) : spot ? K['.'] : K.U, L);
-            }
-          } else if (s.shape === 'dot') putCell(p[0], p[1], p[2] - 0.02, s.col, rc > 0.5 ? K['8'] : K[':'], L);
-          else if (s.shape === 'tulip') blossom(p, rr, s.col, L, 'tulip');
-          else if (s.shape === 'globe') blossom(p, rr, s.col, L, 'globe', a);
-          else blossom(p, rr, s.col, L, s.shape, a);
-        }
+      // Fireflies: drift and blink
+      for (const q of this.flies) {
+        q.p[0] += Math.sin(t * 0.4 * q.sp + q.ph) * 0.004; q.p[2] += Math.cos(t * 0.33 * q.sp + q.ph) * 0.004;
+        q.p[1] = clamp(q.p[1] + Math.sin(t * 0.9 + q.ph) * 0.002, 0.12, 0.9);
+        const glow = Math.sin(t * 2.2 * q.sp + q.ph);
+        if (glow > 0.2) put(q.p[0], q.p[1], q.p[2], 0, 1, 0, C.firefly, glow > 0.75 ? K['*'] : K['+'], 1, 0);
       }
-
-      // The wooden rose arch: twin posts, cross-ties, an arc, leaves and roses
-      {
-        const pxa = pathX(ARCH_Z), R = pathW(ARCH_Z) + 0.28, top = 1.75, rr = rng(4242);
-        for (const side of [-1, 1]) for (const dz of [-0.09, 0.09]) {
-          line(proj(pxa + side * R, 0, ARCH_Z + dz), proj(pxa + side * R, top, ARCH_Z + dz), C.wood, K['|'], 0.6);
-          for (let y = 0.25; y < top; y += 0.3) line(proj(pxa + side * R, y, ARCH_Z - 0.09), proj(pxa + side * R, y, ARCH_Z + 0.09), C.wood, K['='], 0.55);
-        }
-        for (const dz of [-0.09, 0.09]) for (let ang = 0; ang <= Math.PI; ang += 0.04) put(pxa + Math.cos(ang) * R, top + Math.sin(ang) * R * 0.75, ARCH_Z + dz, C.wood, K['='], 0.6);
-        const pts = [];
-        for (const side of [-1, 1]) for (let y = 0.1; y < top; y += 0.13) pts.push([pxa + side * R, y]);
-        for (let ang = 0; ang <= Math.PI; ang += 0.12) pts.push([pxa + Math.cos(ang) * R, top + Math.sin(ang) * R * 0.75]);
-        for (const [x, y] of pts) {
-          const p = proj(x, y, ARCH_Z);
-          if (!p) continue;
-          const lr = 0.14 * cpu(p[2]), lry = lr * aspect;
-          for (let yy = Math.floor(p[1] - lry); yy <= p[1] + lry; yy++) for (let xx = Math.floor(p[0] - lr); xx <= p[0] + lr; xx++) {
-            const uu = (xx + 0.5 - p[0]) / (lr || 1), vv = (yy + 0.5 - p[1]) / (lry || 1), d = uu * uu + vv * vv;
-            const hq = hash2(Math.floor(x * 30 + uu * 3), Math.floor(y * 30 + vv * 3));
-            if (d > 0.75 + 0.25 * hq || hq > 0.88) continue;
-            leafCell(uu, vv, d, hq, litAt(uu, vv, 0.6, 0.3), C.leafD);
-            putCell(xx, yy, p[2] - 0.06 * (1 - d), LC, LG, LL);
-          }
-          const nb = (rr() * 2.4) | 0;
-          for (let j = 0; j < nb; j++) {
-            const bp = proj(x + (rr() - 0.5) * 0.22, y + (rr() - 0.5) * 0.2, ARCH_Z + (rr() - 0.5) * 0.24);
-            if (bp) blossom(bp, 0.06 + rr() * 0.035, C[pick(rr, ['pink', 'rose', 'blush', 'white', 'cream'])], 0.98, 'rose', rr() * 6);
-          }
-        }
+      // Pollen
+      for (const m of this.motes) {
+        const a = Math.sin((m.age / m.life) * Math.PI);
+        if (a > 0.2) put(m.x, m.y, m.z, 0, 1, 0, C.pollen, a > 0.8 ? K['*'] : K['.'], 0, 0);
       }
-
-      // Bird bath: pedestal, bowl, still water catching the sky
-      {
-        const [bx, bz] = BATH, top = 0.62;
-        const bp = proj(bx, top, bz), b0 = proj(bx, 0, bz);
-        if (bp && b0) {
-          for (const off of [-0.06, 0, 0.06]) line(proj(bx + off, 0.05, bz), proj(bx + off * 0.6, top - 0.05, bz), C.bath, off ? K['|'] : K['#'], off ? 0.55 : 0.75);
-          const rc = 0.36 * cpu(bp[2]), ry = rc * aspect * 0.45;
-          for (let yy = Math.floor(bp[1] - ry); yy <= bp[1] + ry * 1.8; yy++) for (let xx = Math.floor(bp[0] - rc); xx <= bp[0] + rc; xx++) {
-            const uu = (xx + 0.5 - bp[0]) / rc, vv = (yy + 0.5 - bp[1]) / (ry || 1);
-            if (vv <= 0) {
-              const d = uu * uu + vv * vv; if (d > 1) continue;
-              putCell(xx, yy, bp[2] - 0.05, d > 0.7 ? C.bath : C.water, d > 0.7 ? K[':'] : hash2(xx * 3 + ((t * 2) | 0), yy) < 0.3 ? K['~'] : K['-'], d > 0.7 ? 0.85 : 0.9);
-            } else {
-              const w = 1 - (vv / 1.8) * 0.5; if (Math.abs(uu) > w) continue;
-              putCell(xx, yy, bp[2], C.bath, Math.abs(uu) > w - 0.15 ? (uu < 0 ? K['\\'] : K['/']) : K['#'], litAt(uu, vv, 0.6, 0.3));
-            }
-          }
-        }
-      }
-
-      // Fallen rose petals on the stones
-      const PT = this.petals;
-      for (let k = 0; k < PT.length; k += 3) put(PT[k], 0.012, PT[k + 1], PT[k + 2], hash2(k, 3) < 0.5 ? K['.'] : K[','], 0.85);
-
-      // Dust drifting in the low sun
-      for (const q of this.motes) {
-        q.p[0] += Math.sin(t * 0.3 * q.sp + q.ph) * 0.002; q.p[1] += Math.sin(t * 0.5 + q.ph) * 0.0012;
-        const glow = Math.sin(t * 1.1 * q.sp + q.ph);
-        if (glow > 0.35) put(q.p[0], q.p[1], q.p[2], C.mote, glow > 0.85 ? K['*'] : K['.'], 0.55 + glow * 0.4);
-      }
-
-      // ── 3. Butterflies and the bee, drawn on top, with a faint trail ──
-      for (const b of this.flyers) this.stepFlyer(b, dt, t);
-      this.stepBee(dt, t);
-      const trailOf = (obj, every) => {
-        obj.trail.unshift([obj.p[0], obj.p[1], obj.p[2]]);
-        if (obj.trail.length > 46) obj.trail.pop();
-        for (let k = 4; k < obj.trail.length; k += every) {
-          const q = obj.trail[k], p = proj(q[0], q[1], q[2]);
-          if (p) putCell(p[0], p[1], p[2], C.trail, K['.'], 0.9 - k / 60, false);
-        }
-      };
-      for (let i = 0; i < 120; i++) this.bits[(Math.random() * 4096) | 0] ^= 1;
+      // Butterflies
+      const W = this.wing;
+      let bi = this.nStatic;
       for (const b of this.flyers) {
-        if (!b.perched) trailOf(b, 3); else b.trail.length = 0;
-        const bp = proj(b.p[0], b.p[1], b.p[2]); if (!bp) continue;
-        const rc = 0.3 * b.scale * cpu(bp[2]);
-        if (rc < 2.2) {
-          const g = b.flap > 0.6 ? K.V : b.flap > 0 ? K.W : K.w;
-          putCell(bp[0], bp[1], bp[2] * 0.5, b.wingC, g, 1, false);
-          if (rc > 1) { putCell(bp[0] - 1, bp[1], bp[2] * 0.5, b.wingC, K['('], 1, false); putCell(bp[0] + 1, bp[1], bp[2] * 0.5, b.wingC, K[')'], 1, false); }
-          continue;
-        }
-        const s = b.scale, cyy = Math.cos(b.yaw), syy = Math.sin(b.yaw), Sd = [-syy, 0, cyy];
-        const pt = b.perched ? 0 : clamp(b.v[1] * 0.25, -0.4, 0.4), Fv = [cyy * Math.cos(pt), Math.sin(pt), syy * Math.cos(pt)];
+        const s = b.scale, cy = Math.cos(b.yaw), sy = Math.sin(b.yaw);
+        const Fw = [cy, 0, sy], Sd = [-sy, 0, cy];            // forward, side (up is world up)
+        const pitch = b.perched ? 0 : clamp(b.v[1] * 0.25, -0.4, 0.4);
+        const Fv = [Fw[0] * Math.cos(pitch), Math.sin(pitch), Fw[2] * Math.cos(pitch)];
         const cf = Math.cos(b.flap), sf = Math.sin(b.flap);
-        for (let side = -1; side <= 1; side += 2) for (let k = 0; k < WING.length; k += 3) {
-          const wu = WING[k] * s, ww = WING[k + 1] * s, kind = WING[k + 2];
-          const p = proj(b.p[0] + Fv[0] * wu + Sd[0] * side * cf * ww, b.p[1] + Fv[1] * wu + sf * ww, b.p[2] + Fv[2] * wu + Sd[2] * side * cf * ww);
-          if (!p) continue;
-          const col = kind === 2 ? b.spotC : kind === 4 || kind === 3 ? b.bandC : b.wingC;
-          const g = kind === 1 ? K[':'] : kind === 2 ? K['1'] : kind === 3 ? K['|'] : kind === 4 ? K['#'] : this.bits[k & 4095] ? K['1'] : K['0'];
-          putCell(p[0], p[1], p[2] * 0.7, col, g, kind === 4 || kind === 3 ? 0.55 : 0.85 + 0.15 * cf, false);
-        }
-        for (let q = -0.2; q <= 0.17; q += 0.02) {
-          const p = proj(b.p[0] + Fv[0] * q * s, b.p[1] + Fv[1] * q * s + 0.004, b.p[2] + Fv[2] * q * s);
-          if (p) putCell(p[0], p[1], p[2] * 0.69, C.body, q > 0.13 ? K['0'] : q > 0.02 ? K['8'] : K['='], 1, false);
-        }
-        for (const side of [-1, 1]) for (let q = 0; q <= 1; q += 0.2) {          // antennae
-          const p = proj(b.p[0] + (Fv[0] * (0.17 + q * 0.12) + Sd[0] * side * q * 0.05) * s, b.p[1] + q * 0.1 * s, b.p[2] + (Fv[2] * (0.17 + q * 0.12) + Sd[2] * side * q * 0.05) * s);
-          if (p) putCell(p[0], p[1], p[2] * 0.69, C.body, q > 0.9 ? K['°'] : K['/'], 0.9, false);
-        }
-      }
-      {
-        const e = this.bee; trailOf(e, 4);
-        const bp = proj(e.p[0], e.p[1], e.p[2]);
-        if (bp) {
-          const rc = 0.09 * cpu(bp[2]);
-          if (rc < 1.6) { putCell(bp[0] - 1, bp[1], bp[2] * 0.5, C.glass, K['('], 1, false); putCell(bp[0], bp[1], bp[2] * 0.5, C.gold, K['8'], 1, false); putCell(bp[0] + 1, bp[1], bp[2] * 0.5, C.glass, K[')'], 1, false); }
-          else {
-            const cyy = Math.cos(e.yaw), syy = Math.sin(e.yaw), S = 1.5;
-            for (let q = -0.06; q <= 0.06; q += 0.008) for (let a = 0; a < 6.28; a += 0.5) {
-              const rad = 0.032 * Math.sqrt(Math.max(0, 1 - (q / 0.07) ** 2)), stripe = ((q + 0.07) / 0.022) | 0;
-              const p = proj(e.p[0] + (cyy * q - syy * Math.cos(a) * rad) * S, e.p[1] + Math.sin(a) * rad * S, e.p[2] + (syy * q + cyy * Math.cos(a) * rad) * S);
-              if (p) putCell(p[0], p[1], p[2] * 0.7, q > 0.045 ? C.gold : stripe % 2 ? C.gold : C.dark, q > 0.045 ? K['0'] : stripe % 2 ? K['#'] : K['='], 1, false);
-            }
-            const open = 0.4 + 0.6 * Math.abs(Math.sin(t * 40));
-            for (const side of [-1, 1]) for (let w = 0.015; w < 0.09; w += 0.012) {
-              const p = proj(e.p[0] - syy * side * w * (1 - open * 0.5) * S, e.p[1] + (0.03 + w * open) * S, e.p[2] + cyy * side * w * (1 - open * 0.5) * S);
-              if (p) putCell(p[0], p[1], p[2] * 0.7, C.glass, K[':'], 1, false);
-            }
+        for (let side = -1; side <= 1; side += 2) {
+          for (let k = 0; k < W.length; k += 3) {
+            const wu = W[k] * s, ww = W[k + 1] * s, kind = W[k + 2];
+            // wing point: along the body + outward, rotated up by the flap angle
+            const ox = Sd[0] * side * cf * ww, oz = Sd[2] * side * cf * ww, oy = sf * ww;
+            const nx = -Sd[0] * side * sf, ny = cf, nz = -Sd[2] * side * sf;
+            put(b.p[0] + Fv[0] * wu + ox, b.p[1] + Fv[1] * wu + oy, b.p[2] + Fv[2] * wu + oz, nx, ny, nz,
+              kind === 2 ? b.spotC : b.wingC, kind === 1 ? K[':'] : kind === 2 ? K['1'] : BIT, 0, bi + k);
           }
+        }
+        // Body, head and antennae
+        for (let q = -0.2; q <= 0.17; q += 0.012) {
+          put(b.p[0] + Fv[0] * q * s, b.p[1] + Fv[1] * q * s + 0.005, b.p[2] + Fv[2] * q * s, 0, 1, 0, C.body, q > 0.13 ? K['0'] : q > 0.02 ? K['8'] : K['='], 0, 0);
+        }
+        for (let side = -1; side <= 1; side += 2) for (let q = 0; q <= 1; q += 0.12) {
+          const ax = b.p[0] + (Fv[0] * (0.17 + q * 0.14) + Sd[0] * side * q * 0.05) * s, ay = b.p[1] + q * 0.12 * s, az = b.p[2] + (Fv[2] * (0.17 + q * 0.14) + Sd[2] * side * q * 0.05) * s;
+          put(ax, ay, az, 0, 1, 0, C.body, q > 0.85 ? K['°'] : K['/'], 0, 0);
+        }
+        bi += 700;
+      }
+      // Bee: striped body + a blur of wings
+      {
+        const e = this.bee, cy = Math.cos(e.yaw), sy = Math.sin(e.yaw);
+        for (let q = -0.09; q <= 0.09; q += 0.012) for (let a = 0; a < 6.28; a += 0.5) {
+          const rad = 0.045 * Math.sqrt(Math.max(0, 1 - (q / 0.1) ** 2));
+          const sx2 = -sy * Math.cos(a) * rad, sz2 = cy * Math.cos(a) * rad, yy = Math.sin(a) * rad;
+          const stripe = ((q + 0.1) / 0.03) | 0;
+          put(e.p[0] + cy * q + sx2, e.p[1] + yy, e.p[2] + sy * q + sz2, -sy * Math.cos(a), Math.sin(a), cy * Math.cos(a),
+            q > 0.07 ? C.gold : stripe % 2 ? C.gold : C.dark, q > 0.07 ? K['0'] : stripe % 2 ? BIT : K['='], 0, bi + (q * 1000) | 0);
+        }
+        const open = 0.4 + 0.6 * Math.abs(Math.sin(t * 40));
+        for (let side = -1; side <= 1; side += 2) for (let w = 0.02; w < 0.12; w += 0.02) for (let q = -0.04; q < 0.04; q += 0.02) {
+          put(e.p[0] + cy * q - sy * side * w * (1 - open * 0.5), e.p[1] + 0.04 + w * open, e.p[2] + sy * q + cy * side * w * (1 - open * 0.5), 0, 1, 0, C.glass, K[':'], 0, 0);
         }
       }
 
-      // ── 4. Draw ──
+      // Draw on the GPU: only a small grid of glyph + colour per cell goes up each frame
       if (this.glr) {
         const R = this.glr, g = R.g, D = R.data, n = COLS * ROWS;
         for (let i = 0, o = 0; i < n; i++, o += 4) {
-          if (gl[i] < 0) { D[o] = 255; continue; }
+          if (zb[i] <= 0) { D[o] = 255; continue; }
           D[o] = gl[i]; D[o + 1] = co[i] & 255; D[o + 2] = co[i] >> 8;
         }
         g.activeTexture(g.TEXTURE0);
@@ -786,17 +583,19 @@
         g.drawArrays(g.TRIANGLES, 0, 6);
         return;
       }
-      const A = this.atlas, buf = A.buf, NG = CH.length, cw = this.cw, chh = this.chH, BW = A.W;
+      // CPU fallback: write each cell's pre-rendered glyph pixels straight into one frame buffer
+      // (one putImageData per frame; fast even without GPU canvas)
+      const A = this.atlas, buf = A.buf, NG = CH.length, cw = this.cw * A.d, chh = this.chH * A.d, BW = A.W;
       buf.fill(0);
       const n = COLS * ROWS;
       for (let i = 0; i < n; i++) {
-        if (gl[i] < 0) continue;
+        if (zb[i] <= 0) continue;
         const g = A.slots[co[i] * NG + gl[i]];
         if (!g) continue;
         const base = Math.round(((i / COLS) | 0) * chh) * BW + Math.round((i % COLS) * cw);
         for (let k = 0; k < g.length; k += 2) buf[base + g[k]] = g[k + 1];
       }
-      this.ctx.putImageData(A.img, 0, 0);
+      ctx.putImageData(A.img, 0, 0);
     }
   }
 

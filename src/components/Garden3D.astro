@@ -1,8 +1,7 @@
 ---
-// Hidden 3D cottage garden (/papillon/garden/): one garden plot with a flagstone
-// path, borders and a rose arch, seen from an orbiting camera, rendered in ASCII
-// in real time (public/js/garden3d.js).
-// Reached from the end of the secret philosophy page.
+// Hidden 3D view of the garden (/papillon/garden/): a real-time ASCII render of
+// the flowers, a bee and four butterflies (public/js/garden3d.js). Reached from
+// the end of the secret philosophy page.
 import Base from '../layouts/Base.astro';
 import { type Lang } from '../data/profile';
 import { url, langUrl } from '../lib/site';
@@ -11,8 +10,8 @@ interface Props { lang: Lang }
 const { lang } = Astro.props;
 const ar = lang === 'ar';
 const t = ar
-  ? { title: 'الحديقة', kicker: '// GARDEN_3D', hint: 'اسحب لتدور · مرّر للتقريب', pause: 'وقّف الدوران', walk: 'دوّر', back: 'رجوع للقصة' }
-  : { title: 'The garden', kicker: '// GARDEN_3D', hint: 'drag to orbit · scroll to zoom', pause: 'Pause', walk: 'Spin', back: 'Back to the story' };
+  ? { title: 'الحديقة', kicker: '// GARDEN_3D', hint: 'اسحب للالتفاف · مرّر للتقريب', follow: 'تابع الفراشة', free: 'كاميرا حرة', back: 'رجوع للقصة' }
+  : { title: 'The garden', kicker: '// GARDEN_3D', hint: 'drag to orbit · scroll to zoom', follow: 'Follow the butterfly', free: 'Free camera', back: 'Back to the story' };
 ---
 <Base lang={lang} title={t.title} path="papillon/garden/" noindex>
   <div class="g3" dir={ar ? 'rtl' : 'ltr'}>
@@ -22,7 +21,7 @@ const t = ar
       <p class="g3-hint">{t.hint}</p>
     </div>
     <div class="g3-actions">
-      <button class="btn" id="g3-walk" type="button" data-pause={t.pause} data-walk={t.walk}>{t.pause}</button>
+      <button class="btn" id="g3-follow" type="button" data-on={t.free} data-off={t.follow}>{t.follow}</button>
       <a class="btn" href={langUrl(lang, 'papillon/')}>{t.back}</a>
     </div>
   </div>
@@ -34,10 +33,8 @@ const t = ar
       s.src = src;
       s.onload = () => {
         const g = new window.Garden3D(document.getElementById('g3-canvas'));
-        const btn = document.getElementById('g3-walk');
-        const label = () => { btn.textContent = g.spinning ? btn.dataset.pause : btn.dataset.walk; };
-        label();
-        btn.addEventListener('click', () => { g.setSpinning(!g.spinning); label(); });
+        const btn = document.getElementById('g3-follow');
+        btn.addEventListener('click', () => { btn.textContent = g.toggleFollow() ? btn.dataset.on : btn.dataset.off; });
       };
       document.body.appendChild(s);
     })();
@@ -47,14 +44,14 @@ const t = ar
 <style>
   .g3 {
     position: relative; height: calc(100svh - var(--header-h)); overflow: hidden; color: var(--paper);
-    background: linear-gradient(180deg, #1d2b36 0%, #2a2c2c 38%, #1a1f17 62%, #0d110b 100%);   /* evening sky behind the trees */
+    background: radial-gradient(ellipse at 50% 115%, #1f2a1f 0%, #141814 38%, #0d0d0f 72%);
   }
   .g3 canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; cursor: grab; touch-action: none; }
   .g3 canvas:active { cursor: grabbing; }
   .g3-ui { position: absolute; top: 16px; inset-inline-start: 20px; pointer-events: none; }
   .g3-kicker { margin: 0 0 4px; color: #ff8a8a; }
-  .g3-hint { margin: 0; color: #8a8a92; font-size: .8rem; }
+  .g3-hint { margin: 0; color: #77777f; font-size: .8rem; }
   .g3-actions { position: absolute; bottom: 20px; inset-inline-start: 20px; display: flex; flex-wrap: wrap; gap: 10px; }
-  .g3-actions .btn { border-color: var(--paper); color: var(--paper); background: rgba(7, 8, 10, .75); }
+  .g3-actions .btn { border-color: var(--paper); color: var(--paper); background: rgba(13, 13, 15, .7); }
   .g3-actions .btn:first-child { background: #ff8a8a; border-color: #ff8a8a; color: #111; }
 </style>
