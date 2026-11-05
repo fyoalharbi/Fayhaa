@@ -1,9 +1,9 @@
 ---
-// Hidden 3D garden (/papillon/garden/): a real-time ASCII render of the flowers,
+// The secret philosophy page (/papillon/), unlocked by catching the butterfly: a real-time ASCII render of the flowers,
 // bushes, a bee and butterflies (public/js/garden3d.js), with a guided tour: a
 // dialogue box at the bottom tells the philosophy line by line while the camera
 // moves to each line's subject (the white butterfly, the bee, the hive, a far
-// flower, the whole garden). Reached from the end of the secret philosophy page.
+// flower, the whole garden).
 import Base from '../layouts/Base.astro';
 import { philosophy, type Lang } from '../data/profile';
 import { url, langUrl } from '../lib/site';
@@ -12,22 +12,23 @@ interface Props { lang: Lang }
 const { lang } = Astro.props;
 const ar = lang === 'ar';
 const t = ar
-  ? { title: 'الحديقة', kicker: '// GARDEN_3D', hint: 'اسحب للالتفاف · مرّر للتقريب', follow: 'تابع الفراشة', free: 'كاميرا حرة', back: 'رجوع للقصة',
-      tour: 'ابدأ الجولة', next: 'التالي', skip: 'تخطَّ', again: 'من جديد', blog: 'اقرأ المدونة', end: 'طارت. وأنت؟', ask: 'تبي جولة في الحديقة؟',
+  ? { title: 'الحديقة', kicker: '// GARDEN_3D', hint: 'اسحب للالتفاف · مرّر للتقريب', follow: 'تابع الفراشة', free: 'كاميرا حرة', back: 'رجوع للموقع',
+      tour: 'ابدأ الجولة', next: 'التالي', skip: 'تخطَّ', again: 'من جديد', blog: 'اقرأ المدونة', end: 'طارت. وأنت؟', ask: 'هذي الحديقة هي طريقتي بالشغل. تبي جولة؟', sub: 'فلسفتي بالشغل، تحكيها حديقة',
       who: { butterfly: 'الفراشة', bee: 'النحلة', hive: 'الخلية', far: 'زهرة بعيدة', wide: 'الحديقة' } }
-  : { title: 'The garden', kicker: '// GARDEN_3D', hint: 'drag to orbit · scroll to zoom', follow: 'Follow the butterfly', free: 'Free camera', back: 'Back to the story',
-      tour: 'Start the tour', next: 'Next', skip: 'Skip', again: 'Replay', blog: 'Read the blog', end: 'It flew away. Your turn.', ask: 'Want a tour of the garden?',
+  : { title: 'The garden', kicker: '// GARDEN_3D', hint: 'drag to orbit · scroll to zoom', follow: 'Follow the butterfly', free: 'Free camera', back: 'Back to the site',
+      tour: 'Start the tour', next: 'Next', skip: 'Skip', again: 'Replay', blog: 'Read the blog', end: 'It flew away. Your turn.', ask: 'This garden is how I work. Want the tour?', sub: 'my work philosophy, told by a garden',
       who: { butterfly: 'the butterfly', bee: 'the bee', hive: 'the hive', far: 'a far flower', wide: 'the garden' } };
 const lines = philosophy.lines[lang];
 // Which subject the camera visits for each line (same order as the philosophy lines)
 const SHOTS = ['wide', 'butterfly', 'butterfly', 'bee', 'bee', 'hive', 'butterfly', 'far', 'wide', 'butterfly', 'wide', 'butterfly'];
 const steps = lines.map((line, i) => ({ line, shot: SHOTS[i] || 'wide' }));
 ---
-<Base lang={lang} title={t.title} path="papillon/garden/" noindex>
+<Base lang={lang} title={t.title} path="papillon/" noindex>
   <div class="g3" dir={ar ? 'rtl' : 'ltr'}>
     <canvas id="g3-canvas" aria-label={t.title}></canvas>
     <div class="g3-ui mono">
-      <p class="g3-kicker" dir="ltr">{t.kicker}</p>
+      <h1 class="g3-title">{philosophy.title[lang]}</h1>
+      <p class="g3-sub">{t.sub}</p>
       <p class="g3-hint">{t.hint}</p>
     </div>
 
@@ -46,7 +47,7 @@ const steps = lines.map((line, i) => ({ line, shot: SHOTS[i] || 'wide' }));
 
     <div class="g3-actions">
       <button class="btn" id="g3-follow" type="button" data-on={t.free} data-off={t.follow}>{t.follow}</button>
-      <a class="btn" href={langUrl(lang, 'papillon/')}>{t.back}</a>
+      <a class="btn" href={langUrl(lang)}>{t.back}</a>
     </div>
   </div>
 
@@ -130,8 +131,26 @@ const steps = lines.map((line, i) => ({ line, shot: SHOTS[i] || 'wide' }));
   .g3 canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; cursor: grab; touch-action: none; }
   .g3 canvas:active { cursor: grabbing; }
   .g3-ui { position: absolute; top: 16px; inset-inline-start: 20px; pointer-events: none; }
-  .g3-kicker { margin: 0 0 4px; color: #ff8a8a; }
-  .g3-hint { margin: 0; color: #77777f; font-size: .8rem; }
+  .g3-title { margin: 0; font: 600 1rem/1.3 var(--font-mono); color: #cfcfcf; letter-spacing: .02em; }
+  .g3-sub { margin: 2px 0 8px; font: .74rem/1.4 var(--font-mono); color: #ff8a8a; opacity: .85; }
+  .g3-sub::before { content: '— '; }
+  .g3-hint { margin: 0; color: #77777f; font-size: .72rem; }
+  .g3[dir='rtl'] .g3-title, .g3[dir='rtl'] .g3-sub { font-family: var(--font-ar); letter-spacing: 0; }
+  .g3[dir='rtl'] .g3-title { font-size: 1.1rem; }
+
+  /* The site header, re-dressed for the night garden: a dark veil, quiet mono links */
+  :global(body:has(.g3)) { background: #0d0d0f; }
+  :global(body:has(.g3) .site-header) {
+    background: rgba(10, 11, 12, .72); border-bottom: 1px solid #ffffff14; color: #cfcfcf;
+  }
+  :global(body:has(.g3) .site-header .brand) { color: #cfcfcf; }
+  :global(body:has(.g3) .site-header .brand-mark) { color: #ff8a8a; }
+  :global(body:has(.g3) .site-nav a), :global(body:has(.g3) .lang-link) { color: #77777f; font-family: var(--font-mono); font-size: .74rem; letter-spacing: .04em; }
+  :global(body:has(.g3) .site-nav a:hover), :global(body:has(.g3) .lang-link:hover) { color: var(--paper); }
+  :global(body:has(.g3) .term-toggle) { background: none; border-color: #ffffff2a; color: #a3a3a3; }
+  :global(body:has(.g3) .term-toggle:hover) { border-color: #ff8a8a; color: var(--paper); background: none; }
+  :global(body:has(.g3) .site-header .secret-tab) { color: #ff8a8a !important; }
+  :global(html[dir='rtl'] body:has(.g3) .site-nav a), :global(html[dir='rtl'] body:has(.g3) .lang-link) { font-family: var(--font-ar); letter-spacing: 0; font-size: .85rem; }
   .g3-actions { position: absolute; top: 16px; inset-inline-end: 20px; display: flex; flex-wrap: wrap; gap: 8px; justify-content: flex-end; }
   .g3-actions { gap: 14px; }
 
@@ -183,6 +202,6 @@ const steps = lines.map((line, i) => ({ line, shot: SHOTS[i] || 'wide' }));
   @media (max-width: 600px) {
     .g3-box { bottom: 12px; }
     .g3-dots i { width: 5px; }
-    .g3-actions { top: 64px; inset-inline-start: 16px; inset-inline-end: auto; justify-content: flex-start; }
+    .g3-actions { top: auto; bottom: 150px; inset-inline-start: 16px; inset-inline-end: auto; justify-content: flex-start; }
   }
 </style>
