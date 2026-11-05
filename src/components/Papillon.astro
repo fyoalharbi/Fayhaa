@@ -20,8 +20,8 @@ const { lang } = Astro.props;
 const lines = philosophy.lines[lang];
 const ar = lang === 'ar';
 const t = ar
-  ? { kicker: '// قناة_سرية', found: 'لقيت الفراشة.', hint: '١٢ سطر · دقيقة وحدة', scroll: 'انزل', next: 'انزل أو اضغط', back: 'رجوع للموقع', blog: 'اقرأ المدونة', end: 'طارت. وأنت؟', visits: 'زيارات', range: 'مدى', gardens: 'حدايق', fly: 'فراشة', bee: 'نحلة', far: 'حديقة بعيدة', tags: ['بيانات', 'تصميم', 'كود'] }
-  : { kicker: '// SECRET_CHANNEL', found: 'You caught the butterfly.', hint: '12 lines · about a minute', scroll: 'scroll', next: 'scroll or tap', back: 'Back to the site', blog: 'Read the blog', end: 'It flew away. Your turn.', visits: 'visits', range: 'range', gardens: 'gardens', fly: 'butterfly', bee: 'bee', far: 'far garden', tags: ['data', 'design', 'code'] };
+  ? { kicker: '// قناة_سرية', found: 'لقيت الفراشة.', hint: '١٢ سطر · دقيقة وحدة', scroll: 'انزل', next: 'انزل أو اضغط', back: 'رجوع للموقع', blog: 'اقرأ المدونة', garden: 'شوف الحديقة 3D', end: 'طارت. وأنت؟', visits: 'زيارات', range: 'مدى', gardens: 'حدايق', fly: 'فراشة', bee: 'نحلة', far: 'حديقة بعيدة', tags: ['بيانات', 'تصميم', 'كود'] }
+  : { kicker: '// SECRET_CHANNEL', found: 'You caught the butterfly.', hint: '12 lines · about a minute', scroll: 'scroll', next: 'scroll or tap', back: 'Back to the site', blog: 'Read the blog', garden: 'See the garden in 3D', end: 'It flew away. Your turn.', visits: 'visits', range: 'range', gardens: 'gardens', fly: 'butterfly', bee: 'bee', far: 'far garden', tags: ['data', 'design', 'code'] };
 
 // Five acts: the line each one starts on, and its name
 const ACTS = [
@@ -117,6 +117,7 @@ const STARS = Array.from({ length: 26 }, (_, i) => ({ x: (i * 37 + 11) % 97, y: 
         <p class="pap-end">{t.end}</p>
         <div class="pap-cta">
           <a class="btn" href={langUrl(lang, 'blog/')}>{t.blog}</a>
+          <a class="btn" href={langUrl(lang, 'papillon/garden/')}>{t.garden}</a>
           <a class="btn" href={langUrl(lang)}>{t.back}</a>
         </div>
       </footer>
