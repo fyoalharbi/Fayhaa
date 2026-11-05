@@ -1,7 +1,7 @@
 ---
-// Hidden 3D view of the garden (/papillon/garden/): a real-time ASCII render of
-// the flowers, a bee and four butterflies (public/js/garden3d.js). Reached from
-// the end of the secret philosophy page.
+// Hidden 3D garden walk (/papillon/garden/): an endless straight path through a
+// night border garden, rendered in ASCII in real time (public/js/garden3d.js).
+// Reached from the end of the secret philosophy page.
 import Base from '../layouts/Base.astro';
 import { type Lang } from '../data/profile';
 import { url, langUrl } from '../lib/site';
@@ -10,22 +10,18 @@ interface Props { lang: Lang }
 const { lang } = Astro.props;
 const ar = lang === 'ar';
 const t = ar
-  ? { title: 'الحديقة', kicker: '// GARDEN_3D', hint: 'اسحب لتتلفت · مرّر لتمشي', walk: 'امشِ', orbit: 'من فوق', follow: 'تابع الفراشة', back: 'رجوع للقصة' }
-  : { title: 'The garden', kicker: '// GARDEN_3D', hint: 'drag to look around · scroll to walk', walk: 'Walk', orbit: 'Overview', follow: 'Follow the butterfly', back: 'Back to the story' };
+  ? { title: 'الحديقة', kicker: '// GARDEN_3D', hint: 'اسحب لتتلفت · مرّر لتمشي', pause: 'وقّف', walk: 'امشِ', back: 'رجوع للقصة' }
+  : { title: 'The garden', kicker: '// GARDEN_3D', hint: 'drag to look around · scroll to walk', pause: 'Pause', walk: 'Walk', back: 'Back to the story' };
 ---
 <Base lang={lang} title={t.title} path="papillon/garden/" noindex>
   <div class="g3" dir={ar ? 'rtl' : 'ltr'}>
     <canvas id="g3-canvas" aria-label={t.title}></canvas>
     <div class="g3-ui mono">
       <p class="g3-kicker" dir="ltr">{t.kicker}</p>
-      <p class="g3-hint" data-orbit={ar ? 'اسحب للالتفاف · مرّر للتقريب' : 'drag to orbit · scroll to zoom'}>{t.hint}</p>
+      <p class="g3-hint">{t.hint}</p>
     </div>
     <div class="g3-actions">
-      <div class="g3-modes" role="group">
-        <button class="btn" type="button" data-mode="walk" aria-pressed="true">{t.walk}</button>
-        <button class="btn" type="button" data-mode="orbit" aria-pressed="false">{t.orbit}</button>
-        <button class="btn" type="button" data-mode="follow" aria-pressed="false">{t.follow}</button>
-      </div>
+      <button class="btn" id="g3-walk" type="button" data-pause={t.pause} data-walk={t.walk}>{t.pause}</button>
       <a class="btn" href={langUrl(lang, 'papillon/')}>{t.back}</a>
     </div>
   </div>
@@ -37,13 +33,10 @@ const t = ar
       s.src = src;
       s.onload = () => {
         const g = new window.Garden3D(document.getElementById('g3-canvas'));
-        const hint = document.querySelector('.g3-hint'), hints = { walk: hint.textContent, orbit: hint.dataset.orbit, follow: hint.dataset.orbit };
-        const btns = [...document.querySelectorAll('.g3-modes [data-mode]')];
-        btns.forEach((b) => b.addEventListener('click', () => {
-          g.setMode(b.dataset.mode);
-          btns.forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
-          hint.textContent = hints[b.dataset.mode];
-        }));
+        const btn = document.getElementById('g3-walk');
+        const label = () => { btn.textContent = g.walking ? btn.dataset.pause : btn.dataset.walk; };
+        label();
+        btn.addEventListener('click', () => { g.setWalking(!g.walking); label(); });
       };
       document.body.appendChild(s);
     })();
@@ -51,18 +44,13 @@ const t = ar
 </Base>
 
 <style>
-  .g3 {
-    position: relative; height: calc(100svh - var(--header-h)); overflow: hidden; color: var(--paper);
-    background: radial-gradient(ellipse at 50% 115%, #1f2a1f 0%, #141814 38%, #0d0d0f 72%);
-  }
+  .g3 { position: relative; height: calc(100svh - var(--header-h)); overflow: hidden; color: var(--paper); background: #07080a; }
   .g3 canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; cursor: grab; touch-action: none; }
   .g3 canvas:active { cursor: grabbing; }
   .g3-ui { position: absolute; top: 16px; inset-inline-start: 20px; pointer-events: none; }
   .g3-kicker { margin: 0 0 4px; color: #ff8a8a; }
-  .g3-hint { margin: 0; color: #77777f; font-size: .8rem; }
+  .g3-hint { margin: 0; color: #8a8a92; font-size: .8rem; }
   .g3-actions { position: absolute; bottom: 20px; inset-inline-start: 20px; display: flex; flex-wrap: wrap; gap: 10px; }
-  .g3-actions .btn { border-color: var(--paper); color: var(--paper); background: rgba(13, 13, 15, .7); }
-  .g3-modes { display: flex; }
-  .g3-modes .btn { border-radius: 0; margin-inline-end: -1px; }
-  .g3-modes .btn[aria-pressed='true'] { background: #ff8a8a; border-color: #ff8a8a; color: #111; }
+  .g3-actions .btn { border-color: var(--paper); color: var(--paper); background: rgba(7, 8, 10, .75); }
+  .g3-actions .btn:first-child { background: #ff8a8a; border-color: #ff8a8a; color: #111; }
 </style>
