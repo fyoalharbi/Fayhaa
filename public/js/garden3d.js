@@ -7,17 +7,21 @@
 //  buffer; lighting picks the brightness, the surface picks the glyph. Fills
 //  use the same live 0/1 bit stream as the 2D garden.
 //
-//    const g = new Garden3D(canvas, { follow: false });
-//    g.toggleFollow();   // camera chases the white butterfly
+//    const g = new Garden3D(canvas);
+//    g.setMode('walk' | 'orbit' | 'follow');
+//      walk:   stroll along the garden path at eye height (drag to look around)
+//      orbit:  circle the whole garden (drag to orbit, scroll to zoom)
+//      follow: the camera chases the white butterfly
 // ─────────────────────────────────────────────
 (function () {
   // ── Palette: base colours × 4 brightness levels ──
   const BASE = ['#3f6b3f', '#6f9f6f', '#4f8a4f', '#e6c34a', '#ff8a8a', '#f4f4f4', '#cfcfcf', '#8a8a9a',
     '#e6d27a', '#8ac6ff', '#c49aff', '#7fe0b0', '#ffb070', '#6a5214', '#d7e6ff',
-    '#2f5a3a', '#e8e4d0', '#d4ff7a', '#ffc0d0', '#b8913a'];
+    '#2f5a3a', '#e8e4d0', '#d4ff7a', '#ffc0d0', '#b8913a', '#d9cdb2', '#8c826f', '#ff6f91'];
   const C = { ground: 0, stem: 1, leaf: 2, gold: 3, pink: 4, white: 5, body: 6, star: 7, pollen: 8, blue: 9, violet: 10, mint: 11, orange: 12, dark: 13, glass: 14,
-    grass2: 15, moon: 16, firefly: 17, blush: 18, amber: 19 };
-  const LEVELS = [0.3, 0.5, 0.75, 1];
+    grass2: 15, moon: 16, firefly: 17, blush: 18, amber: 19, stone: 20, gravel: 21, rose: 22 };
+  const LEVELS = [0.2, 0.36, 0.55, 0.78, 1];
+  const NL = LEVELS.length;
   const PAL = [];
   for (const h of BASE) {
     const n = parseInt(h.slice(1), 16), r = n >> 16, g = (n >> 8) & 255, b = n & 255;
@@ -35,7 +39,7 @@
 
   // ── Static scene: a list of points (x y z nx ny nz colour glyph swayAmp phase fogless ao) ──
   const F = 12;
-  function Cloud() { this.d = []; }
+  function Cloud() { this.d = []; this.groups = []; }
   Cloud.prototype.add = function (x, y, z, nx, ny, nz, col, ch, sway = 0, ph = 0, fogless = 0, ao = 1) {
     this.d.push(x, y, z, nx, ny, nz, col, ch, sway, ph, fogless, ao);
   };
@@ -48,19 +52,19 @@
     { n: 6, len: 0.22, w: 0.1, up: 1.15, droop: -0.04, r0: 0.03, name: 'tulip' },
     { n: 8, len: 0.27, w: 0.075, up: 0.42, droop: 0.04, r0: 0.05, name: 'cosmos' },
   ];
-  function addHead(s, x, h, z, k, col, ph) {
+  function addHead(s, x, h, z, k, col, ph, size = 1) {
     const sp = KINDS[k];
     for (let j = 0; j < sp.n; j++) {
       const a = (j / sp.n) * Math.PI * 2 + (k === 1 ? 0 : rand(-0.06, 0.06));
       const dx = Math.cos(a), dz = Math.sin(a), px = -dz, pz = dx;
-      const lenJ = sp.len * rand(0.9, 1.08);
-      for (let t = 0; t <= 1.001; t += 0.035) {
-        const radial = sp.r0 + t * lenJ * Math.cos(sp.up), vert = t * lenJ * Math.sin(sp.up) - sp.droop * t * t;
+      const lenJ = sp.len * size * rand(0.9, 1.08);
+      for (let t = 0; t <= 1.001; t += 0.07) {
+        const radial = sp.r0 * size + t * lenJ * Math.cos(sp.up), vert = t * lenJ * Math.sin(sp.up) - sp.droop * t * t;
         const slope = Math.atan2(lenJ * Math.sin(sp.up) - 2 * sp.droop * t, lenJ * Math.cos(sp.up));
         const nx = -dx * Math.sin(slope), ny = Math.cos(slope), nz = -dz * Math.sin(slope);
-        const width = sp.w * Math.pow(Math.sin(Math.PI * Math.min(1, t * 1.04 + 0.04)), 0.65) * (k === 1 ? 0.7 + 0.5 * t : 1);
-        for (let w = -1; w <= 1.001; w += 0.14) {
-          const edge = Math.abs(w) > 0.86 || t > 0.96;
+        const width = sp.w * size * Math.pow(Math.sin(Math.PI * Math.min(1, t * 1.04 + 0.04)), 0.65) * (k === 1 ? 0.7 + 0.5 * t : 1);
+        for (let w = -1; w <= 1.001; w += 0.34) {
+          const edge = Math.abs(w) > 0.8 || t > 0.95;
           s.add(x + dx * radial + px * w * width, h + vert, z + dz * radial + pz * w * width, nx, ny, nz,
             col, edge ? K[':'] : BIT, h, ph, 0, 1.3);
         }
@@ -68,37 +72,72 @@
     }
     // Domed centre
     for (let e = 0; e <= Math.PI / 2; e += 0.25) for (let a = 0; a < Math.PI * 2; a += 0.35) {
-      const rr = 0.06 * Math.cos(e);
+      const rr = 0.06 * size * Math.cos(e);
       s.add(x + Math.cos(a) * rr, h + 0.035 * Math.sin(e) + 0.01, z + Math.sin(a) * rr, Math.cos(a) * Math.cos(e), Math.sin(e), Math.sin(a) * Math.cos(e),
         C.gold, e > 1.2 ? K['@'] : K.o, h, ph, 0, 1.3);
     }
   }
 
+  // The path: a closed, winding loop (x, z) and helpers to sample it
+  const PATH_N = 600;
+  function pathAt(u) {
+    const a = u * Math.PI * 2;
+    return [4.3 * Math.cos(a) + 0.75 * Math.cos(3 * a), 3.3 * Math.sin(a) + 0.55 * Math.sin(2 * a)];
+  }
+  const PATH = Array.from({ length: PATH_N }, (_, i) => pathAt(i / PATH_N));
+  function pathDist(x, z) {
+    let best = 1e9;
+    for (let i = 0; i < PATH_N; i += 3) { const d = (PATH[i][0] - x) ** 2 + (PATH[i][1] - z) ** 2; if (d < best) best = d; }
+    return Math.sqrt(best);
+  }
+  const PATH_W = 0.42;                      // half width
+
   function buildScene() {
     const s = new Cloud(), heads = [];
-    // Ground: a jittered disc of grass glyphs that thins out toward the edge
-    const R = 6.4;
-    for (let i = 0; i < 12000; i++) {
-      const r = R * Math.sqrt(Math.random()), a = Math.random() * Math.PI * 2;
-      if (r > 4.8 && Math.random() < (r - 4.8) / 1.6) continue;
-      s.add(r * Math.cos(a), 0, r * Math.sin(a), 0, 1, 0, Math.random() < 0.35 ? C.grass2 : C.ground, GRASS[(Math.random() * GRASS.length) | 0], 0, 0, 0, rand(0.42, 0.68));
+    // Ground: dark, sparse grass glyphs; gravel where the path runs
+    const R = 7.6;
+    for (let i = 0; i < 15000; i++) {
+      const r = R * Math.sqrt(Math.random()), a = Math.random() * Math.PI * 2, x = r * Math.cos(a), z = r * Math.sin(a);
+      if (r > 6 && Math.random() < (r - 6) / 1.6) continue;
+      const pd = pathDist(x, z);
+      if (pd < PATH_W) s.add(x, 0.005, z, 0, 1, 0, C.gravel, Math.random() < 0.5 ? K['.'] : K[','], 0, 0, 0, rand(0.55, 0.8));
+      else s.add(x, 0, z, 0, 1, 0, Math.random() < 0.35 ? C.grass2 : C.ground, Math.random() < 0.6 ? K['.'] : K[','], 0, 0, 0, rand(0.3, 0.5));
     }
-    // Grass blades: a few leaning segments each
-    for (let i = 0; i < 1800; i++) {
-      const r = 5.4 * Math.sqrt(Math.random()), a = Math.random() * Math.PI * 2, x = r * Math.cos(a), z = r * Math.sin(a);
-      const h = rand(0.06, 0.24), lean = rand(-0.05, 0.05), seg = 4;
+    // Extra ground detail near the path, where the walker's eye is close to the ground
+    for (let i = 0; i < 16000; i++) {
+      const [x, z] = PATH[(Math.random() * PATH_N) | 0], a = Math.random() * Math.PI * 2, off = Math.pow(Math.random(), 1.6) * 1.8;
+      const px = x + Math.cos(a) * off, pz = z + Math.sin(a) * off, pd = pathDist(px, pz);
+      if (pd < PATH_W) s.add(px, 0.005, pz, 0, 1, 0, C.gravel, Math.random() < 0.6 ? K['.'] : K[','], 0, 0, 0, rand(0.5, 0.75));
+      else s.add(px, 0, pz, 0, 1, 0, Math.random() < 0.4 ? C.grass2 : C.ground, GRASS[(Math.random() * GRASS.length) | 0], 0, 0, 0, rand(0.32, 0.55));
+    }
+    // Stepping stones down the middle of the path
+    for (let i = 0; i < PATH_N; i += 9) {
+      const [x, z] = PATH[i], [x2, z2] = PATH[(i + 3) % PATH_N];
+      const ta = Math.atan2(z2 - z, x2 - x), ra = rand(0.15, 0.2), rb = rand(0.11, 0.15), jx = rand(-0.06, 0.06), jz = rand(-0.06, 0.06);
+      for (let u = -1; u <= 1; u += 0.13) for (let v = -1; v <= 1; v += 0.17) {
+        const dd = u * u + v * v;
+        if (dd > 1) continue;
+        const px = x + jx + Math.cos(ta) * u * ra - Math.sin(ta) * v * rb, pz = z + jz + Math.sin(ta) * u * ra + Math.cos(ta) * v * rb;
+        s.add(px, 0.02 + 0.015 * (1 - dd), pz, -u * 0.2, 1, -v * 0.2, C.stone, dd > 0.7 ? K[':'] : Math.random() < 0.08 ? K.o : K['='], 0, 0, 0, 1.05);
+      }
+    }
+    // Grass blades, kept off the path
+    for (let i = 0; i < 1600; i++) {
+      const r = 6.2 * Math.sqrt(Math.random()), a = Math.random() * Math.PI * 2, x = r * Math.cos(a), z = r * Math.sin(a);
+      if (pathDist(x, z) < PATH_W + 0.08) continue;
+      const h = rand(0.06, 0.22), lean = rand(-0.05, 0.05), seg = 4;
       for (let k = 1; k <= seg; k++) {
         const t = k / seg;
-        s.add(x + lean * t * t, h * t, z + lean * t * t * 0.6, 0.3, 0.6, 0.3, Math.random() < 0.5 ? C.stem : C.leaf, K[k === seg ? "'" : '|'], h * t, a, 0, 0.75 * aoAt(h * t * 3));
+        s.add(x + lean * t * t, h * t, z + lean * t * t * 0.6, 0.3, 0.6, 0.3, Math.random() < 0.5 ? C.stem : C.leaf, K[k === seg ? "'" : '|'], h * t, a, 0, 0.6 * aoAt(h * t * 3));
       }
     }
     // Stars and a moon
-    for (let i = 0; i < 320; i++) {
-      const a = Math.random() * Math.PI * 2, e = rand(0.1, 1.35), r = 40;
+    for (let i = 0; i < 340; i++) {
+      const a = Math.random() * Math.PI * 2, e = rand(0.08, 1.35), r = 40;
       s.add(r * Math.cos(a) * Math.cos(e), r * Math.sin(e), r * Math.sin(a) * Math.cos(e), 0, -1, 0, C.star, Math.random() < 0.18 ? K['+'] : K['.'], 0, 0, 1);
     }
     {
-      const dir = norm([-0.55, 0.45, -0.7]), D = 38, mr = 2.1;
+      const dir = norm([-0.55, 0.42, -0.7]), D = 38, mr = 2.2;
       const ax = norm([dir[2], 0, -dir[0]]), ay = [dir[1] * ax[2] - dir[2] * ax[1], dir[2] * ax[0] - dir[0] * ax[2], dir[0] * ax[1] - dir[1] * ax[0]];
       for (let rr = 0; rr <= mr; rr += 0.12) for (let a = 0; a < Math.PI * 2; a += 0.12 / Math.max(rr, 0.12)) {
         const cx = Math.cos(a) * rr, cy = Math.sin(a) * rr;
@@ -107,53 +146,74 @@
           C.moon, rr > mr - 0.15 ? K[':'] : crater ? K.o : BIT, 0, 0, 1);
       }
     }
-    // The hive, where the bee lives
-    const hive = { x: -2.3, z: 1.7 };
+    // The hive, in the meadow inside the loop
+    const hive = { x: -1.1, z: 0.5 };
     for (let y = 0; y <= 0.58; y += 0.022) {
       const rad = 0.34 * Math.sqrt(Math.max(0, 1 - (y / 0.62) ** 2)) + 0.03;
       for (let a = 0; a < Math.PI * 2; a += 0.05 / rad) {
-        const door = Math.abs(((a + Math.PI) % (Math.PI * 2)) - Math.PI) < 0.32 && y < 0.13;
+        const door = Math.abs(((a + Math.PI / 2 + Math.PI) % (Math.PI * 2)) - Math.PI) < 0.32 && y < 0.13;
         const band = ((y / 0.075) | 0) % 2;
         s.add(hive.x + Math.cos(a) * rad, y, hive.z + Math.sin(a) * rad, Math.cos(a), 0.4, Math.sin(a),
           door ? C.dark : band ? C.amber : C.gold, door ? K['0'] : band ? K['='] : BIT, 0, 0, 0, aoAt(y + 0.3));
       }
     }
-    // Flowers
-    const PETALS = [C.pink, C.blue, C.violet, C.gold, C.mint, C.orange, C.blush, C.white];
-    const placed = [[hive.x, hive.z]];
-    let tries = 0;
-    while (placed.length < 25 && tries++ < 800) {
-      const r = 4.3 * Math.sqrt(Math.random()), a = Math.random() * Math.PI * 2;
-      const x = r * Math.cos(a), z = r * Math.sin(a);
-      if (placed.some((p) => Math.hypot(p[0] - x, p[1] - z) < 0.72)) continue;
-      placed.push([x, z]);
-      const h = rand(0.65, 1.45), ph = Math.random() * 6.28, col = PETALS[placed.length % PETALS.length];
-      const kind = placed.length % 3;
-      // Stem: a thin tube with a gentle bend
-      const bend = rand(-0.1, 0.1), bendA = Math.random() * 6.28;
-      for (let t = 0; t <= 1; t += 0.018) {
+    // Flower beds: short flowers at the path's edge, taller ones behind them
+    const PETALS = [C.pink, C.blue, C.violet, C.gold, C.mint, C.orange, C.blush, C.white, C.rose];
+    const placed = [[hive.x, hive.z, 0.6]];
+    const plant = (x, z, h, size) => {
+      const g0 = s.d.length / F;
+      const ph = Math.random() * 6.28, col = PETALS[(Math.random() * PETALS.length) | 0], kind = (Math.random() * 3) | 0;
+      const bend = rand(-0.08, 0.08), bendA = Math.random() * 6.28;
+      for (let t = 0; t <= 1; t += 0.03) {
         const y = t * h, ob = Math.sin(t * Math.PI) * bend;
-        for (let q = 0; q < 3; q++) {
-          const qa = (q / 3) * Math.PI * 2;
-          s.add(x + Math.cos(bendA) * ob + Math.cos(qa) * 0.012, y, z + Math.sin(bendA) * ob + Math.sin(qa) * 0.012, Math.cos(qa), 0.2, Math.sin(qa),
+        for (let q = 0; q < 2; q++) {
+          const qa = q * Math.PI;
+          s.add(x + Math.cos(bendA) * ob + Math.cos(qa) * 0.011, y, z + Math.sin(bendA) * ob + Math.sin(qa) * 0.011, Math.cos(qa), 0.2, Math.sin(qa),
             C.stem, t > 0.4 && Math.random() < 0.25 ? K[':'] : K['|'], y, ph, 0, aoAt(y));
         }
       }
-      // Two curved leaves with a midrib
       for (let l = 0; l < 2; l++) {
-        const ly = h * rand(0.18, 0.5), la = Math.random() * Math.PI * 2, len = rand(0.32, 0.48);
+        const ly = h * rand(0.15, 0.45), la = Math.random() * Math.PI * 2, len = rand(0.22, 0.4) * size;
         const dx = Math.cos(la), dz = Math.sin(la);
-        for (let u = 0; u <= 1; u += 0.025) for (let w = -1; w <= 1.001; w += 0.13) {
-          const width = Math.pow(Math.sin(u * Math.PI), 0.8) * 0.085;
+        for (let u = 0; u <= 1; u += 0.055) for (let w = -1; w <= 1.001; w += 0.3) {
+          const width = Math.pow(Math.sin(u * Math.PI), 0.8) * 0.075 * size;
           const py = ly + u * len * 0.55 - u * u * len * 0.38;
           s.add(x + dx * u * len - dz * w * width, py, z + dz * u * len + dx * w * width, -dx * 0.5, 0.85, -dz * 0.5,
             C.leaf, Math.abs(w) < 0.1 ? K['-'] : Math.abs(w) > 0.8 || u > 0.95 ? K[':'] : BIT, py, ph, 0, aoAt(py));
         }
       }
-      addHead(s, x, h, z, kind, col, ph);
-      heads.push({ x, y: h + (kind === 1 ? 0.12 : 0.04), z, ph, col });
+      addHead(s, x, h, z, kind, col, ph, size);
+      heads.push({ x, y: h + (kind === 1 ? 0.1 * size : 0.04), z, ph, col });
+      s.groups.push([g0, s.d.length / F, x, h * 0.6, z]);   // point range + centre, for culling
+    };
+    const free = (x, z, r) => !placed.some((q) => Math.hypot(q[0] - x, q[1] - z) < Math.max(r, q[2]));
+    for (let i = 0; i < PATH_N; i += 9) {
+      const [x, z] = PATH[i], [x2, z2] = PATH[(i + 2) % PATH_N];
+      const tx = x2 - x, tz = z2 - z, tl = Math.hypot(tx, tz) || 1, nx = -tz / tl, nz = tx / tl;
+      for (const side of [-1, 1]) {
+        if (Math.random() < 0.32) continue;
+        const off = rand(PATH_W + 0.12, PATH_W + 1.1), fx = x + nx * side * off, fz = z + nz * side * off;
+        if (pathDist(fx, fz) < PATH_W + 0.1 || !free(fx, fz, 0.3)) continue;
+        const k = (off - PATH_W) / 1.1;                      // 0 at the edge … 1 at the back
+        const h = 0.24 + k * 0.55 + rand(-0.05, 0.08), size = 0.7 + k * 0.4;
+        placed.push([fx, fz, 0.28]);
+        plant(fx, fz, h, size);
+      }
     }
-    return { pts: new Float32Array(s.d), heads, hive: { x: hive.x, y: 0.66, z: hive.z } };
+    // A few tall ones in the meadow
+    for (let i = 0, tries = 0; i < 10 && tries < 300; tries++) {
+      const r = 2.4 * Math.sqrt(Math.random()), a = Math.random() * Math.PI * 2, x = r * Math.cos(a) * 1.2, z = r * Math.sin(a) * 0.9;
+      if (pathDist(x, z) < PATH_W + 0.3 || !free(x, z, 0.5)) continue;
+      placed.push([x, z, 0.4]); plant(x, z, rand(0.7, 1.1), 1.05); i++;
+    }
+    // Tiny ground-cover blossoms between the beds
+    for (let i = 0; i < 900; i++) {
+      const [x, z] = PATH[(Math.random() * PATH_N) | 0], a = Math.random() * Math.PI * 2, off = rand(PATH_W + 0.05, PATH_W + 1.4);
+      const fx = x + Math.cos(a) * off, fz = z + Math.sin(a) * off;
+      if (pathDist(fx, fz) < PATH_W + 0.04) continue;
+      s.add(fx, 0.03, fz, 0, 1, 0, PETALS[(Math.random() * PETALS.length) | 0], Math.random() < 0.5 ? K['*'] : K['°'], 0.03, a, 0, 0.75);
+    }
+    return { pts: new Float32Array(s.d), heads, hive: { x: hive.x, y: 0.66, z: hive.z }, groups: s.groups };
   }
 
   // ── Butterfly template (body frame: u forward, w outward from the body) ──
@@ -182,27 +242,29 @@
       this.canvas = canvas; this.ctx = canvas.getContext('2d');
       this.reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
       const sc = buildScene();
-      this.pts = sc.pts; this.heads = sc.heads; this.hive = sc.hive;
+      this.pts = sc.pts; this.heads = sc.heads; this.hive = sc.hive; this.groups = sc.groups;
       this.nStatic = this.pts.length / F;
       this.bits = Uint8Array.from({ length: this.nStatic + 12000 }, () => (Math.random() < 0.5 ? 1 : 0));
       this.wing = wingTemplate();
 
-      // Camera (orbit)
-      this.yaw = 0.6; this.pitch = 0.46; this.dist = 6; this.tgt = [0, 0.7, 0];
-      this.follow = !!opts.follow; this.idle = 0;
+      // Camera: walk (default), orbit or follow
+      this.mode = opts.mode || 'walk';
+      this.yaw = 0.6; this.pitch = 0.46; this.dist = 9; this.tgt = [0, 0.6, 0];
+      this.walkU = Math.random(); this.lookYaw = 0; this.lookPitch = 0; this.idle = 0;
+      this.fogDist = 10;
 
       // Butterflies: the white one is "ours"
-      const cols = [[C.white, C.pink], [C.blue, C.white], [C.violet, C.gold], [C.orange, C.dark]];
+      const cols = [[C.white, C.pink], [C.blue, C.white], [C.violet, C.gold], [C.orange, C.dark], [C.gold, C.dark], [C.mint, C.violet]];
       this.flyers = cols.map(([wingC, spotC], i) => ({
-        wingC, spotC, scale: i === 0 ? 0.85 : rand(0.55, 0.72),
-        p: [rand(-2, 2), rand(1.2, 2.2), rand(-2, 2)], v: [0, 0, 0], yaw: Math.random() * 6.28,
+        wingC, spotC, scale: i === 0 ? 0.95 : rand(0.6, 0.78),
+        p: [rand(-3, 3), rand(0.9, 1.6), rand(-3, 3)], v: [0, 0, 0], yaw: Math.random() * 6.28,
         phase: Math.random() * 6, glide: 0, perched: false, perchT: 0, target: (Math.random() * this.heads.length) | 0,
         wand: 0, w: [0, 0, 0], flap: 0.5, hopT: 0,
       }));
       // One bee, busy and direct
       this.bee = { p: [this.hive.x, this.hive.y, this.hive.z], v: [0, 0, 0], target: 0, t: 0, yaw: 0, visits: 0, home: false };
       // Fireflies blinking low over the grass
-      this.flies = Array.from({ length: 28 }, () => ({ p: [rand(-4, 4), rand(0.15, 0.7), rand(-4, 4)], ph: Math.random() * 6.28, sp: rand(0.6, 1.4) }));
+      this.flies = Array.from({ length: 40 }, () => ({ p: [rand(-5, 5), rand(0.15, 0.8), rand(-4, 4)], ph: Math.random() * 6.28, sp: rand(0.6, 1.4) }));
       // Pollen motes drifting up from the flowers
       this.motes = Array.from({ length: 70 }, () => this.newMote(true));
 
@@ -271,17 +333,22 @@
       c.addEventListener('pointerdown', (e) => { drag = { x: e.clientX, y: e.clientY }; c.setPointerCapture(e.pointerId); this.idle = 0; });
       c.addEventListener('pointermove', (e) => {
         if (!drag) return;
-        this.yaw -= (e.clientX - drag.x) * 0.006;
-        this.pitch = clamp(this.pitch + (e.clientY - drag.y) * 0.004, 0.05, 1.2);
+        if (this.mode === 'walk') {
+          this.lookYaw = clamp(this.lookYaw - (e.clientX - drag.x) * 0.005, -2.6, 2.6);
+          this.lookPitch = clamp(this.lookPitch + (e.clientY - drag.y) * 0.003, -0.5, 0.6);
+        } else {
+          this.yaw -= (e.clientX - drag.x) * 0.006;
+          this.pitch = clamp(this.pitch + (e.clientY - drag.y) * 0.004, 0.05, 1.2);
+        }
         drag = { x: e.clientX, y: e.clientY }; this.idle = 0;
       });
       const end = () => { drag = null; };
       c.addEventListener('pointerup', end); c.addEventListener('pointercancel', end);
-      c.addEventListener('wheel', (e) => { e.preventDefault(); this.dist = clamp(this.dist * Math.exp(e.deltaY * 0.001), 2.2, 12); this.idle = 0; }, { passive: false });
+      c.addEventListener('wheel', (e) => { e.preventDefault(); if (this.mode === 'walk') this.walkU += e.deltaY * 0.00004; else this.dist = clamp(this.dist * Math.exp(e.deltaY * 0.001), 2.2, 13); this.idle = 0; }, { passive: false });
       this.dragging = () => !!drag;
     }
 
-    toggleFollow() { this.follow = !this.follow; this.idle = 0; return this.follow; }
+    setMode(m) { this.mode = m; this.idle = 0; this.lookYaw = 0; this.lookPitch = 0; }
 
     // ── Natural flight: wander + steer + glides + perching (same rules as the 2D page) ──
     stepFlyer(b, dt, t) {
@@ -359,15 +426,30 @@
         if (m.age > m.life) Object.assign(m, this.newMote(false));
       }
 
-      // Camera: idle auto-orbit; follow mode eases toward the white butterfly
+      // Camera
       this.idle += dt;
-      if (!this.dragging() && this.idle > 2.5 && !this.reduced) this.yaw += dt * 0.09;
-      const want = this.follow ? this.flyers[0].p : [0, 0.7, 0];
-      for (let k = 0; k < 3; k++) this.tgt[k] += (want[k] - this.tgt[k]) * Math.min(1, dt * 2.5);
-      const dist = this.follow ? Math.min(this.dist, 2.6) : this.dist;
-      const cp = Math.cos(this.pitch);
-      const cam = [this.tgt[0] + dist * Math.sin(this.yaw) * cp, this.tgt[1] + dist * Math.sin(this.pitch), this.tgt[2] + dist * Math.cos(this.yaw) * cp];
-      const f = norm([this.tgt[0] - cam[0], this.tgt[1] - cam[1], this.tgt[2] - cam[2]]);
+      let cam, f;
+      if (this.mode === 'walk') {
+        // Stroll along the path at eye height, with a gentle step bob; drag to look around,
+        // and the gaze drifts back ahead when left alone
+        if (!this.reduced) this.walkU = (this.walkU + dt * 0.0075) % 1;
+        if (!this.dragging() && this.idle > 2.5) { this.lookYaw *= 1 - Math.min(1, dt * 0.8); this.lookPitch *= 1 - Math.min(1, dt * 0.8); }
+        const a = pathAt(((this.walkU % 1) + 1) % 1), b = pathAt(((this.walkU + 0.03) % 1 + 1) % 1);
+        const bob = this.reduced ? 0 : Math.sin(t * 3.4) * 0.008;
+        cam = [a[0], 0.66 + bob, a[1]];
+        const hd = Math.atan2(b[1] - a[1], b[0] - a[0]) + this.lookYaw;
+        f = norm([Math.cos(hd), -0.22 + this.lookPitch, Math.sin(hd)]);
+        this.fogDist = 7.5;
+      } else {
+        if (this.mode === 'orbit' && !this.dragging() && this.idle > 2.5 && !this.reduced) this.yaw += dt * 0.08;
+        const want = this.mode === 'follow' ? this.flyers[0].p : [0, 0.6, 0];
+        for (let k = 0; k < 3; k++) this.tgt[k] += (want[k] - this.tgt[k]) * Math.min(1, dt * 2.5);
+        const dist = this.mode === 'follow' ? Math.min(this.dist, 2.4) : this.dist;
+        const cp = Math.cos(this.pitch);
+        cam = [this.tgt[0] + dist * Math.sin(this.yaw) * cp, this.tgt[1] + dist * Math.sin(this.pitch), this.tgt[2] + dist * Math.cos(this.yaw) * cp];
+        f = norm([this.tgt[0] - cam[0], this.tgt[1] - cam[1], this.tgt[2] - cam[2]]);
+        this.fogDist = this.mode === 'follow' ? 8 : 14;
+      }
       const r = norm([-f[2], 0, f[0]]);                       // right = forward × up
       const u = [r[1] * f[2] - r[2] * f[1], r[2] * f[0] - r[0] * f[2], r[0] * f[1] - r[1] * f[0]];
       const FOC = Math.min(this.H, this.W * 1.2) * 1.05, cwI = 1 / this.cw, chI = 1 / this.chH, hc = COLS / 2, hr = ROWS / 2;
@@ -386,17 +468,33 @@
         if (iz <= zb[i]) return;
         zb[i] = iz;
         const lum = (0.35 + 0.65 * Math.abs(nx * L[0] + ny * L[1] + nz * L[2])) * ao;
-        const fog = fogless ? 0.55 : clamp(1.3 - zc / 13, 0.15, 1);
+        const fog = fogless ? 0.6 : clamp(1.35 - zc / this.fogDist, 0.12, 1);
         gl[i] = ch === BIT ? (bits[bitIdx % bits.length] ? K['1'] : K['0']) : ch;
-        co[i] = col * 4 + Math.min(3, Math.max(0, (lum * fog * 4.2 - 0.4) | 0));
+        co[i] = col * NL + Math.min(NL - 1, Math.max(0, (lum * fog * NL * 1.1 - 0.45) | 0));
       };
 
       // Static scene with sway
-      const P = this.pts;
-      for (let n = 0, o = 0; n < this.nStatic; n++, o += F) {
-        const sway = P[o + 8], sw = sway ? Math.sin(t * 1.3 + P[o + 9]) * 0.04 * sway : 0;
-        put(P[o] + sw, P[o + 1], P[o + 2] + sw * 0.6, P[o + 3], P[o + 4], P[o + 5], P[o + 6], P[o + 7], P[o + 10], n, P[o + 11]);
+      const P = this.pts, G = this.groups;
+      // Points outside any flower (ground, stones, sky, hive) are always drawn;
+      // each flower is skipped when its centre is behind the camera or lost in the fog
+      const drawRange = (from, to) => {
+        for (let n = from, o = from * F; n < to; n++, o += F) {
+          const sway = P[o + 8], sw = sway ? Math.sin(t * 1.3 + P[o + 9]) * 0.04 * sway : 0;
+          put(P[o] + sw, P[o + 1], P[o + 2] + sw * 0.6, P[o + 3], P[o + 4], P[o + 5], P[o + 6], P[o + 7], P[o + 10], n, P[o + 11]);
+        }
+      };
+      const firstFlower = G.length ? G[0][0] : this.nStatic;
+      drawRange(0, firstFlower);
+      const maxZ = this.fogDist * 1.4;
+      for (const g of G) {
+        const dx = g[2] - cam[0], dy = g[3] - cam[1], dz = g[4] - cam[2];
+        const zc = dx * f[0] + dy * f[1] + dz * f[2];
+        if (zc < -0.8 || zc > maxZ) continue;
+        if (zc > 0.5 && Math.abs(dx * r[0] + dy * r[1] + dz * r[2]) > zc * 1.9 + 0.8) continue;
+        drawRange(g[0], g[1]);
       }
+      const lastFlower = G.length ? G[G.length - 1][1] : this.nStatic;
+      drawRange(lastFlower, this.nStatic);
       // Fireflies: drift and blink
       for (const q of this.flies) {
         q.p[0] += Math.sin(t * 0.4 * q.sp + q.ph) * 0.004; q.p[2] += Math.cos(t * 0.33 * q.sp + q.ph) * 0.004;

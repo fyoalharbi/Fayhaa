@@ -10,18 +10,22 @@ interface Props { lang: Lang }
 const { lang } = Astro.props;
 const ar = lang === 'ar';
 const t = ar
-  ? { title: 'الحديقة', kicker: '// GARDEN_3D', hint: 'اسحب للالتفاف · مرّر للتقريب', follow: 'تابع الفراشة', free: 'كاميرا حرة', back: 'رجوع للقصة' }
-  : { title: 'The garden', kicker: '// GARDEN_3D', hint: 'drag to orbit · scroll to zoom', follow: 'Follow the butterfly', free: 'Free camera', back: 'Back to the story' };
+  ? { title: 'الحديقة', kicker: '// GARDEN_3D', hint: 'اسحب لتتلفت · مرّر لتمشي', walk: 'امشِ', orbit: 'من فوق', follow: 'تابع الفراشة', back: 'رجوع للقصة' }
+  : { title: 'The garden', kicker: '// GARDEN_3D', hint: 'drag to look around · scroll to walk', walk: 'Walk', orbit: 'Overview', follow: 'Follow the butterfly', back: 'Back to the story' };
 ---
 <Base lang={lang} title={t.title} path="papillon/garden/" noindex>
   <div class="g3" dir={ar ? 'rtl' : 'ltr'}>
     <canvas id="g3-canvas" aria-label={t.title}></canvas>
     <div class="g3-ui mono">
       <p class="g3-kicker" dir="ltr">{t.kicker}</p>
-      <p class="g3-hint">{t.hint}</p>
+      <p class="g3-hint" data-orbit={ar ? 'اسحب للالتفاف · مرّر للتقريب' : 'drag to orbit · scroll to zoom'}>{t.hint}</p>
     </div>
     <div class="g3-actions">
-      <button class="btn" id="g3-follow" type="button" data-on={t.free} data-off={t.follow}>{t.follow}</button>
+      <div class="g3-modes" role="group">
+        <button class="btn" type="button" data-mode="walk" aria-pressed="true">{t.walk}</button>
+        <button class="btn" type="button" data-mode="orbit" aria-pressed="false">{t.orbit}</button>
+        <button class="btn" type="button" data-mode="follow" aria-pressed="false">{t.follow}</button>
+      </div>
       <a class="btn" href={langUrl(lang, 'papillon/')}>{t.back}</a>
     </div>
   </div>
@@ -33,8 +37,13 @@ const t = ar
       s.src = src;
       s.onload = () => {
         const g = new window.Garden3D(document.getElementById('g3-canvas'));
-        const btn = document.getElementById('g3-follow');
-        btn.addEventListener('click', () => { btn.textContent = g.toggleFollow() ? btn.dataset.on : btn.dataset.off; });
+        const hint = document.querySelector('.g3-hint'), hints = { walk: hint.textContent, orbit: hint.dataset.orbit, follow: hint.dataset.orbit };
+        const btns = [...document.querySelectorAll('.g3-modes [data-mode]')];
+        btns.forEach((b) => b.addEventListener('click', () => {
+          g.setMode(b.dataset.mode);
+          btns.forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
+          hint.textContent = hints[b.dataset.mode];
+        }));
       };
       document.body.appendChild(s);
     })();
@@ -53,5 +62,7 @@ const t = ar
   .g3-hint { margin: 0; color: #77777f; font-size: .8rem; }
   .g3-actions { position: absolute; bottom: 20px; inset-inline-start: 20px; display: flex; flex-wrap: wrap; gap: 10px; }
   .g3-actions .btn { border-color: var(--paper); color: var(--paper); background: rgba(13, 13, 15, .7); }
-  .g3-actions .btn:first-child { background: #ff8a8a; border-color: #ff8a8a; color: #111; }
+  .g3-modes { display: flex; }
+  .g3-modes .btn { border-radius: 0; margin-inline-end: -1px; }
+  .g3-modes .btn[aria-pressed='true'] { background: #ff8a8a; border-color: #ff8a8a; color: #111; }
 </style>
