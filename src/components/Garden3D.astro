@@ -1,6 +1,7 @@
 ---
-// Hidden 3D meadow walk (/papillon/garden/): an endless footpath through hilly
-// wildflower meadow at night, rendered in ASCII in real time (public/js/garden3d.js).
+// Hidden 3D cottage-garden walk (/papillon/garden/): an endless flagstone path
+// through overflowing borders and rose arches, rendered in ASCII in real time
+// (public/js/garden3d.js).
 // Reached from the end of the secret philosophy page.
 import Base from '../layouts/Base.astro';
 import { type Lang } from '../data/profile';
@@ -44,7 +45,10 @@ const t = ar
 </Base>
 
 <style>
-  .g3 { position: relative; height: calc(100svh - var(--header-h)); overflow: hidden; color: var(--paper); background: #07080a; }
+  .g3 {
+    position: relative; height: calc(100svh - var(--header-h)); overflow: hidden; color: var(--paper);
+    background: linear-gradient(180deg, #1d2b36 0%, #2a2c2c 38%, #1a1f17 62%, #0d110b 100%);   /* evening sky behind the trees */
+  }
   .g3 canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; cursor: grab; touch-action: none; }
   .g3 canvas:active { cursor: grabbing; }
   .g3-ui { position: absolute; top: 16px; inset-inline-start: 20px; pointer-events: none; }
