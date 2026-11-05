@@ -7,7 +7,8 @@
 //  at the back) and a rose arch over the path. Butterflies and a bee work the
 //  flowers, drawn brighter and larger than the blooms, with a faint trail.
 //
-//  How it is drawn:
+//  How it is drawn (on the GPU via WebGL when available: the CPU only fills a
+//  small grid of glyph + colour per cell; a shader draws the letters):
 //   • The ground and path are ray-cast per character cell (Voronoi stones).
 //   • Plants are soft impostors: a sparse leafy dome in screen space with
 //     blossoms fixed in 3D on it, so they stay put and simply shrink with
@@ -139,7 +140,9 @@
 
   class Garden3D {
     constructor(canvas) {
-      this.canvas = canvas; this.ctx = canvas.getContext('2d');
+      this.canvas = canvas;
+      this.glr = this.initGL();
+      if (!this.glr) this.ctx = canvas.getContext('2d');
       this.reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
       this.spinning = !this.reduced;
       this.yaw = 0.5; this.pitch = 0.42; this.dist = 7.5; this.idle = 0;
@@ -176,14 +179,88 @@
 
     resize() {
       const r = this.canvas.getBoundingClientRect();
-      this.W = r.width; this.H = r.height;
-      this.canvas.width = r.width; this.canvas.height = r.height;
+      const d = this.glr ? Math.min(devicePixelRatio || 1, 2) : 1;      // the GPU path can afford sharp hi-DPI text
+      this.W = r.width; this.H = r.height; this.dpr = d;
+      this.canvas.width = Math.round(r.width * d); this.canvas.height = Math.round(r.height * d);
       this.fs = (r.width < 600 ? 9 : 11) + (this.quality || 0);
       this.cw = this.fs * 0.6; this.chH = this.fs * 1.08;
       this.COLS = Math.ceil(r.width / this.cw); this.ROWS = Math.ceil(r.height / this.chH);
-      this.buildAtlas();
+      if (this.glr) this.glAtlas(); else this.buildAtlas();
       const n = this.COLS * this.ROWS;
       this.zb = new Float32Array(n); this.gl = new Int8Array(n); this.co = new Int16Array(n);
+    }
+
+    // ── WebGL renderer: a full-screen quad; the fragment shader looks up which glyph
+    // and colour its cell holds and samples the glyph from a white-on-clear atlas ──
+    initGL() {
+      let g;
+      try { g = this.canvas.getContext('webgl', { alpha: true, premultipliedAlpha: true, antialias: false }); } catch (e) { g = null; }
+      if (!g) return null;
+      const sh = (type, src) => { const o = g.createShader(type); g.shaderSource(o, src); g.compileShader(o); return g.getShaderParameter(o, g.COMPILE_STATUS) ? o : null; };
+      const vs = sh(g.VERTEX_SHADER, 'attribute vec2 p; void main(){ gl_Position = vec4(p, 0.0, 1.0); }');
+      const fs = sh(g.FRAGMENT_SHADER, `precision mediump float;
+        uniform sampler2D grid, atlas, pal;
+        uniform vec2 gridSize, cell, atlasSize, glyphPx;
+        uniform float palN, canvasH;
+        void main() {
+          vec2 fc = vec2(gl_FragCoord.x, canvasH - gl_FragCoord.y);
+          vec2 c = floor(fc / cell);
+          if (c.x >= gridSize.x || c.y >= gridSize.y) discard;
+          vec4 t = texture2D(grid, (c + 0.5) / gridSize);
+          float glyph = floor(t.r * 255.0 + 0.5);
+          if (glyph > 254.0) discard;
+          float ci = floor(t.g * 255.0 + 0.5) + floor(t.b * 255.0 + 0.5) * 256.0;
+          vec2 lp = fc - c * cell;
+          float a = texture2D(atlas, (vec2(glyph * glyphPx.x, 0.0) + lp) / atlasSize).a;
+          if (a < 0.03) discard;
+          vec3 col = texture2D(pal, vec2((ci + 0.5) / palN, 0.5)).rgb;
+          gl_FragColor = vec4(col * a, a);
+        }`);
+      if (!vs || !fs) return null;
+      const prog = g.createProgram();
+      g.attachShader(prog, vs); g.attachShader(prog, fs); g.linkProgram(prog);
+      if (!g.getProgramParameter(prog, g.LINK_STATUS)) return null;
+      g.useProgram(prog);
+      const buf = g.createBuffer();
+      g.bindBuffer(g.ARRAY_BUFFER, buf);
+      g.bufferData(g.ARRAY_BUFFER, new Float32Array([-1, -1, 1, -1, -1, 1, -1, 1, 1, -1, 1, 1]), g.STATIC_DRAW);
+      const loc = g.getAttribLocation(prog, 'p');
+      g.enableVertexAttribArray(loc); g.vertexAttribPointer(loc, 2, g.FLOAT, false, 0, 0);
+      const tex = (unit) => {
+        const t = g.createTexture(); g.activeTexture(g.TEXTURE0 + unit); g.bindTexture(g.TEXTURE_2D, t);
+        g.texParameteri(g.TEXTURE_2D, g.TEXTURE_MIN_FILTER, g.NEAREST); g.texParameteri(g.TEXTURE_2D, g.TEXTURE_MAG_FILTER, g.NEAREST);
+        g.texParameteri(g.TEXTURE_2D, g.TEXTURE_WRAP_S, g.CLAMP_TO_EDGE); g.texParameteri(g.TEXTURE_2D, g.TEXTURE_WRAP_T, g.CLAMP_TO_EDGE);
+        return t;
+      };
+      const R = { g, prog, tGrid: tex(0), tAtlas: tex(1), tPal: tex(2), u: {} };
+      for (const n of ['grid', 'atlas', 'pal', 'gridSize', 'cell', 'atlasSize', 'glyphPx', 'palN', 'canvasH']) R.u[n] = g.getUniformLocation(prog, n);
+      g.uniform1i(R.u.grid, 0); g.uniform1i(R.u.atlas, 1); g.uniform1i(R.u.pal, 2);
+      // Palette: every colour × brightness level, as one row of texels
+      const pal = new Uint8Array(PAL.length * 4);
+      PAL.forEach((s, i) => { const m = s.match(/\d+/g); pal.set([+m[0], +m[1], +m[2], 255], i * 4); });
+      g.activeTexture(g.TEXTURE2); g.texImage2D(g.TEXTURE_2D, 0, g.RGBA, PAL.length, 1, 0, g.RGBA, g.UNSIGNED_BYTE, pal);
+      g.uniform1f(R.u.palN, PAL.length);
+      g.enable(g.BLEND); g.blendFunc(g.ONE, g.ONE_MINUS_SRC_ALPHA);
+      return R;
+    }
+    glAtlas() {
+      const R = this.glr, g = R.g, d = this.dpr;
+      const gw = Math.ceil(this.cw * d) + 1, gh = Math.ceil(this.chH * d) + 1;
+      const c = document.createElement('canvas');
+      c.width = gw * CH.length; c.height = gh;
+      const x = c.getContext('2d');
+      x.font = `700 ${this.fs * d}px "JetBrains Mono", ui-monospace, monospace`;
+      x.textBaseline = 'top'; x.direction = 'ltr'; x.fillStyle = '#fff';
+      CH.forEach((ch, gi) => x.fillText(ch, gi * gw, 0));
+      g.activeTexture(g.TEXTURE1); g.texImage2D(g.TEXTURE_2D, 0, g.RGBA, g.RGBA, g.UNSIGNED_BYTE, c);
+      g.viewport(0, 0, this.canvas.width, this.canvas.height);
+      g.uniform2f(R.u.cell, this.cw * d, this.chH * d);
+      g.uniform2f(R.u.atlasSize, c.width, c.height);
+      g.uniform2f(R.u.glyphPx, gw, gh);
+      g.uniform1f(R.u.canvasH, this.canvas.height);
+      this.COLS = Math.floor(this.W / this.cw); this.ROWS = Math.floor(this.H / this.chH);
+      g.uniform2f(R.u.gridSize, this.COLS, this.ROWS);
+      R.data = new Uint8Array(this.COLS * this.ROWS * 4);
     }
 
     buildAtlas() {
@@ -470,7 +547,19 @@
         }
       }
 
-      // ── 4. Blit ──
+      // ── 4. Draw ──
+      if (this.glr) {
+        const R = this.glr, g = R.g, D = R.data, n = COLS * ROWS;
+        for (let i = 0, o = 0; i < n; i++, o += 4) {
+          if (gl[i] < 0) { D[o] = 255; continue; }
+          D[o] = gl[i]; D[o + 1] = co[i] & 255; D[o + 2] = co[i] >> 8;
+        }
+        g.activeTexture(g.TEXTURE0);
+        g.texImage2D(g.TEXTURE_2D, 0, g.RGBA, COLS, ROWS, 0, g.RGBA, g.UNSIGNED_BYTE, D);
+        g.clearColor(0, 0, 0, 0); g.clear(g.COLOR_BUFFER_BIT);
+        g.drawArrays(g.TRIANGLES, 0, 6);
+        return;
+      }
       const A = this.atlas, buf = A.buf, NG = CH.length, cw = this.cw, chh = this.chH, BW = A.W;
       buf.fill(0);
       const n = COLS * ROWS;
