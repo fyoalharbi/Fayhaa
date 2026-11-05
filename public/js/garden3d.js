@@ -9,6 +9,7 @@
 //
 //    const g = new Garden3D(canvas, { follow: false });
 //    g.toggleFollow();   // camera chases the white butterfly
+//    g.setShot('wide' | 'butterfly' | 'bee' | 'hive' | 'far' | null);   // guided tour camera
 // ─────────────────────────────────────────────
 (function () {
   // ── Palette: base colours × 4 brightness levels ──
@@ -397,7 +398,20 @@
       this.dragging = () => !!drag;
     }
 
-    toggleFollow() { this.follow = !this.follow; this.idle = 0; return this.follow; }
+    toggleFollow() { this.follow = !this.follow; this.shot = null; this.idle = 0; return this.follow; }
+    // Guided tour: each shot is a subject + distance; the camera glides between them
+    setShot(name) { this.shot = name; this.follow = false; this.idle = 0; }
+    shotTarget() {
+      const far = this.heads.reduce((a, h) => (Math.hypot(h.x, h.z) > Math.hypot(a.x, a.z) ? h : a), this.heads[0]);
+      switch (this.shot) {
+        case 'butterfly': return [this.flyers[0].p, 2.3];
+        case 'bee': return [this.bee.p, 2.1];
+        case 'hive': return [[this.hive.x, 0.5, this.hive.z], 2.8];
+        case 'far': return [[far.x, far.y, far.z], 3];
+        case 'wide': return [[0, 0.7, 0], 7.5];
+        default: return null;
+      }
+    }
 
     // ── Natural flight: wander + steer + glides + perching (same rules as the 2D page) ──
     stepFlyer(b, dt, t) {
@@ -478,8 +492,10 @@
       // Camera: idle auto-orbit; follow mode eases toward the white butterfly
       this.idle += dt;
       if (!this.dragging() && this.idle > 2.5 && !this.reduced) this.yaw += dt * 0.09;
-      const want = this.follow ? this.flyers[0].p : [0, 0.7, 0];
-      for (let k = 0; k < 3; k++) this.tgt[k] += (want[k] - this.tgt[k]) * Math.min(1, dt * 2.5);
+      const st = this.shot ? this.shotTarget() : null;
+      const want = st ? st[0] : this.follow ? this.flyers[0].p : [0, 0.7, 0];
+      for (let k = 0; k < 3; k++) this.tgt[k] += (want[k] - this.tgt[k]) * Math.min(1, dt * (st ? 1.6 : 2.5));
+      if (st) this.dist += (st[1] - this.dist) * Math.min(1, dt * 1.4);      // smooth dolly in / out
       const dist = this.follow ? Math.min(this.dist, 2.6) : this.dist;
       const cp = Math.cos(this.pitch);
       const cam = [this.tgt[0] + dist * Math.sin(this.yaw) * cp, this.tgt[1] + dist * Math.sin(this.pitch), this.tgt[2] + dist * Math.cos(this.yaw) * cp];

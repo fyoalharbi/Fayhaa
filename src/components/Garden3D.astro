@@ -1,17 +1,27 @@
 ---
-// Hidden 3D view of the garden (/papillon/garden/): a real-time ASCII render of
-// the flowers, a bee and four butterflies (public/js/garden3d.js). Reached from
-// the end of the secret philosophy page.
+// Hidden 3D garden (/papillon/garden/): a real-time ASCII render of the flowers,
+// bushes, a bee and butterflies (public/js/garden3d.js), with a guided tour: a
+// dialogue box at the bottom tells the philosophy line by line while the camera
+// moves to each line's subject (the white butterfly, the bee, the hive, a far
+// flower, the whole garden). Reached from the end of the secret philosophy page.
 import Base from '../layouts/Base.astro';
-import { type Lang } from '../data/profile';
+import { philosophy, type Lang } from '../data/profile';
 import { url, langUrl } from '../lib/site';
 
 interface Props { lang: Lang }
 const { lang } = Astro.props;
 const ar = lang === 'ar';
 const t = ar
-  ? { title: 'الحديقة', kicker: '// GARDEN_3D', hint: 'اسحب للالتفاف · مرّر للتقريب', follow: 'تابع الفراشة', free: 'كاميرا حرة', back: 'رجوع للقصة' }
-  : { title: 'The garden', kicker: '// GARDEN_3D', hint: 'drag to orbit · scroll to zoom', follow: 'Follow the butterfly', free: 'Free camera', back: 'Back to the story' };
+  ? { title: 'الحديقة', kicker: '// GARDEN_3D', hint: 'اسحب للالتفاف · مرّر للتقريب', follow: 'تابع الفراشة', free: 'كاميرا حرة', back: 'رجوع للقصة',
+      tour: 'ابدأ الجولة', next: 'التالي', skip: 'تخطَّ', again: 'من جديد', blog: 'اقرأ المدونة', end: 'طارت. وأنت؟', ask: 'تبي جولة في الحديقة؟',
+      who: { butterfly: 'الفراشة', bee: 'النحلة', hive: 'الخلية', far: 'زهرة بعيدة', wide: 'الحديقة' } }
+  : { title: 'The garden', kicker: '// GARDEN_3D', hint: 'drag to orbit · scroll to zoom', follow: 'Follow the butterfly', free: 'Free camera', back: 'Back to the story',
+      tour: 'Start the tour', next: 'Next', skip: 'Skip', again: 'Replay', blog: 'Read the blog', end: 'It flew away. Your turn.', ask: 'Want a tour of the garden?',
+      who: { butterfly: 'the butterfly', bee: 'the bee', hive: 'the hive', far: 'a far flower', wide: 'the garden' } };
+const lines = philosophy.lines[lang];
+// Which subject the camera visits for each line (same order as the philosophy lines)
+const SHOTS = ['wide', 'butterfly', 'butterfly', 'bee', 'bee', 'hive', 'butterfly', 'far', 'wide', 'butterfly', 'wide', 'butterfly'];
+const steps = lines.map((line, i) => ({ line, shot: SHOTS[i] || 'wide' }));
 ---
 <Base lang={lang} title={t.title} path="papillon/garden/" noindex>
   <div class="g3" dir={ar ? 'rtl' : 'ltr'}>
@@ -20,21 +30,89 @@ const t = ar
       <p class="g3-kicker" dir="ltr">{t.kicker}</p>
       <p class="g3-hint">{t.hint}</p>
     </div>
+
+    <section class="g3-box" id="g3-box" aria-live="polite" data-state="intro">
+      <p class="g3-who mono" id="g3-who"></p>
+      <p class="g3-line" id="g3-line">{t.ask}</p>
+      <div class="g3-row">
+        <span class="g3-dots" aria-hidden="true">{steps.map(() => <i></i>)}</span>
+        <span class="g3-btns">
+          <a class="btn g3-blog" href={langUrl(lang, 'blog/')}>{t.blog}</a>
+          <button class="btn g3-skip" id="g3-skip" type="button">{t.skip}</button>
+          <button class="btn g3-next" id="g3-next" type="button">{t.tour}</button>
+        </span>
+      </div>
+    </section>
+
     <div class="g3-actions">
       <button class="btn" id="g3-follow" type="button" data-on={t.free} data-off={t.follow}>{t.follow}</button>
       <a class="btn" href={langUrl(lang, 'papillon/')}>{t.back}</a>
     </div>
   </div>
 
-  <script is:inline define:vars={{ src: url('js/garden3d.js') }}>
+  <script is:inline define:vars={{ src: url('js/garden3d.js'), steps, t }}>
     (function () {
       try { localStorage.setItem('fayhaa:papillon', '1'); } catch (e) {}
+      const REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches;
+      const box = document.getElementById('g3-box'), lineEl = document.getElementById('g3-line'), whoEl = document.getElementById('g3-who');
+      const nextBtn = document.getElementById('g3-next'), skipBtn = document.getElementById('g3-skip');
+      const dots = [...box.querySelectorAll('.g3-dots i')];
+      let g = null, step = -1;
+
+      // Decode a line in: 0/1 noise resolving into letters (same feel as the story page)
+      function decode(el, text) {
+        cancelAnimationFrame(el._raf || 0);
+        const chars = [...text], n = chars.length, at = chars.map((_, i) => (i / n) * 0.7 + Math.random() * 0.12);
+        const t0 = performance.now(), dur = REDUCED ? 0 : Math.min(1200, 400 + n * 12);
+        const frame = (now) => {
+          const k = dur ? (now - t0) / dur : 2; let out = '', done = true;
+          for (let i = 0; i < n; i++) {
+            if (chars[i] === ' ' || k >= at[i] + 0.18) out += chars[i];
+            else { out += Math.random() < 0.5 ? '0' : '1'; done = false; }
+          }
+          el.textContent = out;
+          if (!done) el._raf = requestAnimationFrame(frame);
+        };
+        el._raf = requestAnimationFrame(frame);
+      }
+      function show(i) {
+        step = i;
+        dots.forEach((d, k) => { d.classList.toggle('is-on', k <= i); d.classList.toggle('is-now', k === i); });
+        if (i >= steps.length) {                    // the end: pull back, offer the blog
+          box.dataset.state = 'end';
+          if (g) g.setShot('wide');
+          whoEl.textContent = '';
+          decode(lineEl, t.end);
+          nextBtn.textContent = t.again;
+          return;
+        }
+        box.dataset.state = 'tour';
+        const s = steps[i];
+        if (g) g.setShot(s.shot);
+        whoEl.textContent = '// ' + t.who[s.shot];
+        decode(lineEl, s.line);
+        nextBtn.textContent = t.next;
+      }
+      function stop() {
+        step = -1; box.dataset.state = 'off';
+        if (g) g.setShot(null);
+      }
+      nextBtn.addEventListener('click', () => show(step >= steps.length ? 0 : step + 1));
+      skipBtn.addEventListener('click', stop);
+      addEventListener('keydown', (e) => {
+        if (box.dataset.state === 'off' || box.dataset.state === 'intro') return;
+        if (e.key === 'ArrowRight' || e.key === 'Enter') { e.preventDefault(); nextBtn.click(); }
+        if (e.key === 'Escape') stop();
+      });
+
       const s = document.createElement('script');
       s.src = src;
       s.onload = () => {
-        const g = new window.Garden3D(document.getElementById('g3-canvas'));
+        g = new window.Garden3D(document.getElementById('g3-canvas'));
         const btn = document.getElementById('g3-follow');
-        btn.addEventListener('click', () => { btn.textContent = g.toggleFollow() ? btn.dataset.on : btn.dataset.off; });
+        btn.addEventListener('click', () => { stop(); btn.textContent = g.toggleFollow() ? btn.dataset.on : btn.dataset.off; });
+        // Dragging the garden mid-tour hands the camera back for that line
+        document.getElementById('g3-canvas').addEventListener('pointerdown', () => { if (box.dataset.state === 'tour') g.setShot(null); });
       };
       document.body.appendChild(s);
     })();
@@ -51,7 +129,34 @@ const t = ar
   .g3-ui { position: absolute; top: 16px; inset-inline-start: 20px; pointer-events: none; }
   .g3-kicker { margin: 0 0 4px; color: #ff8a8a; }
   .g3-hint { margin: 0; color: #77777f; font-size: .8rem; }
-  .g3-actions { position: absolute; bottom: 20px; inset-inline-start: 20px; display: flex; flex-wrap: wrap; gap: 10px; }
-  .g3-actions .btn { border-color: var(--paper); color: var(--paper); background: rgba(13, 13, 15, .7); }
-  .g3-actions .btn:first-child { background: #ff8a8a; border-color: #ff8a8a; color: #111; }
+  .g3-actions { position: absolute; top: 16px; inset-inline-end: 20px; display: flex; flex-wrap: wrap; gap: 8px; justify-content: flex-end; }
+  .g3-actions .btn { border-color: #ffffff55; color: var(--paper); background: rgba(13, 13, 15, .7); padding: 6px 12px; font-size: .85rem; }
+
+  /* Dialogue box */
+  .g3-box {
+    position: absolute; left: 50%; bottom: 20px; transform: translateX(-50%); width: min(720px, calc(100% - 32px));
+    padding: 16px 20px 14px; background: rgba(10, 11, 12, .86); border: 1px solid #ffffff2a; border-top: 2px solid #ff8a8a;
+    backdrop-filter: blur(4px); transition: opacity .4s, transform .4s;
+  }
+  .g3-box[data-state='off'] { opacity: 0; transform: translate(-50%, 16px); pointer-events: none; }
+  .g3-who { margin: 0 0 6px; color: #ff8a8a; font-size: .75rem; letter-spacing: .08em; text-transform: uppercase; min-height: 1.1em; }
+  .g3-line { margin: 0; min-height: 2.9em; font: 600 clamp(1rem, 1.7vw, 1.3rem)/1.45 var(--font-mono); color: var(--paper); }
+  .g3[dir='rtl'] .g3-line { font-family: var(--font-ar); font-size: clamp(1.05rem, 1.9vw, 1.4rem); }
+  .g3-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 10px; }
+  .g3-dots { display: flex; gap: 5px; }
+  .g3-dots i { width: 6px; height: 6px; border-radius: 50%; background: #2c2c30; transition: background .3s, transform .3s; }
+  .g3-dots i.is-on { background: #ff8a8a88; }
+  .g3-dots i.is-now { background: #ff8a8a; transform: scale(1.35); }
+  .g3-box[data-state='intro'] .g3-dots { visibility: hidden; }
+  .g3-btns { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
+  .g3-box .btn { padding: 6px 14px; font-size: .85rem; border-color: #ffffff55; color: var(--paper); background: transparent; }
+  .g3-box .g3-next { background: #ff8a8a; border-color: #ff8a8a; color: #111; }
+  .g3-blog { display: none; }
+  .g3-box[data-state='end'] .g3-blog { display: inline-flex; }
+  .g3-box[data-state='end'] .g3-skip { display: none; }
+  @media (max-width: 600px) {
+    .g3-box { bottom: 12px; padding: 12px 14px 10px; }
+    .g3-dots i { width: 5px; height: 5px; }
+    .g3-actions { top: 64px; inset-inline-start: 16px; inset-inline-end: auto; justify-content: flex-start; }
+  }
 </style>
