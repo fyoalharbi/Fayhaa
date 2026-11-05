@@ -266,6 +266,7 @@
       const hc = (cols - 1) / 2, hr = (rows - 1) / 2;
       ctx.clearRect(0, 0, this.width, this.height);
       ctx.font = `700 ${cell * this.fontScale}px "JetBrains Mono", ui-monospace, monospace`;
+      ctx.direction = 'ltr';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
 

@@ -38,7 +38,7 @@
       const { ctx, cols, rows, cell } = this;
       ctx.clearRect(0, 0, this.width, this.height);
       ctx.font = `700 ${cell * this.font}px "JetBrains Mono", ui-monospace, monospace`;
-      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.direction = 'ltr'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
       const slip = new Int8Array(rows);
       if (glitching) for (let r = 0; r < rows; r++) if (Math.random() < 0.25) slip[r] = Math.random() < 0.5 ? -1 : 1;
 
@@ -131,6 +131,22 @@
         if (Math.hypot(c - 10.4, r - 4.4) < 1.3) return [c === 11 && r === 4 ? '@' : '0', GOLD];
         if (c === 1 && r === 5) return ['-', GOLD];
         if (c === 11 && r === 2) return [mirror ? '\\' : '/', GOLD];
+        return null;
+      };
+    },
+
+    /** A rising sun on a 17×11 grid: a bit-filled disk with rays */
+    sun() {
+      const cx = 8, cy = 5.5;
+      return (c, r, bit, t) => {
+        const dx = c - cx, dy = (r - cy) * 1.15, d = Math.hypot(dx, dy), th = Math.atan2(dy, dx);
+        if (d < 2.7) return d > 1.9 ? [':', '#ffb070'] : [bit ? '1' : '0', '#ffd29a'];
+        // Eight rays that pulse slowly outward
+        const k = (th * 4) / Math.PI;
+        if (Math.abs(k - Math.round(k)) < 0.12 && d > 3.4 && d < 5.4 + Math.sin(t * 1.5) * 0.6) {
+          const a = ((Math.round(k) % 4) + 4) % 4;
+          return [['-', '\\', '|', '/'][a], '#ffc48a', 0.85];
+        }
         return null;
       };
     },

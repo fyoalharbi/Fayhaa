@@ -1,9 +1,10 @@
 ---
 // Secret philosophy page (/papillon/): a scroll-told dialogue over a sticky
 // ASCII night garden. Scrollytelling rules it follows:
-//  - Scroll is the clock: words, flower growth, the act bar and the dawn are
-//    scrubbed by scroll position (reversible, reader sets the pace, no timers
-//    gating the text). Ambient motion (sway, wings, pollen) runs on its own.
+//  - Scroll is the clock: flower growth, the act bar, the tally and the dawn
+//    are scrubbed by scroll position (reversible, reader sets the pace).
+//  - The text never slides: one line at a time decodes in place (0/1 noise →
+//    letters) in a fixed panel. Scrolling, a tap or a key moves to the next line.
 //  - One idea per line, one visible change in the garden per line.
 //  - A clear arc in five acts with a hook, a turn (bees stay home, butterflies
 //    travel and connect far gardens) and a resolution (dawn, the butterfly
@@ -19,8 +20,8 @@ const { lang } = Astro.props;
 const lines = philosophy.lines[lang];
 const ar = lang === 'ar';
 const t = ar
-  ? { kicker: '// قناة_سرية', found: 'لقيت الفراشة.', hint: '١٢ سطر · دقيقة وحدة', scroll: 'انزل', back: 'رجوع للموقع', blog: 'اقرأ المدونة', end: 'طارت. وأنت؟', visits: 'زيارات', range: 'مدى', gardens: 'حدايق', fly: 'فراشة', bee: 'نحلة', far: 'حديقة بعيدة', tags: ['بيانات', 'تصميم', 'كود'] }
-  : { kicker: '// SECRET_CHANNEL', found: 'You caught the butterfly.', hint: '12 lines · about a minute', scroll: 'scroll', back: 'Back to the site', blog: 'Read the blog', end: 'It flew away. Your turn.', visits: 'visits', range: 'range', gardens: 'gardens', fly: 'butterfly', bee: 'bee', far: 'far garden', tags: ['data', 'design', 'code'] };
+  ? { kicker: '// قناة_سرية', found: 'لقيت الفراشة.', hint: '١٢ سطر · دقيقة وحدة', scroll: 'انزل', next: 'انزل أو اضغط', back: 'رجوع للموقع', blog: 'اقرأ المدونة', end: 'طارت. وأنت؟', visits: 'زيارات', range: 'مدى', gardens: 'حدايق', fly: 'فراشة', bee: 'نحلة', far: 'حديقة بعيدة', tags: ['بيانات', 'تصميم', 'كود'] }
+  : { kicker: '// SECRET_CHANNEL', found: 'You caught the butterfly.', hint: '12 lines · about a minute', scroll: 'scroll', next: 'scroll or tap', back: 'Back to the site', blog: 'Read the blog', end: 'It flew away. Your turn.', visits: 'visits', range: 'range', gardens: 'gardens', fly: 'butterfly', bee: 'bee', far: 'far garden', tags: ['data', 'design', 'code'] };
 
 // Five acts: the line each one starts on, and its name
 const ACTS = [
@@ -34,8 +35,6 @@ const ROMAN = ['I', 'II', 'III', 'IV', 'V'];
 const actOf = (i: number) => ACTS.reduce((a, act, k) => (i >= act.from ? k : a), 0);
 const actLen = ACTS.map((a, k) => (ACTS[k + 1]?.from ?? lines.length) - a.from);
 
-// Lines split into words so the reveal can be scrubbed word by word
-const words = lines.map((l) => l.split(' '));
 
 // Flowers: digitized sprites (public/js/garden.js) drawn on the same cell grid as
 // the butterfly. x position (%), the line they grow on, the petal shape, and the
@@ -53,7 +52,6 @@ const GRASS_CHARS = ",.'`;\"'.,";
 const GRASS = Array.from({ length: 240 }, (_, i) => GRASS_CHARS[(i * 7 + (i >> 2)) % 9]).join('');
 const GRASS2 = GRASS.split('').reverse().join('');
 const STARS = Array.from({ length: 26 }, (_, i) => ({ x: (i * 37 + 11) % 97, y: 4 + ((i * i * 13 + i * 29) % 44), c: i % 4 ? '.' : '+', d: (i % 7) * 0.6 }));
-const SUN = ' \\ | / \n-- O --\n / | \\ ';
 ---
 <Base lang={lang} title={philosophy.title[lang]} path="papillon/" noindex>
   <div class="pap" id="pap" dir={ar ? 'rtl' : 'ltr'}>
@@ -62,7 +60,7 @@ const SUN = ' \\ | / \n-- O --\n / | \\ ';
         {STARS.map((s) => <span class="pap-star" style={`left:${s.x}%;top:${s.y}%;animation-delay:${s.d}s`}>{s.c}</span>)}
       </div>
       <div class="pap-dawn"></div>
-      <pre class="pap-sun">{SUN}</pre>
+      <div class="pap-sun"><canvas></canvas></div>
       {FLOWERS.map((f, i) => (
         <div class="pap-flower" data-at={f.at} data-kind={f.k} data-c={f.c} style={`left:${f.x}%`}>
           <canvas style={`animation-delay:${-(i * 0.7)}s`}></canvas>
@@ -91,24 +89,30 @@ const SUN = ' \\ | / \n-- O --\n / | \\ ';
     </div>
 
     <div class="pap-script">
-      <header class="pap-intro">
-        <p class="mono pap-kicker">{t.kicker}</p>
-        <h1>{t.found}</h1>
-        <p class="mono muted">{t.hint}</p>
-        <p class="mono pap-cue">{t.scroll} <span aria-hidden="true">↓</span></p>
-      </header>
-      {lines.map((_, i) => (
-        <section class="pap-step" data-i={i}>
-          <div>
-            {ACTS.some((a) => a.from === i) && (
-              <p class="mono pap-chapter">{ROMAN[actOf(i)]} · {ACTS[actOf(i)][lang]}</p>
-            )}
-            <p class={i === lines.length - 1 ? 'pap-line is-last' : 'pap-line'} style={`--n:${words[i].length}`}>
-              {words[i].map((w, k) => <><span class="pap-w" style={`--k:${k}`}>{w}</span>{k < words[i].length - 1 ? ' ' : ''}</>)}
-            </p>
+      <div class="pap-track">
+        <!-- The fixed reading panel: intro, then one line at a time decoding in place -->
+        <div class="pap-panel" id="pap-panel" data-state="intro">
+          <div class="pap-p-intro">
+            <p class="mono pap-kicker">{t.kicker}</p>
+            <h1>{t.found}</h1>
+            <p class="mono muted">{t.hint}</p>
+            <p class="mono pap-cue">{t.scroll} <span aria-hidden="true">↓</span></p>
           </div>
-        </section>
-      ))}
+          <div class="pap-p-line" aria-hidden="true">
+            <p class="mono pap-chapter" id="pap-chap"></p>
+            <p class="pap-line" id="pap-text"></p>
+          </div>
+          <div class="pap-p-foot mono" aria-hidden="true">
+            <span class="pap-dots">{lines.map(() => <i></i>)}</span>
+            <span><span id="pap-count">00</span>/{String(lines.length).padStart(2, '0')} · {t.next}</span>
+          </div>
+        </div>
+        {lines.map((line, i) => (
+          <section class="pap-step" data-i={i}>
+            <p class="pap-src">{line}</p>
+          </section>
+        ))}
+      </div>
       <footer class="pap-outro pap-step" data-i={lines.length}>
         <p class="pap-end">{t.end}</p>
         <div class="pap-cta">
@@ -119,7 +123,7 @@ const SUN = ' \\ | / \n-- O --\n / | \\ ';
     </div>
   </div>
 
-  <script is:inline define:vars={{ flyerSrc: url('js/flyer.js'), gardenSrc: url('js/garden.js'), ACTS, ROMAN, lang, N: lines.length, NEAR, FAR }}>
+  <script is:inline define:vars={{ flyerSrc: url('js/flyer.js'), gardenSrc: url('js/garden.js'), ACTS, ROMAN, lang, N: lines.length, NEAR, FAR, LINES: lines }}>
     (function () {
       try { localStorage.setItem('fayhaa:papillon', '1'); } catch (e) {}
       const REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -127,7 +131,9 @@ const SUN = ' \\ | / \n-- O --\n / | \\ ';
       const root = document.getElementById('pap');
       const stage = document.getElementById('pap-stage');
       const steps = [...document.querySelectorAll('.pap-step')]; // lines + outro
-      const lineEls = steps.map((s) => s.querySelector('.pap-line'));
+      const panel = document.getElementById('pap-panel'), textEl = document.getElementById('pap-text');
+      const chapEl = document.getElementById('pap-chap'), countEl = document.getElementById('pap-count');
+      const dots = [...panel.querySelectorAll('.pap-dots i')];
       const flowers = [...stage.querySelectorAll('.pap-flower')];
       const segs = [...stage.querySelectorAll('.pap-acts i')];
       const actN = document.getElementById('pap-act-n'), actName = document.getElementById('pap-act-name');
@@ -171,9 +177,6 @@ const SUN = ' \\ | / \n-- O --\n / | \\ ';
         steps.forEach((s, i) => {
           const r = s.getBoundingClientRect();
           if (r.top <= f) { a = i; local = (f - r.top) / r.height; }
-          // Words arrive as the line rises into the reading zone, done before it reaches the focus line
-          const line = lineEls[i];
-          if (line) line.style.setProperty('--r', REDUCED ? 1 : clamp((f - r.top + r.height * 0.12) / (r.height * 0.36)).toFixed(3));
         });
         p = a < 0 ? 0 : Math.min(N + 1, a + clamp(local));
         if (a !== active) setScene(a);
@@ -202,9 +205,60 @@ const SUN = ' \\ | / \n-- O --\n / | \\ ';
         steps.forEach((s, j) => { s.classList.toggle('is-active', j === a); s.classList.toggle('is-past', j < a); });
         const act = ACTS.reduce((x, act, k) => (Math.max(a, 0) >= act.from ? k : x), 0);
         actN.textContent = ROMAN[act]; actName.textContent = ACTS[act][lang];
+        showLine(a, act);
         for (const k of ['flicker', 'engine', 'beeGlow', 'tally', 'spot', 'hive', 'far', 'diverse', 'tags']) stage.classList.toggle('is-' + k, !!scene[k]);
         hopAt = 0; beeAt = 0;
       }
+      // ── Decode in place ─────────────────────────
+      // A new line arrives as 0/1 noise, flickers through glyphs, and resolves into
+      // letters, roughly left to right (start to end in Arabic).
+      const GLYPHS = '01#=:/\\|-+*';
+      const esc = (x) => x.replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
+      let decRaf = 0, shownLine = -2, shownAct = -1;
+      function decode(el, text, ms) {
+        cancelAnimationFrame(el._raf || 0);
+        const chars = [...text], n = chars.length;
+        const at = chars.map((_, i) => (i / n) * 0.7 + Math.random() * 0.12);
+        const dur = REDUCED ? 0 : ms, t0 = performance.now();
+        const frame = (now) => {
+          const t = dur ? (now - t0) / dur : 2;
+          let html = '', buf = '', mode = '', done = true;
+          const flush = () => { if (buf) html += mode === 'ok' ? esc(buf) : `<span class="pap-noise${mode === 'g' ? ' is-g' : ''}">${esc(buf)}</span>`; buf = ''; };
+          for (let i = 0; i < n; i++) {
+            const ch = chars[i];
+            let m, out;
+            if (ch === ' ' || t >= at[i] + 0.18) { m = 'ok'; out = ch; }
+            else if (t >= at[i]) { m = 'g'; out = GLYPHS[(Math.random() * GLYPHS.length) | 0]; done = false; }
+            else { m = 'n'; out = Math.random() < 0.5 ? '0' : '1'; done = false; }
+            if (m !== mode) { flush(); mode = m; }
+            buf += out;
+          }
+          flush();
+          el.innerHTML = html;
+          if (!done) el._raf = requestAnimationFrame(frame);
+        };
+        el._raf = requestAnimationFrame(frame);
+      }
+      function showLine(a, act) {
+        const i = Math.min(a, N - 1);
+        panel.dataset.state = a < 0 ? 'intro' : 'line';
+        countEl.textContent = String(Math.max(0, i + 1)).padStart(2, '0');
+        dots.forEach((d, k) => { d.classList.toggle('is-on', k <= i); d.classList.toggle('is-now', k === i); });
+        if (a < 0 || i === shownLine) return;
+        shownLine = i;
+        textEl.classList.toggle('is-last', i === N - 1);
+        decode(textEl, LINES[i], Math.min(1300, 420 + LINES[i].length * 13));
+        if (act !== shownAct) { shownAct = act; decode(chapEl, `${ROMAN[act]} · ${ACTS[act][lang]}`, 500); }
+      }
+      // Tap the panel (or press Enter on it) to move to the next line
+      function next() {
+        const target = steps[Math.min(steps.length - 1, active + 1)];
+        if (!target) return;
+        const r = target.getBoundingClientRect();
+        scrollTo({ top: scrollY + r.top - focusY() + 8, behavior: REDUCED ? 'auto' : 'smooth' });
+      }
+      panel.addEventListener('click', (e) => { if (!e.target.closest('a')) next(); });
+
       let ticking = false;
       const onScroll = () => { if (!ticking) { ticking = true; requestAnimationFrame(() => { ticking = false; update(); }); } };
       addEventListener('scroll', onScroll, { passive: true });
@@ -245,6 +299,7 @@ const SUN = ' \\ | / \n-- O --\n / | \\ ';
         sprites = flowers.map((el, i) => new AsciiSprite(el.querySelector('canvas'), { cols: 13, rows: 21, cell: CELL }, AsciiPainters.flower(el.dataset.kind, i)));
         beeS = new AsciiSprite(beeEl.querySelector('canvas'), { cols: 12, rows: 8, cell: CELL }, AsciiPainters.bee());
         hiveS = new AsciiSprite(hiveEl.querySelector('canvas'), { cols: 9, rows: 8, cell: CELL }, AsciiPainters.hive());
+        const sunS = new AsciiSprite(stage.querySelector('.pap-sun canvas'), { cols: 17, rows: 11, cell: CELL }, AsciiPainters.sun());
         const bf = new AsciiFlyer(flyEl.querySelector('canvas'), { cols: 23, rows: 17, cell: CELL, font: 1, side: true });
         const seatFly = bf.seat(false), seatPerch = bf.seat(true);
         const LEG = 2.5 * CELL;                   // perched: body sits this far above the flower head
@@ -348,6 +403,7 @@ const SUN = ' \\ | / \n-- O --\n / | \\ ';
           beeStep(dt, now);
           beeS.draw(dt, { facing: bee.facing, flip: 0.05 });
           if (stage.classList.contains('is-hive') && frameN % 2) hiveS.draw(dt * 2, { flip: 0.02 });
+          if (p > 9.5 && frameN % 2 === 0) sunS.draw(dt * 2, { flip: 0.02, glitchRate: 0.03, ghost: '#ffb070' });
 
           // Flowers: half of them each frame; petal colour follows the story
           const petal = scene.engine ? '#ff5f5f' : null;
@@ -384,11 +440,10 @@ const SUN = ' \\ | / \n-- O --\n / | \\ ';
     background: linear-gradient(to top, rgba(255, 150, 110, .38), rgba(255, 190, 140, .12) 45%, rgba(120, 110, 160, .08) 75%, transparent);
   }
   .pap-sun {
-    position: absolute; inset-inline-end: 14%; bottom: 9%; margin: 0; direction: ltr;
-    font: 700 clamp(16px, 1.8vw, 22px)/1.05 var(--font-mono); color: #ffc48a;
-    text-shadow: 0 0 18px rgba(255, 180, 120, .7);
-    transform: translateY(calc((1 - var(--dawn)) * 160%)); opacity: var(--dawn);
+    position: absolute; right: 12%; bottom: 7%; filter: drop-shadow(0 0 14px rgba(255, 180, 120, .55));
+    transform: translateY(calc((1 - var(--dawn)) * 110%)); opacity: var(--dawn);
   }
+  .pap-sun canvas { display: block; }
 
   .pap-grass {
     position: absolute; left: 0; right: 0; bottom: 0; height: 9%; overflow: hidden; direction: ltr; z-index: 1;
@@ -400,6 +455,7 @@ const SUN = ' \\ | / \n-- O --\n / | \\ ';
     position: absolute; bottom: 8.5%; transform-origin: 50% 100%; z-index: 1;
     transform: translateX(-50%) scaleY(var(--g)); opacity: var(--g);
   }
+  .pap-stage canvas { direction: ltr; }
   .pap-flower canvas { display: block; transform-origin: 50% 100%; animation: pap-sway 4.5s ease-in-out infinite alternate; }
   @keyframes pap-sway { from { transform: rotate(-3deg); } to { transform: rotate(3deg); } }
 
@@ -455,26 +511,46 @@ const SUN = ' \\ | / \n-- O --\n / | \\ ';
   .pap-tally div:nth-child(3) b:first-of-type { color: #e6c34a; }
   .pap-tally em { font-style: normal; color: #77777f; font-size: .9em; }
 
-  /* The story column */
+  /* The story column: a fixed reading panel; the steps underneath are invisible spacers */
   .pap-script { padding-inline: clamp(16px, 4vw, 48px); border-inline-start: 1px solid #222; }
-  .pap-intro { min-height: calc(100svh - var(--header-h)); display: flex; flex-direction: column; justify-content: center; }
+  .pap-panel { display: grid; align-content: center; min-height: calc(100svh - var(--header-h)); }
+  .pap.is-js .pap-panel {
+    position: sticky; top: var(--header-h); height: calc(100svh - var(--header-h)); z-index: 1; background: #111;
+    grid-template: 1fr / 1fr; cursor: pointer; user-select: none;
+  }
+  .pap.is-js .pap-panel > * { grid-area: 1 / 1; align-self: center; transition: opacity .5s, transform .5s; }
+  .pap.is-js .pap-panel > .pap-p-foot { align-self: end; }
+  .pap-panel[data-state='line'] .pap-p-intro { opacity: 0; transform: translateY(-12px); visibility: hidden; }
+  .pap-panel[data-state='intro'] .pap-p-line { opacity: 0; }
+  .pap:not(.is-js) .pap-p-line, .pap:not(.is-js) .pap-p-foot { display: none; }
+
   .pap-kicker { color: #ff8a8a; margin: 0 0 8px; }
-  .pap-intro h1 { font-size: clamp(1.8rem, 3.6vw, 2.8rem); margin: 0 0 10px; }
+  .pap-p-intro h1 { font-size: clamp(1.8rem, 3.6vw, 2.8rem); margin: 0 0 10px; }
   .pap-cue { margin-top: 28px; color: #ff8a8a; }
   .pap-cue span { display: inline-block; animation: pap-bob 1.6s ease-in-out infinite; }
   @keyframes pap-bob { 50% { transform: translateY(5px); } }
-  .pap-step { min-height: 52svh; display: flex; align-items: center; }
-  .pap-chapter { margin: 0 0 10px; color: #ff8a8a; font-size: .78rem; letter-spacing: .06em; text-transform: uppercase; opacity: .85; transition: opacity .4s; }
-  .pap-line { margin: 0; font: 600 clamp(1.25rem, 2.1vw, 1.8rem)/1.38 var(--font-sans); color: var(--paper); transition: opacity .4s; }
-  .pap[dir='rtl'] .pap-line { font-family: var(--font-ar); }
-  .pap-line.is-last { color: #ff8a8a; }
-  /* Word reveal, scrubbed by --r (0..1) from the scroll script */
-  .pap.is-js .pap-w {
-    --o: clamp(0, calc(var(--r, 0) * (var(--n) + 1) - var(--k)), 1);
-    display: inline-block; opacity: var(--o);
-    transform: translateY(calc((1 - var(--o)) * .45em)); filter: blur(calc((1 - var(--o)) * 3px));
+  .pap-chapter { margin: 0 0 14px; color: #ff8a8a; font-size: .78rem; letter-spacing: .08em; text-transform: uppercase; min-height: 1.2em; }
+  .pap-line {
+    margin: 0; min-height: 4.2em; color: var(--paper);
+    font: 600 clamp(1.15rem, 1.75vw, 1.55rem)/1.45 var(--font-mono); letter-spacing: -.01em;
   }
-  .pap.is-js .pap-step.is-past .pap-line, .pap.is-js .pap-step.is-past .pap-chapter { opacity: .3; }
+  .pap[dir='rtl'] .pap-line { font: 600 clamp(1.3rem, 2vw, 1.8rem)/1.5 var(--font-ar); }
+  .pap-line.is-last { color: #ff8a8a; }
+  .pap-panel :global(.pap-noise) { color: #ff8a8a; opacity: .55; font-family: var(--font-mono); }
+  .pap-panel :global(.pap-noise.is-g) { color: var(--paper); opacity: .8; }
+  .pap-p-foot { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding-bottom: 22px; color: #77777f; font-size: .75rem; }
+  .pap-dots { display: flex; gap: 5px; }
+  .pap-dots i { width: 6px; height: 6px; border-radius: 50%; background: #2a2a2e; transition: background .3s, transform .3s; }
+  .pap-dots i.is-on { background: #ff8a8a88; }
+  .pap-dots i.is-now { background: #ff8a8a; transform: scale(1.35); }
+
+  .pap-step { min-height: 55svh; display: flex; align-items: center; }
+  .pap-src { margin: 0; font: 600 clamp(1.15rem, 1.75vw, 1.55rem)/1.45 var(--font-sans); }
+  .pap.is-js .pap-src { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+  @media (min-width: 800px) {
+    :global(html:has(.pap.is-js)) { scroll-snap-type: y proximity; }
+    .pap.is-js .pap-step { scroll-snap-align: center; }
+  }
   .pap-outro { min-height: calc(100svh - var(--header-h)); flex-direction: column; justify-content: center; gap: 20px; align-items: flex-start; }
   .pap-end { margin: 0; font: 600 clamp(1.25rem, 2.1vw, 1.8rem)/1.38 var(--font-sans); }
   .pap[dir='rtl'] .pap-end { font-family: var(--font-ar); }
@@ -487,7 +563,14 @@ const SUN = ' \\ | / \n-- O --\n / | \\ ';
     .pap-stage { height: 56svh; z-index: 3; border-bottom: 1px solid #222; }
     .pap-script { border: 0; }
     .pap-step { min-height: 40svh; }
-    .pap-intro, .pap-outro { min-height: 44svh; }
+    .pap-outro { min-height: 44svh; }
+    .pap-panel { min-height: 44svh; }
+    .pap.is-js .pap-panel { top: calc(var(--header-h) + 56svh); height: calc(100svh - var(--header-h) - 56svh); }
+    .pap-p-intro h1 { font-size: 1.5rem; }
+    .pap-cue { margin-top: 10px; }
+    .pap-line { min-height: 3.2em; font-size: 1.05rem; }
+    .pap-chapter { margin-bottom: 6px; }
+    .pap-p-foot { padding-bottom: 10px; }
     .pap-tally { top: 52px; inset-inline-start: 12px; font-size: .68rem; padding: 6px 8px; }
     .pap-tally div { grid-template-columns: 5.6em 3.6em 4em 4em; }
     .pap-tag, .pap-far { font-size: .62rem; }
@@ -495,6 +578,5 @@ const SUN = ' \\ | / \n-- O --\n / | \\ ';
   }
   @media (prefers-reduced-motion: reduce) {
     .pap-flower canvas, .pap-fly, .pap-cue span, .pap-star { animation: none !important; }
-    .pap.is-js .pap-w { filter: none; transform: none; }
   }
 </style>
