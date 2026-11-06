@@ -155,7 +155,7 @@
         }
       }
       addHead(s, x, h, z, kind, col, ph);
-      heads.push({ x, y: h + (kind === 1 ? 0.12 : 0.04), z, ph, col });
+      heads.push({ x, y: h + (kind === 1 ? 0.12 : 0.04), z, ph, col, type: KINDS[kind].name });
     }
     // Rounded bushes between the flowers and around the edge of the plot
     const BLOOM = [C.blue, C.violet, C.pink, C.blush, C.white, -1, -1];
@@ -177,7 +177,7 @@
           s.add(px, py, pz, nx, ny, nz, cl ? bloom : hh < 0.3 ? C.leaf : C.stem, cl ? (hh < 0.4 ? K['@'] : K.o) : hh < 0.45 ? K['%'] : hh < 0.8 ? K['&'] : K['#'], py * 0.3, ph, 0, aoAt(py + 0.25));
         }
       }
-      heads.push({ x, y: hgt + 0.02, z, ph, col: bloom >= 0 ? bloom : C.stem });
+      heads.push({ x, y: hgt * 0.6, z, ph, col: bloom >= 0 ? bloom : C.stem, type: bloom >= 0 ? 'flowering bush' : 'bush' });
     }
     return { pts: new Float32Array(s.d), heads, hive: { x: hive.x, y: 0.66, z: hive.z } };
   }
@@ -398,6 +398,29 @@
       this.dragging = () => !!drag;
     }
 
+    // What is under the pointer? Projects the actors and plants with the last frame's camera
+    // and returns the nearest one within a few dozen pixels: { kind, name, colour, x, y }
+    pick(px, py) {
+      const V = this.view; if (!V) return null;
+      const scr = (p) => {
+        const dx = p[0] - V.cam[0], dy = p[1] - V.cam[1], dz = p[2] - V.cam[2];
+        const zc = dx * V.f[0] + dy * V.f[1] + dz * V.f[2];
+        if (zc < 0.2) return null;
+        return [this.W / 2 + ((dx * V.r[0] + dy * V.r[1] + dz * V.r[2]) / zc) * V.FOC, this.H / 2 - ((dx * V.u[0] + dy * V.u[1] + dz * V.u[2]) / zc) * V.FOC, zc];
+      };
+      const cand = [];
+      this.flyers.forEach((b, i) => cand.push({ kind: i === 0 ? 'me' : 'butterfly', p: b.p, w: 1.6, perched: b.perched }));
+      cand.push({ kind: 'bee', p: this.bee.p, w: 1.5 });
+      cand.push({ kind: 'hive', p: [this.hive.x, 0.35, this.hive.z], w: 1.1 });
+      this.heads.forEach((h) => cand.push({ kind: h.type, p: [h.x, h.y, h.z], w: 1, col: PAL[h.col * 4 + 3] }));
+      let best = null;
+      for (const c of cand) {
+        const s = scr(c.p); if (!s) continue;
+        const d = Math.hypot(s[0] - px, s[1] - py) / c.w, lim = Math.max(18, 90 / s[2]);
+        if (d < lim && (!best || d + s[2] * 2 < best.score)) best = { ...c, x: s[0], y: s[1], score: d + s[2] * 2 };
+      }
+      return best;
+    }
     toggleFollow() { this.follow = !this.follow; this.shot = null; this.idle = 0; return this.follow; }
     // Guided tour: each shot is a subject + distance; the camera glides between them
     setShot(name) { this.shot = name; this.follow = false; this.idle = 0; }
@@ -502,6 +525,7 @@
       const f = norm([this.tgt[0] - cam[0], this.tgt[1] - cam[1], this.tgt[2] - cam[2]]);
       const r = norm([-f[2], 0, f[0]]);                       // right = forward × up
       const u = [r[1] * f[2] - r[2] * f[1], r[2] * f[0] - r[0] * f[2], r[0] * f[1] - r[1] * f[0]];
+      this.view = { cam, f, r, u, FOC: Math.min(this.H, this.W * 1.2) * 1.05 };      // kept for pick()
       const FOC = Math.min(this.H, this.W * 1.2) * 1.05, cwI = 1 / this.cw, chI = 1 / this.chH, hc = COLS / 2, hr = ROWS / 2;
       zb.fill(0);
       const bits = this.bits;

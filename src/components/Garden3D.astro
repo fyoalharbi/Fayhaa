@@ -19,6 +19,28 @@ const t = ar
       tour: 'Start the tour', next: 'Next', skip: 'Skip', again: 'Replay', blog: 'Read the blog', end: 'It flew away. Your turn.', ask: 'This garden is how I work. Want the tour?', sub: 'my work philosophy, told by a garden',
       who: { butterfly: 'the butterfly', bee: 'the bee', hive: 'the hive', far: 'a far flower', wide: 'the garden' } };
 const lines = philosophy.lines[lang];
+// Hover cards, old-game style: name, a "stat" line, a note
+const INFO = ar ? {
+  me: ['الفراشة البيضاء', 'المدى: بعيد · الزيارات: كثيرة', 'هذي أنا. أزور كل زهرة وأوصل بين الحدايق.'],
+  butterfly: ['فراشة', 'المدى: بعيد', 'تطير أبعد، وتزور زهور محد يوصلها.'],
+  bee: ['النحلة', 'المدى: قريب · الإتقان: عالي', 'تبقى قريب من خليتها، وشاطرة بشغلها.'],
+  hive: ['الخلية', 'البيت', 'كل رحلات النحلة تبدأ وتنتهي هنا.'],
+  daisy: ['أقحوانة', 'زهرة', 'نقطة بيانات صغيرة، تستاهل زيارة.'],
+  tulip: ['توليب', 'زهرة', 'فكرة مغلقة تنتظر أحد يفتحها.'],
+  cosmos: ['كوزموس', 'زهرة', 'تنبت حيث مرّ اللقاح.'],
+  bush: ['شجيرة', 'خضرة', 'الأساس الهادي اللي يشيل الحديقة.'],
+  'flowering bush': ['شجيرة مزهرة', 'خضرة + زهور', 'عناقيد أفكار من مجالات مختلفة.'],
+} : {
+  me: ['The white butterfly', 'RANGE: far · VISITS: many', "That's me. I visit every flower and connect the gardens."],
+  butterfly: ['Butterfly', 'RANGE: far', 'Flies farther, to flowers no one else reaches.'],
+  bee: ['The bee', 'RANGE: near · SKILL: high', "Stays close to home, and it's excellent at it."],
+  hive: ['The hive', 'HOME BASE', "Every one of the bee's trips starts and ends here."],
+  daisy: ['Daisy', 'FLOWER', 'A small data point, worth a visit.'],
+  tulip: ['Tulip', 'FLOWER', 'A closed idea, waiting for someone to open it.'],
+  cosmos: ['Cosmos', 'FLOWER', 'Grows wherever the pollen landed.'],
+  bush: ['Bush', 'GREENERY', 'The quiet groundwork that holds the garden together.'],
+  'flowering bush': ['Flowering bush', 'GREENERY + BLOOMS', 'Clusters of ideas from different fields.'],
+};
 // Which subject the camera visits for each line (same order as the philosophy lines)
 const SHOTS = ['wide', 'butterfly', 'butterfly', 'bee', 'bee', 'hive', 'butterfly', 'far', 'wide', 'butterfly', 'wide', 'butterfly'];
 const steps = lines.map((line, i) => ({ line, shot: SHOTS[i] || 'wide' }));
@@ -31,6 +53,8 @@ const steps = lines.map((line, i) => ({ line, shot: SHOTS[i] || 'wide' }));
       <p class="g3-sub">{t.sub}</p>
       <p class="g3-hint">{t.hint}</p>
     </div>
+
+    <div class="g3-tip" id="g3-tip" role="tooltip" hidden><b id="g3-tip-t"></b><em id="g3-tip-s"></em><span id="g3-tip-n"></span></div>
 
     <section class="g3-box is-enter" id="g3-box" aria-live="polite" data-state="intro">
       <p class="g3-who mono" id="g3-who"></p>
@@ -51,7 +75,7 @@ const steps = lines.map((line, i) => ({ line, shot: SHOTS[i] || 'wide' }));
     </div>
   </div>
 
-  <script is:inline define:vars={{ src: url('js/garden3d.js'), steps, t }}>
+  <script is:inline define:vars={{ src: url('js/garden3d.js'), steps, t, INFO }}>
     (function () {
       try { localStorage.setItem('fayhaa:papillon', '1'); } catch (e) {}
       const REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -115,6 +139,29 @@ const steps = lines.map((line, i) => ({ line, shot: SHOTS[i] || 'wide' }));
         g = new window.Garden3D(document.getElementById('g3-canvas'));
         const btn = document.getElementById('g3-follow');
         btn.addEventListener('click', () => { stop(); btn.textContent = g.toggleFollow() ? btn.dataset.on : btn.dataset.off; });
+        // Hover cards: point at something in the garden to read about it
+        const cv = document.getElementById('g3-canvas'), tip = document.getElementById('g3-tip');
+        const tT = document.getElementById('g3-tip-t'), tS = document.getElementById('g3-tip-s'), tN = document.getElementById('g3-tip-n');
+        let mx = -1, my = -1, shown = null, down = false;
+        cv.addEventListener('pointermove', (e) => { const r = cv.getBoundingClientRect(); mx = e.clientX - r.left; my = e.clientY - r.top; });
+        cv.addEventListener('pointerleave', () => { mx = -1; });
+        cv.addEventListener('pointerdown', () => { down = true; });
+        addEventListener('pointerup', () => { down = false; });
+        (function track() {
+          requestAnimationFrame(track);
+          const hit = mx >= 0 && !down ? g.pick(mx, my) : null;
+          if (!hit || !INFO[hit.kind]) { if (shown) { tip.hidden = true; shown = null; cv.style.cursor = ''; } return; }
+          if (shown !== hit.kind) {
+            const [a, b, c] = INFO[hit.kind];
+            tT.textContent = a; tS.textContent = b; tN.textContent = c; shown = hit.kind;
+            const rgb = (hit.col || '').match(/\d+/g), grey = !rgb || Math.max(...rgb) - Math.min(...rgb) < 60;   // pale blooms get neon cyan
+            tip.style.setProperty('--neon', hit.kind === 'bee' || hit.kind === 'hive' ? '#ffd24a' : grey ? '#7fe0ff' : hit.col);
+            tip.hidden = false; tip.classList.remove('is-in'); void tip.offsetWidth; tip.classList.add('is-in');
+            cv.style.cursor = 'help';
+          }
+          const W = cv.clientWidth, x = Math.min(W - tip.offsetWidth - 8, Math.max(8, hit.x + 18)), y = Math.max(8, hit.y - tip.offsetHeight - 14);
+          tip.style.transform = `translate(${x}px, ${y}px)`;
+        })();
         // Dragging the garden mid-tour hands the camera back for that line
         document.getElementById('g3-canvas').addEventListener('pointerdown', () => { if (box.dataset.state === 'tour') g.setShot(null); });
       };
@@ -153,6 +200,27 @@ const steps = lines.map((line, i) => ({ line, shot: SHOTS[i] || 'wide' }));
   :global(html[dir='rtl'] body:has(.g3) .site-nav a), :global(html[dir='rtl'] body:has(.g3) .lang-link) { font-family: var(--font-ar); letter-spacing: 0; font-size: .85rem; }
   .g3-actions { position: absolute; top: 16px; inset-inline-end: 20px; display: flex; flex-wrap: wrap; gap: 8px; justify-content: flex-end; }
   .g3-actions { gap: 14px; }
+
+  /* Old-game hover card: neon double border, pixel corners, scanlines */
+  .g3-tip {
+    --neon: #7fe0ff;
+    position: absolute; top: 0; left: 0; z-index: 5; pointer-events: none; max-width: 240px;
+    padding: 8px 11px 9px; background-color: rgba(6, 8, 12, .82);
+    border: 1px solid var(--neon); outline: 1px solid color-mix(in srgb, var(--neon) 35%, transparent); outline-offset: 2px;
+    box-shadow: 0 0 10px color-mix(in srgb, var(--neon) 55%, transparent), inset 0 0 8px color-mix(in srgb, var(--neon) 25%, transparent);
+    font: .72rem/1.45 var(--font-mono); color: #d8d8d8;
+    background-image: repeating-linear-gradient(0deg, transparent 0 2px, rgba(255, 255, 255, .035) 2px 3px);
+  }
+  .g3-tip::before, .g3-tip::after { content: ''; position: absolute; width: 5px; height: 5px; background: var(--neon); }
+  .g3-tip::before { top: -3px; left: -3px; }
+  .g3-tip::after { bottom: -3px; right: -3px; }
+  .g3-tip b { display: block; color: var(--neon); font-weight: 700; letter-spacing: .06em; text-transform: uppercase; text-shadow: 0 0 6px var(--neon); }
+  .g3-tip em { display: block; font-style: normal; color: #8a8a92; font-size: .64rem; letter-spacing: .08em; margin: 1px 0 4px; }
+  .g3-tip.is-in { animation: g3-tip-in .22s steps(4) both; }
+  @keyframes g3-tip-in { from { clip-path: inset(0 100% 0 0); } to { clip-path: inset(0 0 0 0); } }
+  .g3[dir='rtl'] .g3-tip { font-family: var(--font-ar); font-size: .8rem; }
+  .g3[dir='rtl'] .g3-tip b, .g3[dir='rtl'] .g3-tip em { letter-spacing: 0; }
+  @media (hover: none) { .g3-tip { display: none; } }
 
   /* Dialogue box: quiet, like the garden's own labels — small mono text on a faint veil */
   .g3-box {
