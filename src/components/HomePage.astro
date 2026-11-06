@@ -39,6 +39,25 @@ const groups = Object.keys(skillGroups)
 // Open on the most-used core skill
 const initial = [...skillInfo].sort((a, b) => Number(b.core) - Number(a.core) || b.count - a.count)[0]?.key;
 
+// Skills as a pipeline: which tools I use at each stage of the work; the rest are extras
+const STAGE_TOOLS: Record<string, string[]> = {
+  ingest: ['python', 'rest-apis', 'web-scraping', 'etl'],
+  transform: ['sql', 'dbt', 'airflow', 'data-cleaning', 'power-query'],
+  model: ['data-modeling', 'snowflake', 'statistics'],
+  report: ['power-bi', 'dax', 'dashboard-design', 'streamlit'],
+};
+const STAGE_WHAT = {
+  en: ['Pull data from APIs, files and the web.', 'Clean it, test it, schedule it.', 'Shape it into tables people can trust.', 'Turn it into decisions people can see.'],
+  ar: ['أسحب البيانات من الـ APIs والملفات والويب.', 'أنظفها وأختبرها وأجدولها.', 'أشكّلها لجداول يوثق فيها.', 'أحوّلها لقرارات تنشاف.'],
+};
+const byKey = Object.fromEntries(skillInfo.map((s) => [s.key, s]));
+const stages = Object.keys(STAGE_TOOLS).map((k, i) => ({
+  name: profile.workflow[lang][i], what: STAGE_WHAT[lang][i],
+  tools: STAGE_TOOLS[k].map((key) => byKey[key]).filter(Boolean),
+}));
+const inStages = new Set(Object.values(STAGE_TOOLS).flat());
+const extras = skillInfo.filter((s) => !inStages.has(s.key));
+
 // Sections are numbered in order and alternate white / paper backgrounds;
 // the optional experience section shifts the numbering when present.
 // (The philosophy is hidden in the hero butterflies, not a section.)
@@ -59,87 +78,87 @@ const tone = (id: string) => (num(id) % 2 ? 'surface' : 'paper') as 'surface' | 
     </div>
   </Section>
 
-  <!-- ── SKILLS ── -->
-  <Section id="skills" index={num('skills')} tone={tone('skills')} label={t.nav.skills} title={t.skillsTitle}>
-    <p slot="aside" class="muted">{t.skillsLead}</p>
-    <div class="skills-explorer">
-      <div class="chip-groups">
-        {groups.map((g) => (
-          <div class="chip-group">
-            <h3 class="mono">{g.label}</h3>
-            <ul class="chips">
-              {g.items.map((s, i) => (
-                <li class={i >= CHIP_LIMIT ? 'is-extra' : undefined}>
-                  <a href={langUrl(lang, `skills/${s.key}/`)} class={`chip${s.core ? ' is-core' : ''}${s.count ? '' : ' is-empty'}`}
-                     data-skill={s.key} aria-controls={`receipt-${s.key}`}
-                     aria-pressed={s.key === initial ? 'true' : 'false'}>
-                    {s.label[lang]}{s.count > 0 && <span class="chip-count mono">{s.count}</span>}
-                  </a>
+  <!-- ── SKILLS: the way I work, as a pipeline ── -->
+  <Section id="skills" index={num('skills')} tone={tone('skills')} label={t.nav.skills} title={lang === 'ar' ? 'كيف أشتغل' : 'How I work'}>
+    <p slot="aside" class="muted">{lang === 'ar' ? 'مرّر على أي أداة لتشوف المشاريع اللي استخدمتها فيها.' : 'Point at a tool to see the projects I used it in.'}</p>
+    <div class="pipe" id="pipe">
+      <ol class="pipe-stages">
+        {stages.map((st, i) => (
+          <li class="pipe-stage">
+            <p class="pipe-n mono">{String(i + 1).padStart(2, '0')}</p>
+            <h3 class="pipe-name">{st.name}</h3>
+            <p class="pipe-what muted">{st.what}</p>
+            <ul class="pipe-tools">
+              {st.tools.map((s) => (
+                <li>
+                  <a href={langUrl(lang, `skills/${s.key}/`)} class={`pipe-tool${s.core ? ' is-core' : ''}`} data-skill={s.key}>{s.label[lang]}</a>
                 </li>
               ))}
-              {g.items.length > CHIP_LIMIT && (
-                <li>
-                  <button type="button" class="chip chip-more mono" data-more={t.more(g.items.length - CHIP_LIMIT)} data-less={t.less}>
-                    {t.more(g.items.length - CHIP_LIMIT)}
-                  </button>
-                </li>
-              )}
             </ul>
-          </div>
+          </li>
         ))}
-      </div>
-
-      <div class="receipts" aria-live="polite">
-        {skillInfo.map((s) => (
-          <div class="receipt" id={`receipt-${s.key}`} hidden={s.key !== initial}>
-            <p class="receipt-head">
-              <span class="receipt-skill">{s.label[lang]}</span>
-              {s.core && <span class="mx-core mono">{t.core}</span>}
-            </p>
-            <p class="receipt-sub mono muted">{s.count ? t.usedIn(s.count) : t.noReceipt}</p>
-            {s.count > 0 && (
-              <ol class="receipt-list">
-                {s.receipts.map((r) => (
-                  <li>
-                    <a href={r.href} {...(r.external ? { target: '_blank', rel: 'noopener' } : {})}>
-                      <span class="receipt-title">{r.title}{r.external && ' ↗'}</span>
-                      <span class="receipt-date mono muted">{r.date}</span>
-                    </a>
-                  </li>
-                ))}
-              </ol>
-            )}
-            {s.count > 3 && (
-              <a class={`receipt-all mono${s.count <= RECEIPT_LIMIT ? ' phone-only' : ''}`} href={langUrl(lang, `skills/${s.key}/`)}>{t.allWork(s.count)}</a>
-            )}
-          </div>
+      </ol>
+      <p class="pipe-used" aria-live="polite">
+        {skillInfo.filter((s) => s.count).map((s) => (
+          <span class="pipe-for" data-for={s.key} hidden={s.key !== initial}>
+            <span class="mono">{s.label[lang]} {lang === 'ar' ? '←' : '→'}</span>
+            {s.receipts.map((r, k) => <>{k > 0 && <span class="pipe-sep"> · </span>}<a href={r.href} {...(r.external ? { target: '_blank', rel: 'noopener' } : {})}>{r.title.split(/ [—–-] /)[0]}</a></>)}
+          </span>
         ))}
-      </div>
+      </p>
+      <p class="pipe-also mono muted">{lang === 'ar' ? 'وكمان: ' : 'also: '}{extras.map((s, k) => <>{k > 0 && ' · '}<a href={langUrl(lang, `skills/${s.key}/`)}>{s.label[lang]}</a></>)}</p>
     </div>
 
     <script is:inline>
-      // Progressive enhancement: chips are links to skill pages; with JS a plain
-      // click shows that skill's receipts in place instead.
+      // Pointing at (or focusing) a tool shows the projects it was used in
       (function () {
-        const root = document.querySelector('.skills-explorer');
-        if (!root) return;
-        root.addEventListener('click', (e) => {
-          const more = e.target.closest('.chip-more');
-          if (more) {
-            const group = more.closest('.chip-group');
-            const open = group.classList.toggle('is-open');
-            more.textContent = open ? more.dataset.less : more.dataset.more;
-            return;
-          }
-          const chip = e.target.closest('.chip[data-skill]');
-          if (!chip || e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return;
-          e.preventDefault();
-          root.querySelectorAll('.chip[aria-pressed]').forEach((c) => c.setAttribute('aria-pressed', String(c === chip)));
-          root.querySelectorAll('.receipt').forEach((r) => { r.hidden = r.id !== 'receipt-' + chip.dataset.skill; });
-        });
+        const root = document.getElementById('pipe'); if (!root) return;
+        const show = (key) => {
+          const line = root.querySelector(`.pipe-for[data-for="${key}"]`); if (!line) return;
+          root.querySelectorAll('.pipe-for').forEach((el) => { el.hidden = el !== line; });
+          root.querySelectorAll('.pipe-tool').forEach((el) => el.classList.toggle('is-on', el.dataset.skill === key));
+        };
+        root.addEventListener('pointerover', (e) => { const a = e.target.closest('.pipe-tool'); if (a) show(a.dataset.skill); });
+        root.addEventListener('focusin', (e) => { const a = e.target.closest('.pipe-tool'); if (a) show(a.dataset.skill); });
       })();
     </script>
   </Section>
+
+  <style>
+    .pipe-stages { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); border-top: 1px solid var(--ink); }
+    .pipe-stage { position: relative; padding: 18px 20px 6px 0; }
+    .pipe-stage + .pipe-stage { padding-inline-start: 20px; border-inline-start: 1px solid var(--rule); }
+    /* the arrow between stages */
+    .pipe-stage + .pipe-stage::before { content: '→'; position: absolute; top: -0.75em; inset-inline-start: -0.6em; padding: 0 4px; background: var(--paper); font: 600 0.95rem/1.4 var(--font-mono); color: var(--accent); }
+    :global([dir='rtl']) .pipe-stage + .pipe-stage::before { content: '←'; }
+    .pipe-n { margin: 0 0 4px; color: var(--accent); }
+    .pipe-name { margin: 0 0 4px; font-size: 1.25rem; }
+    .pipe-what { margin: 0 0 14px; font-size: 0.85rem; min-height: 2.6em; }
+    .pipe-tools { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+    .pipe-tool { display: inline-block; padding: 3px 0; text-decoration: none; color: var(--ink); border-bottom: 1px solid transparent; }
+    .pipe-tool.is-core { font-weight: 600; }
+    .pipe-tool:hover, .pipe-tool:focus-visible, .pipe-tool.is-on { color: var(--accent); border-bottom-color: currentColor; }
+    .pipe-used { margin: 22px 0 0; padding-top: 14px; border-top: 1px solid var(--rule); min-height: 3.2em; }
+    .pipe-used a { color: var(--ink); }
+    .pipe-used a:hover { color: var(--accent); }
+    .pipe-used .mono { color: var(--accent); margin-inline-end: 8px; }
+    .pipe-sep { color: var(--muted); }
+    .pipe-also { margin: 14px 0 0; line-height: 1.8; }
+    .pipe-also a { color: inherit; text-decoration: none; }
+    .pipe-also a:hover { color: var(--accent); }
+    @media (max-width: 760px) {
+      .pipe-stages { grid-template-columns: repeat(2, minmax(0, 1fr)); row-gap: 8px; }
+      .pipe-stage:nth-child(3) { padding-inline-start: 0; border-inline-start: 0; }
+      .pipe-stage:nth-child(3)::before { display: none; }
+      .pipe-what { display: none; }
+      .pipe-stage { padding-top: 12px; padding-bottom: 4px; }
+      .pipe-name { font-size: 1.05rem; margin-bottom: 6px; }
+      .pipe-tools { display: flex; flex-wrap: wrap; gap: 0 10px; font-size: 0.9rem; }
+      .pipe-tool { padding: 1px 0; }
+      .pipe-used { margin-top: 12px; padding-top: 10px; font-size: 0.9rem; }
+      .pipe-also { margin-top: 8px; font-size: 0.7rem; line-height: 1.6; }
+    }
+  </style>
 
   <!-- ── EXPERIENCE / EDUCATION / CERTIFICATIONS (hidden until filled in profile.ts) ── -->
   {hasTimeline && (
