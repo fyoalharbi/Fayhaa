@@ -8,7 +8,7 @@ const D = await expData('en');
 const roman = ['I', 'II', 'III', 'IV', 'V'];
 const secs = [['about', 'About'], ['work', 'Work'], ['tools', 'Tools'], ['notes', 'Notes'], ['contact', 'Contact']];
 // Tools on the map: anything used in a project or in a role, most used first
-const usedSkills = D.skills.filter((s) => s.used.length || s.work.length).sort((a, b) => (b.used.length + b.work.length) - (a.used.length + a.work.length));
+const usedSkills = D.skills.filter((s) => s.used.length || s.work.length).sort((a, b) => b.used.length - a.used.length || b.work.length - a.work.length);
 const roles = D.experience.filter((e) => e.skills.length);
 const fam = (p: (typeof D.projects)[number]) => p.skills.some((s) => s.key === 'airflow' || s.key === 'dbt') ? 'Pipelines' : p.skills.some((s) => s.key === 'power-bi') ? 'Dashboards' : 'Analysis';
 ---
@@ -79,11 +79,11 @@ const fam = (p: (typeof D.projects)[number]) => p.skills.some((s) => s.key === '
       <p class="hb-lead">A pollination map: every tool is threaded to where it was used, in my work and in my projects. Hover either side.</p>
       <div class="hb-map" id="hb-map">
         <svg class="hb-map-lines" id="hb-map-lines" aria-hidden="true"></svg>
-        <ul class="hb-map-l">{usedSkills.map((s) => <li><button type="button" data-k={s.key} class={s.core ? 'is-core' : ''}>{s.label}<i title={`${s.work.length} role(s) · ${s.used.length} project(s)`}><em class="w">{'●'.repeat(s.work.length)}</em>{'○'.repeat(s.used.length)}</i></button></li>)}</ul>
+        <ul class="hb-map-l">{usedSkills.map((s) => <li><button type="button" data-k={s.key} class={s.core ? 'is-core' : ''}>{s.label}{s.work.length > 0 && <em class="wk">work</em>}<i title={`used in ${s.used.length} project(s)`}>{s.used.length || '–'}</i></button></li>)}</ul>
         <div class="hb-map-r">
-          <p class="hb-map-h"><b>●</b> at work</p>
+          <p class="hb-map-h"><b class="wk">work</b> at my jobs</p>
           <ul>{roles.map((e) => <li><button type="button" class="is-role" data-p={`role-${e.period}`} data-ks={e.skills.join(' ')}>{e.title}<small>{e.org} · {e.period}</small></button></li>)}</ul>
-          <p class="hb-map-h"><b class="p">○</b> in projects</p>
+          <p class="hb-map-h"><b class="p">4</b> = number of projects</p>
           <ul>{D.projects.map((p) => <li><button type="button" data-p={p.slug} data-ks={p.skills.map((s) => s.key).join(' ')}>{p.title}</button></li>)}</ul>
         </div>
       </div>
@@ -197,8 +197,9 @@ const fam = (p: (typeof D.projects)[number]) => p.skills.some((s) => s.key === '
   .hb-map-h:not(:first-child) { margin-top: 18px; }
   .hb-map button.is-role { flex-direction: column; gap: 0; color: var(--ink); }
   .hb-map button.is-role small { font: 10.5px var(--mono); color: var(--dim); font-style: normal; }
-  .hb-map button i .w { font-style: normal; color: #e6c34a99; }
-  .hb-map button.is-on .w, .hb-map button.is-role.is-on small { color: #0b0c0ebb; }
+  .hb-map .wk { font: normal 9px/1 var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--gold); border: 1px solid #e6c34a66; padding: 2px 4px; align-self: center; }
+  .hb-map button.is-on .wk { color: #0b0c0e; border-color: #0b0c0e66; }
+  .hb-map button.is-role.is-on small { color: #0b0c0ebb; }
   .hb-map button { all: unset; cursor: pointer; font: 12.5px/1.6 var(--mono); color: var(--ink-2); padding: 1px 6px; transition: color .2s, background .2s; display: inline-flex; gap: 8px; }
   .hb-map-l li { text-align: right; } .hb-map-l button { flex-direction: row; }
   .hb-map button i { font-style: normal; color: #ffffff40; }
