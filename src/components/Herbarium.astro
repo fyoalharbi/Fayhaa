@@ -9,6 +9,7 @@ import { expData } from '../lib/expData';
 import { flowerHTML } from '../lib/flowerArt';
 import type { Lang } from '../data/profile';
 import { url } from '../lib/site';
+import { projectArt } from '../lib/projectArt';
 
 interface Props { lang: Lang }
 const { lang } = Astro.props;
@@ -24,6 +25,7 @@ const T = AR ? {
   leads: ['خبراتي وتعليمي وطريقتي في الشغل.', 'الأعمال المميزة أول، وبعدها الباقي.',
     'كل أداة أستخدمها مرتبة حسب مرحلتها، ووين استخدمتها: في الشغل، وفي معسكر SDA، وفي مشاريعي.',
     'أشياء أتعلمها بالطريق.', 'أسرع طريقة توصل لي هي الإيميل.'],
+  preview: 'معاينة', hide: 'إخفاء', fig: 'شكل', shot: 'لقطة من',
   why: 'ليش فراشات؟ القصة كاملة ←', project: 'مشروع', result: 'النتيجة', case: 'دراسة الحالة ←', live: 'العرض المباشر ↗', liveS: 'مباشر ↗', code: 'الكود ↗',
   more: 'مشاريع أخرى', moreN: (n: number) => `· ${n} إضافية`,
   types: { Pipelines: 'خطوط بيانات', Dashboards: 'لوحات بيانات', Web: 'ويب', Analysis: 'تحليل' } as Record<string, string>,
@@ -41,6 +43,7 @@ const T = AR ? {
   leads: ['Experience, education, and how I like to work.', 'Featured work first, then everything else.',
     'Every tool I use, grouped by stage, and where I used it: at work, in the SDA bootcamp, and in my projects.',
     'Things I learn along the way.', 'Email is the fastest way to reach me.'],
+  preview: 'Preview', hide: 'Hide preview', fig: 'fig.', shot: 'Screenshot of',
   why: 'Why butterflies? The full story →', project: 'Project', result: 'Result', case: 'Case study →', live: 'Live demo ↗', liveS: 'Live ↗', code: 'Code ↗',
   more: 'More projects', moreN: (n: number) => `· ${n} more`,
   types: { Pipelines: 'Pipelines', Dashboards: 'Dashboards', Web: 'Web', Analysis: 'Analysis' } as Record<string, string>,
@@ -52,6 +55,14 @@ const T = AR ? {
   js: { hint: 'Hover or tap a tool, a job or a project.', pinned: 'pinned · tap again or esc', jobs: 'jobs', camp: 'bootcamp', projects: 'projects', tools: 'tools', tip: 'Why butterflies? Open the garden →' },
 };
 const ids = ['about', 'work', 'tools', 'notes', 'contact'];
+// Each project's ASCII plate and its figure note (Arabic notes below; English ones come with the drawing)
+const CAP_AR: Record<string, string> = {
+  invasight: 'أربعة مصادر، جذر واحد، ونموذج نجمي', 'finance-analyzer': 'كشف حساب يُقرأ سطراً سطراً ويتفرّع لوين تروح الفلوس',
+  'ewc-2024-dashboard': 'أدوار إقصائية تضيق إلى كأس واحدة، والجوائز حسب الدولة', 'qafiyah-feelings': 'ثمانية مشاعر تتفتح من ديوان شعر',
+  'bellabeat-case-study': 'يوم من الخطوات والنوم ونبض القلب', 'x-api-report': 'تغريدات كثيرة تدخل، ومؤشرات وتقرير يطلع',
+  'saudi-sectors-dashboard': 'جذر واحد، 32 قطاعاً، و638 جهة', 'coworking-spaces-dashboard': 'مساحات عمل متجمعة في ثلاث مدن، مكتباً مكتباً',
+};
+const plate = (slug: string) => { const a = projectArt(slug); return { html: a.html, cap: AR ? CAP_AR[slug] ?? '' : a.caption }; };
 // The same page in the other language
 const other = AR ? { href: url('experiments/herbarium/'), label: 'English', lang: 'en' } : { href: url('ar/experiments/herbarium/'), label: 'العربية', lang: 'ar' };
 
@@ -106,9 +117,11 @@ const lead = featured[0] ?? D.projects[0], camp = camps[0], post = D.posts[0];
       <aside class="hb-now">
         <article class="hb-now-p">
           <a class="hb-img" href={lead.href} aria-label={lead.title} data-perch>
-            {lead.thumb && <><canvas data-src={lead.thumb}></canvas><img src={lead.thumb} alt="" /></>}
+            <pre class="hb-art" aria-hidden="true" set:html={plate(lead.slug).html}></pre>
+            {lead.thumb && <img class="hb-shot" src={lead.thumb} alt={`${T.shot} ${lead.title}`} loading="lazy" />}
             <i class="c tl"></i><i class="c tr"></i><i class="c bl"></i><i class="c br"></i>
           </a>
+          <p class="hb-fig"><span><b>{T.fig} 01</b> {plate(lead.slug).cap}</span>{lead.thumb && <button type="button" class="hb-prev" aria-pressed="false" data-on={T.hide} data-off={T.preview}>{T.preview}</button>}</p>
           <p class="hb-tag">{T.now} · {lead.date}</p>
           <h3><a href={lead.href}>{lead.title}</a></h3>
           {lead.sub && <p class="hb-sub">{lead.sub}</p>}
@@ -144,7 +157,8 @@ const lead = featured[0] ?? D.projects[0], camp = camps[0], post = D.posts[0];
         {featured.map((p, i) => (
           <article class={`hb-feat ${i % 2 ? 'is-flip' : ''}`}>
             <a class="hb-img" href={p.href} aria-label={p.title} data-perch>
-              {p.thumb ? <><canvas data-src={p.thumb}></canvas><img src={p.thumb} alt="" loading="lazy" /></> : <pre class="hb-fallback" data-seed={i + 5}></pre>}
+              <pre class="hb-art" aria-hidden="true" set:html={plate(p.slug).html}></pre>
+              {p.thumb && <img class="hb-shot" src={p.thumb} alt={`${T.shot} ${p.title}`} loading="lazy" />}
               <i class="c tl"></i><i class="c tr"></i><i class="c bl"></i><i class="c br"></i>
               <span class="hb-tape t1"></span><span class="hb-tape t2"></span>
               <span class="hb-slip" aria-hidden="true"><b>{T.project} {pad(i + 1)}</b><span>{p.title}</span><span>{fam(p)} · {p.date}</span></span>
@@ -161,6 +175,7 @@ const lead = featured[0] ?? D.projects[0], camp = camps[0], post = D.posts[0];
                 {p.live && <a href={p.live}>{T.live}</a>}
                 {p.code && <a href={p.code}>{T.code}</a>}
               </p>
+              <p class="hb-fig"><span><b>{T.fig} {pad(i + 1)}</b> {plate(p.slug).cap}</span>{p.thumb && <button type="button" class="hb-prev" aria-pressed="false" data-on={T.hide} data-off={T.preview}>{T.preview}</button>}</p>
             </div>
           </article>
         ))}
@@ -170,9 +185,11 @@ const lead = featured[0] ?? D.projects[0], camp = camps[0], post = D.posts[0];
         {drawer.map((p, i) => (
           <article class="hb-sheet">
             <a class="hb-img" href={p.href} aria-label={p.title}>
-              {p.thumb ? <><canvas data-src={p.thumb}></canvas><img src={p.thumb} alt="" loading="lazy" /></> : <pre class="hb-fallback" data-seed={i + 9}></pre>}
+              <pre class="hb-art" aria-hidden="true" set:html={plate(p.slug).html}></pre>
+              {p.thumb && <img class="hb-shot" src={p.thumb} alt={`${T.shot} ${p.title}`} loading="lazy" />}
               <i class="c tl"></i><i class="c tr"></i><i class="c bl"></i><i class="c br"></i>
             </a>
+            <p class="hb-fig"><span><b>{T.fig} {pad(featured.length + i + 1)}</b> {plate(p.slug).cap}</span>{p.thumb && <button type="button" class="hb-prev" aria-pressed="false" data-on={T.hide} data-off={T.preview}>{T.preview}</button>}</p>
             <p class="hb-tag">{pad(featured.length + i + 1)} · {fam(p)} · {p.date}</p>
             <h3><a href={p.href}>{p.title}</a></h3>
             <p class="hb-sum">{p.summary}</p>
@@ -236,7 +253,7 @@ const lead = featured[0] ?? D.projects[0], camp = camps[0], post = D.posts[0];
 </ExpShell>
 
 <style is:global>
-  html { scroll-behavior: smooth; }
+  html { scroll-behavior: smooth; overflow-x: clip; }
   body { background: radial-gradient(1200px 600px at 85% -10%, #1a1f1a 0%, transparent 60%), var(--night); }
   html[lang='ar'] { --mono: 'JetBrains Mono', 'IBM Plex Sans Arabic', ui-monospace, monospace; }
   html[lang='ar'] .hb, html[lang='ar'] .hb-rail { letter-spacing: 0; }
@@ -315,11 +332,24 @@ const lead = featured[0] ?? D.projects[0], camp = camps[0], post = D.posts[0];
 
   /* ── projects ── */
   .hb-img { position: relative; display: block; aspect-ratio: 16/10; background: #0e100f; outline: 1px solid #ffffff12; outline-offset: 7px; }
-  .hb-img img, .hb-img canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; object-fit: cover; object-position: top; }
-  .hb-img img { clip-path: inset(0 0 100% 0); transition: clip-path 1.6s cubic-bezier(.6, 0, .2, 1) .2s; }
+  /* the plate: a 64×20 drawing scaled to the frame's width, in a quiet monochrome */
+  .hb-img { container-type: inline-size; display: grid; place-items: center; overflow: visible; }
+  .hb-art { margin: 0; direction: ltr; white-space: pre; font: 400 calc(100cqw / 64 / .6 * .9)/1.25 'JetBrains Mono', monospace; color: #4d4d57; transition: opacity .5s; user-select: none; }
+  .hb-img { text-decoration: none; } .hb-art i { font-style: normal !important; }
+  .hb-art { transform: translateZ(0); }   /* own layer → grayscale antialiasing, no coloured fringes on thin glyphs */
+  .hb-art .a-w { color: #e8e4d0; } .hb-art .a-g { color: #8d8d96; } .hb-art .a-d { color: #4d4d57; transition: color .4s; } .hb-art .a-u { color: #7f95b0; } .hb-art .a-q { color: #8d8d96; }
+  article:hover .hb-art .a-d { color: #63636e; }
+  /* the real screenshot waits behind the plate until asked for */
+  .hb-shot { position: absolute; inset: 0; width: 100%; height: 100%; display: block; object-fit: cover; object-position: top; clip-path: inset(0 0 100% 0); transition: clip-path 1.2s cubic-bezier(.6, 0, .2, 1); }
+  .is-prev .hb-shot { clip-path: inset(0 0 0 0); }
+  .is-prev .hb-art { opacity: 0; }
+  .hb-fig { display: flex; justify-content: space-between; align-items: baseline; gap: 14px; margin: 16px 0 0; font: 10.5px/1.5 var(--mono); color: #6a6a74; }
+  .hb-fig b { font-weight: 500; color: #8d8d96; margin-inline-end: 6px; }
+  .hb-prev { all: unset; cursor: pointer; flex: none; font: 500 10px/1 var(--mono); letter-spacing: .08em; text-transform: uppercase; color: #8d8d96; padding: 5px 8px; border: 1px solid #ffffff1c; transition: color .2s, border-color .2s; }
+  .hb-prev:hover, .hb-prev[aria-pressed='true'] { color: var(--ink); border-color: #7f95b0; }
+  .hb-label .hb-fig { margin-top: 22px; padding-top: 12px; border-top: 1px dashed #ffffff14; }
   .hb-img::after { content: ''; position: absolute; left: -6px; right: -6px; top: 0; height: 1px; background: var(--red); box-shadow: 0 0 10px 1px #ff8a8a; opacity: 0; pointer-events: none; z-index: 2; }
-  .is-dev .hb-img img { clip-path: inset(0 0 0 0); }
-  .is-dev .hb-img::after { animation: hb-scan 1.6s cubic-bezier(.6, 0, .2, 1) .2s both; }
+  .is-prev .hb-img::after { animation: hb-scan 1.2s cubic-bezier(.6, 0, .2, 1) both; }
   @keyframes hb-scan { 0% { top: 0; opacity: 1; } 92% { opacity: 1; } 100% { top: 100%; opacity: 0; } }
   .hb-img .c { position: absolute; width: 12px; height: 12px; border: 1px solid var(--red); opacity: 0; transition: all .3s; filter: drop-shadow(0 0 4px var(--red)); z-index: 3; }
   .hb-img .tl { top: -14px; left: -14px; border-right: 0; border-bottom: 0; } .hb-img .tr { top: -14px; right: -14px; border-left: 0; border-bottom: 0; }
@@ -329,7 +359,6 @@ const lead = featured[0] ?? D.projects[0], camp = camps[0], post = D.posts[0];
   article:hover .hb-img .bl { transform: translate(5px, -5px); } article:hover .hb-img .br { transform: translate(-5px, -5px); }
   .hb-tape { position: absolute; width: 54px; height: 16px; background: #e8e4d01a; border: 1px solid #e8e4d014; z-index: 3; }
   .hb-tape.t1 { top: -9px; left: 14%; transform: rotate(-4deg); } .hb-tape.t2 { bottom: -9px; right: 12%; transform: rotate(3deg); }
-  .hb-fallback { position: absolute; inset: 0; margin: 0; }
 
   .hb-feats { display: grid; gap: 130px; }
   .hb-feat { position: relative; display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr); gap: 64px; align-items: center; }
@@ -352,10 +381,10 @@ const lead = featured[0] ?? D.projects[0], camp = camps[0], post = D.posts[0];
   .hb-links a:hover { color: var(--red); border-color: var(--red); }
   .hb-sub-h { margin: 150px 0 34px; font: 400 30px/1 var(--serif); font-style: italic; color: var(--ink); padding-bottom: 14px; border-bottom: 1px dashed #ffffff22; }
   .hb-sub-h span { font: 500 10.5px var(--mono); font-style: normal; letter-spacing: .14em; text-transform: uppercase; color: var(--dim); }
-  .hb-drawer { display: grid; grid-template-columns: repeat(3, 1fr); gap: 64px 40px; }
+  .hb-drawer { display: grid; grid-template-columns: repeat(3, 1fr); gap: 72px 40px; align-items: start; }
   .hb-sheet { display: grid; align-content: start; }
-  .hb-sheet .hb-img { aspect-ratio: 4/3; margin-bottom: 22px; }
-  .hb-sheet:nth-child(3n + 2) { margin-top: 48px; }
+  .hb-sheet .hb-img { aspect-ratio: 16/10; }
+  .hb-sheet .hb-fig { margin-bottom: 18px; min-height: 3em; }   /* two lines always, so every card in the row lines up */
   .hb-sheet h3 { font-size: 25px; margin-top: 6px; } html[lang='ar'] .hb-sheet h3 { font-size: 23px; }
   .hb-sheet .hb-sum { font-size: 13.5px; color: var(--dim); display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
   .hb-tag { margin: 0; font: 500 9.5px var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--dim); }
@@ -443,7 +472,7 @@ const lead = featured[0] ?? D.projects[0], camp = camps[0], post = D.posts[0];
     .hb-feat.is-flip .hb-img { order: 0; }
     .hb-slip, .hb-feat.is-flip .hb-slip { inset-inline-end: -4px; inset-inline-start: auto; bottom: -40px; width: 170px; }
     .hb-feats { gap: 90px; } .hb-n { font-size: 72px; } .hb-label h3 { font-size: 36px; }
-    .hb-drawer { grid-template-columns: 1fr; gap: 56px; } .hb-sheet:nth-child(3n + 2) { margin-top: 0; }
+    .hb-drawer { grid-template-columns: 1fr; gap: 56px; }
     .hb-quote { position: static; }
     .hb-legend { margin-top: -14px; }
     .hb-stages { grid-template-columns: 1fr; gap: 26px; }

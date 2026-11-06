@@ -1,6 +1,6 @@
 // Experiment 03 · Herbarium: a readable scrolling page in Papillon's language (EN + AR).
 (function () {
-  const T = window.HB_T, { decodeOnView, asciiImage, flowerHTML, Garden2D, clamp, rand, REDUCED } = window.KIT;
+  const T = window.HB_T, { decodeOnView, Garden2D, clamp, rand, REDUCED } = window.KIT;
   const $ = (s, r = document) => r.querySelector(s), $$ = (s, r = document) => [...r.querySelectorAll(s)];
   const RTL = document.documentElement.dir === 'rtl';
   const wide = () => !matchMedia('(max-width: 860px)').matches;
@@ -16,22 +16,32 @@
   new IntersectionObserver(([e]) => { g.paused = !e.isIntersecting; }).observe(gc);
   addEventListener('resize', () => { placeBand(); g.resize(); });
 
-  // ── Reveal blocks; project pictures develop from 0/1 into the photo under a scan line ──
-  const develop = (art) => setTimeout(() => art.classList.add('is-dev'), REDUCED ? 0 : 800);
+  // ── Reveal blocks as they scroll in ──
   const io = new IntersectionObserver((es) => es.forEach((e) => {
     if (!e.isIntersecting) return;
     io.unobserve(e.target); e.target.classList.add('is-in');
-    if (e.target.matches('.hb-feat, .hb-sheet')) develop(e.target);
   }), { threshold: 0.18, rootMargin: '0px 0px -8% 0px' });
   $$('.hb-sec > *:not(.hb-feats):not(.hb-drawer), .hb-feat, .hb-sheet, .hb-entry').forEach((el) => io.observe(el));
-  const nowCard = $('.hb-now-p'); if (nowCard) setTimeout(() => develop(nowCard), 900);
-  $$('.hb-img canvas[data-src]').forEach((c) => {
-    const art = c.closest('article');
-    const ctl = asciiImage(c, c.dataset.src, { cell: 7 });
-    let n = 0;
-    const id = setInterval(() => { if (ctl.draw && !art.classList.contains('is-dev')) ctl.draw(++n); if (art.classList.contains('is-dev') || n > 300) clearInterval(id); }, 150);
-  });
-  $$('.hb-fallback').forEach((p) => { p.innerHTML = `<span>${flowerHTML({ R: 13, seed: +p.dataset.seed, stem: 6, squash: 0.45 })}</span>`; p.style.cssText += 'display:flex;align-items:center;justify-content:center;font:9px/1.05 var(--mono);overflow:hidden;direction:ltr'; });
+
+  // ── Project plates: the ASCII drawing first; "Preview" reveals the real screenshot ──
+  $$('.hb-prev').forEach((btn) => btn.addEventListener('click', () => {
+    const art = btn.closest('article'), on = !art.classList.contains('is-prev');
+    art.classList.toggle('is-prev', on);
+    btn.setAttribute('aria-pressed', String(on));
+    btn.textContent = on ? btn.dataset.on : btn.dataset.off;
+  }));
+  // the few live bits in each drawing flip now and then, only while it's on screen
+  const live = new Set();
+  const lio = new IntersectionObserver((es) => es.forEach((e) => (e.isIntersecting ? live.add(e.target) : live.delete(e.target))));
+  $$('.hb-art').forEach((pre) => { if (pre.querySelector('.a-q')) lio.observe(pre); });
+  if (!REDUCED) setInterval(() => {
+    for (const pre of live) {
+      if (Math.random() < 0.5) continue;
+      const qs = pre.querySelectorAll('.a-q'), q = qs[(Math.random() * qs.length) | 0], t = [...q.textContent];
+      const i = (Math.random() * t.length) | 0;
+      if (t[i] === '0' || t[i] === '1') { t[i] = t[i] === '0' ? '1' : '0'; q.textContent = t.join(''); }
+    }
+  }, 420);
 
   // ── Rail: hidden on the landing; the stem grows with the scroll ──
   const rail = $('#hb-rail'), links = $$('.hb-rail a'), grow = $('#hb-grow');
