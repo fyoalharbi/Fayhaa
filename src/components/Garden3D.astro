@@ -199,7 +199,8 @@ const projects = (await getProjects(lang)).slice(0, 6).map((p) => ({ title: p.da
             const lit = !HOVER || o.k === openPin;
             if (lit) { on.add(el); paths += `<polyline points="${fx},${fy} ${bx},${ey} ${ex},${ey}"/>`; }
             // Every project flower keeps a small target marker, so there is something to point at
-            paths += `<rect class="${lit ? 'is-lit' : ''}" x="${fx - 4}" y="${fy - 4}" width="8" height="8"/>`;
+            const d = lit ? 13 : 9;
+            paths += `<g class="g3-mk${lit ? ' is-lit' : ''}" style="--d:${(o.k * 0.37) % 1.8}s"><circle cx="${fx}" cy="${fy}" r="${d}"/><path d="M${fx} ${fy - d - 5}L${fx + 2} ${fy - 2}L${fx + d + 5} ${fy}L${fx + 2} ${fy + 2}L${fx} ${fy + d + 5}L${fx - 2} ${fy + 2}L${fx - d - 5} ${fy}L${fx - 2} ${fy - 2}Z"/><rect x="${fx - 3}" y="${fy - 3}" width="6" height="6"/></g>`;
           });
         });
         svg.innerHTML = paths;
@@ -224,12 +225,13 @@ const projects = (await getProjects(lang)).slice(0, 6).map((p) => ({ title: p.da
         (function track() {
           requestAnimationFrame(track);
           const hit = mx >= 0 && !down && !root.classList.contains('is-pointing') ? g.pick(mx, my) : null;   // project labels win over the info card
-          if (!hit || !INFO[hit.kind]) { if (shown) { tip.hidden = true; shown = null; cv.style.cursor = ''; } return; }
+          const plant = hit && /daisy|tulip|cosmos|bush/.test(hit.kind);         // no cards for flowers and bushes
+          if (!hit || plant || !INFO[hit.kind]) { if (shown) { tip.hidden = true; shown = null; cv.style.cursor = ''; } return; }
           if (shown !== hit.kind) {
             const [a, b, c] = INFO[hit.kind];
             tT.textContent = a; tS.textContent = b; tN.textContent = c; shown = hit.kind;
             const rgb = (hit.col || '').match(/\d+/g), grey = !rgb || Math.max(...rgb) - Math.min(...rgb) < 60;   // pale blooms get neon cyan
-            tip.style.setProperty('--neon', hit.kind === 'bee' || hit.kind === 'hive' ? '#ffd24a' : grey ? '#7fe0ff' : hit.col);
+            tip.style.setProperty('--neon', hit.kind === 'bee' || hit.kind === 'hive' ? '#ffd24a' : grey ? '#ff8a8a' : hit.col);
             tip.hidden = false; tip.classList.remove('is-in'); void tip.offsetWidth; tip.classList.add('is-in');
             cv.style.cursor = 'help';
           }
@@ -297,25 +299,31 @@ const projects = (await getProjects(lang)).slice(0, 6).map((p) => ({ title: p.da
 
   /* ── The end: retro callouts ── */
   .g3-lines { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 4; pointer-events: none; opacity: 0; transition: opacity .8s ease .6s; }
-  .g3-lines :global(polyline) { fill: none; stroke: #7fe0ff; stroke-width: 1; stroke-dasharray: 4 3; filter: drop-shadow(0 0 3px #7fe0ff); animation: g3-march 1.2s linear infinite; }
-  .g3-lines :global(rect) { fill: none; stroke: #7fe0ff; stroke-width: 1; opacity: .7; transform-box: fill-box; transform-origin: center; animation: g3-ping 1.8s ease-in-out infinite; }
-  .g3-lines :global(rect.is-lit) { fill: #7fe0ff55; opacity: 1; animation: none; filter: drop-shadow(0 0 4px #7fe0ff); }
-  @keyframes g3-ping { 50% { transform: scale(1.5); opacity: .25; } }
+  .g3-lines :global(polyline) { fill: none; stroke: #ff8a8a; stroke-width: 1; stroke-dasharray: 4 3; filter: drop-shadow(0 0 3px #ff8a8a); animation: g3-march 1.2s linear infinite; }
+  /* Shining markers: a bright core, a twinkling sparkle and a soft halo that breathes */
+  .g3-lines :global(.g3-mk) { filter: drop-shadow(0 0 4px #ffd0a0) drop-shadow(0 0 10px #ff8a8a); }
+  .g3-lines :global(.g3-mk rect) { fill: #fff3e0; }
+  .g3-lines :global(.g3-mk path) { fill: #ffe2c4; transform-box: fill-box; transform-origin: center; animation: g3-twinkle 1.8s ease-in-out var(--d) infinite; }
+  .g3-lines :global(.g3-mk circle) { fill: #ff8a8a22; stroke: #ff8a8a; stroke-width: 1; transform-box: fill-box; transform-origin: center; animation: g3-halo 1.8s ease-out var(--d) infinite; }
+  .g3-lines :global(.g3-mk.is-lit path) { animation-duration: .9s; }
+  .g3-lines :global(.g3-mk.is-lit circle) { fill: #ff8a8a44; }
+  @keyframes g3-twinkle { 0%, 100% { transform: scale(.55) rotate(0deg); opacity: .65; } 50% { transform: scale(1.1) rotate(45deg); opacity: 1; } }
+  @keyframes g3-halo { from { transform: scale(.6); opacity: .9; } to { transform: scale(1.8); opacity: 0; } }
   .g3.is-pointing canvas { cursor: pointer; }
   @keyframes g3-march { to { stroke-dashoffset: -14; } }
   .g3-pins { position: absolute; inset: 0; z-index: 5; pointer-events: none; }
   .g3-pin {
     position: absolute; top: 0; left: 0; width: min(230px, 38vw); padding: 7px 10px 8px; pointer-events: auto; text-decoration: none;
-    background-color: rgba(6, 8, 12, .82); border: 1px solid #7fe0ff; outline: 1px solid #7fe0ff44; outline-offset: 2px;
-    box-shadow: 0 0 10px #7fe0ff55, inset 0 0 8px #7fe0ff22; color: #cfcfcf; font: .68rem/1.4 var(--font-mono);
+    background-color: rgba(6, 8, 12, .82); border: 1px solid #ff8a8a; outline: 1px solid #ff8a8a44; outline-offset: 2px;
+    box-shadow: 0 0 10px #ff8a8a55, inset 0 0 8px #ff8a8a22; color: #cfcfcf; font: .68rem/1.4 var(--font-mono);
     background-image: repeating-linear-gradient(0deg, transparent 0 2px, rgba(255, 255, 255, .035) 2px 3px);
     transition: transform .45s cubic-bezier(.2, .8, .2, 1), opacity .5s, box-shadow .2s; opacity: 0; visibility: hidden;
   }
   .g3[data-phase='end'] .g3-pin[data-on='1'] { opacity: 1; visibility: visible; }
   .g3[data-phase='end'] .g3-lines { opacity: 1; }
-  .g3-pin b { display: block; color: #7fe0ff; font-size: .74rem; letter-spacing: .05em; text-transform: uppercase; text-shadow: 0 0 6px #7fe0ff; }
+  .g3-pin b { display: block; color: #ff8a8a; font-size: .74rem; letter-spacing: .05em; text-transform: uppercase; text-shadow: 0 0 6px #ff8a8a; }
   .g3-pin span { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; color: #8a8a92; margin-top: 2px; }
-  .g3-pin:hover, .g3-pin:focus-visible { box-shadow: 0 0 18px #7fe0ffaa, inset 0 0 10px #7fe0ff44; outline-color: #7fe0ff; }
+  .g3-pin:hover, .g3-pin:focus-visible { box-shadow: 0 0 18px #ff8a8aaa, inset 0 0 10px #ff8a8a44; outline-color: #ff8a8a; }
   .g3-pin:hover b::after { content: ' ▸'; }
   .g3[dir='rtl'] .g3-pin { font-family: var(--font-ar); font-size: .78rem; }
   .g3[dir='rtl'] .g3-pin b { letter-spacing: 0; font-size: .82rem; }
@@ -323,7 +331,7 @@ const projects = (await getProjects(lang)).slice(0, 6).map((p) => ({ title: p.da
 
   /* Old-game hover card: neon double border, pixel corners, scanlines */
   .g3-tip {
-    --neon: #7fe0ff;
+    --neon: #ff8a8a;
     position: absolute; top: 0; left: 0; z-index: 5; pointer-events: none; max-width: 240px;
     padding: 8px 11px 9px; background-color: rgba(6, 8, 12, .82);
     border: 1px solid var(--neon); outline: 1px solid color-mix(in srgb, var(--neon) 35%, transparent); outline-offset: 2px;
