@@ -109,7 +109,8 @@ const art = kind().map((r) => r.join('')).join('\n')
     background: radial-gradient(ellipse at 50% 130%, #1f2a1f 0%, #141814 45%, #0d0d0f 80%);
     display: grid; place-items: center;
   }
-  .thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .thumb img { width: 100%; height: 100%; object-fit: cover; object-position: top center; display: block; transition: transform .4s ease; }
+  :global(.card:hover) .thumb img { transform: scale(1.04); }
   .thumb pre {
     margin: 0; font: 600 clamp(8px, 1.05vw, 11px)/1.15 var(--font-mono); color: #6f9f6f; letter-spacing: .02em;
     transition: color .3s, transform .4s ease;
