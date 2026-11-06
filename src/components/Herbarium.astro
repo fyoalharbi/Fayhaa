@@ -110,7 +110,7 @@ const lead = featured[0] ?? D.projects[0], camp = camps[0], post = D.posts[0];
       </div>
       <aside class="hb-now">
         <article class="hb-now-p">
-          <a class="hb-img" href={lead.href} aria-label={lead.title} data-perch>
+          <a class="hb-img" href={lead.href} aria-label={lead.title}>
             <pre class="hb-art" aria-hidden="true" set:html={plate(lead.slug).html}></pre>
             {lead.thumb && <img class="hb-shot" src={lead.thumb} alt={`${T.shot} ${lead.title}`} loading="lazy" />}
             <i class="c tl"></i><i class="c tr"></i><i class="c bl"></i><i class="c br"></i>
@@ -150,7 +150,7 @@ const lead = featured[0] ?? D.projects[0], camp = camps[0], post = D.posts[0];
       <div class="hb-feats">
         {featured.map((p, i) => (
           <article class={`hb-feat ${i % 2 ? 'is-flip' : ''}`}>
-            <a class="hb-img" href={p.href} aria-label={p.title} data-perch>
+            <a class="hb-img" href={p.href} aria-label={p.title}>
               <pre class="hb-art" aria-hidden="true" set:html={plate(p.slug).html}></pre>
               {p.thumb && <img class="hb-shot" src={p.thumb} alt={`${T.shot} ${p.title}`} loading="lazy" />}
               <i class="c tl"></i><i class="c tr"></i><i class="c bl"></i><i class="c br"></i>
@@ -357,9 +357,9 @@ const lead = featured[0] ?? D.projects[0], camp = camps[0], post = D.posts[0];
   .hb-feats { display: grid; gap: 130px; }
   .hb-feat { position: relative; display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr); gap: 64px; align-items: center; }
   .hb-feat.is-flip .hb-img { order: 2; } .hb-feat.is-flip .hb-label { order: 1; }
-  .hb-slip { position: absolute; z-index: 4; inset-inline-end: -34px; bottom: -44px; display: grid; gap: 1px; width: 190px; padding: 9px 11px; font: 9.5px/1.5 var(--mono); color: var(--dim); background: #101311; border: 1px solid #ffffff22; box-shadow: 0 10px 30px #0008; transform: rotate(-1.5deg); }
+  .hb-slip { position: absolute; z-index: 4; inset-inline-end: -10px; top: calc(100% + 16px); display: grid; gap: 1px; width: 190px; padding: 9px 11px; font: 9.5px/1.5 var(--mono); color: var(--dim); background: #101311; border: 1px solid #ffffff22; box-shadow: 0 10px 30px #0008; transform: rotate(-1.5deg); }
   .hb-slip b { color: var(--red); font-weight: 500; letter-spacing: .1em; text-transform: uppercase; } .hb-slip span:nth-child(2) { color: var(--ink); font: italic 13px/1.3 var(--serif); }
-  .hb-feat.is-flip .hb-slip { inset-inline-end: auto; inset-inline-start: -34px; transform: rotate(1.5deg); }
+  .hb-feat.is-flip .hb-slip { inset-inline-end: auto; inset-inline-start: -10px; transform: rotate(1.5deg); }
   .hb-n { margin: 0 0 -10px; font: italic 400 110px/1 var(--serif); color: transparent; -webkit-text-stroke: 1px #ffffff26; letter-spacing: -.04em; }
   .hb-label h3, .hb-sheet h3 { margin: 0; font: 400 46px/1.04 var(--serif); font-style: italic; letter-spacing: -.01em; }
   html[lang='ar'] .hb-label h3, html[lang='ar'] .hb-sheet h3 { font-weight: 500; line-height: 1.3; font-size: 38px; }
