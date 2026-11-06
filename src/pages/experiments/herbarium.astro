@@ -7,7 +7,9 @@ import { expData } from '../../lib/expData';
 const D = await expData('en');
 const roman = ['I', 'II', 'III', 'IV', 'V'];
 const secs = [['about', 'About'], ['work', 'Work'], ['tools', 'Tools'], ['notes', 'Notes'], ['contact', 'Contact']];
-const usedSkills = D.skills.filter((s) => s.used.length);
+// Tools on the map: anything used in a project or in a role, most used first
+const usedSkills = D.skills.filter((s) => s.used.length || s.work.length).sort((a, b) => (b.used.length + b.work.length) - (a.used.length + a.work.length));
+const roles = D.experience.filter((e) => e.skills.length);
 const fam = (p: (typeof D.projects)[number]) => p.skills.some((s) => s.key === 'airflow' || s.key === 'dbt') ? 'Pipelines' : p.skills.some((s) => s.key === 'power-bi') ? 'Dashboards' : 'Analysis';
 ---
 <ExpShell title="Herbarium" n="03" scripts={['js/flyer.js', 'experiments/kit.js', 'experiments/herbarium.js']}>
@@ -26,11 +28,6 @@ const fam = (p: (typeof D.projects)[number]) => p.skills.some((s) => s.key === '
         <p class="hb-intro">{D.intro}</p>
         <p class="hb-cta"><a href="#work">See the plates ↓</a><a href={`mailto:${D.email}`}>Email me</a></p>
       </div>
-      <figure class="hb-spec" id="hb-spec" aria-hidden="true">
-        <canvas></canvas>
-        <i class="c tl"></i><i class="c tr"></i><i class="c bl"></i><i class="c br"></i>
-        <figcaption><b>Pl. 0</b> · <em>Papilio datum</em><br/>the collector · wings of live bits, caught mid-flap</figcaption>
-      </figure>
       <p class="hb-scroll" aria-hidden="true">scroll ·<br/>·<br/>·</p>
     </header>
 
@@ -79,11 +76,16 @@ const fam = (p: (typeof D.projects)[number]) => p.skills.some((s) => s.key === '
     <section id="tools" class="hb-sec">
       <p class="hb-num">Pl. III</p>
       <h2 data-decode>Tools</h2>
-      <p class="hb-lead">A pollination map: which tool carried pollen to which project. Hover either side.</p>
+      <p class="hb-lead">A pollination map: every tool is threaded to where it was used, in my work and in my projects. Hover either side.</p>
       <div class="hb-map" id="hb-map">
         <svg class="hb-map-lines" id="hb-map-lines" aria-hidden="true"></svg>
-        <ul class="hb-map-l">{usedSkills.map((s) => <li><button type="button" data-k={s.key} class={s.core ? 'is-core' : ''}>{s.label}<i>{s.used.length}</i></button></li>)}</ul>
-        <ul class="hb-map-r">{D.projects.map((p) => <li><button type="button" data-p={p.slug} data-ks={p.skills.map((s) => s.key).join(' ')}>{p.title}</button></li>)}</ul>
+        <ul class="hb-map-l">{usedSkills.map((s) => <li><button type="button" data-k={s.key} class={s.core ? 'is-core' : ''}>{s.label}<i title={`${s.work.length} role(s) · ${s.used.length} project(s)`}><em class="w">{'●'.repeat(s.work.length)}</em>{'○'.repeat(s.used.length)}</i></button></li>)}</ul>
+        <div class="hb-map-r">
+          <p class="hb-map-h"><b>●</b> at work</p>
+          <ul>{roles.map((e) => <li><button type="button" class="is-role" data-p={`role-${e.period}`} data-ks={e.skills.join(' ')}>{e.title}<small>{e.org} · {e.period}</small></button></li>)}</ul>
+          <p class="hb-map-h"><b class="p">○</b> in projects</p>
+          <ul>{D.projects.map((p) => <li><button type="button" data-p={p.slug} data-ks={p.skills.map((s) => s.key).join(' ')}>{p.title}</button></li>)}</ul>
+        </div>
       </div>
       <p class="hb-flow">{D.workflow.map((w, i) => <span><b>0{i + 1}</b> {w}</span>)}</p>
     </section>
@@ -139,14 +141,6 @@ const fam = (p: (typeof D.projects)[number]) => p.skills.some((s) => s.key === '
   .hb-cta a { font: 500 11.5px/1 var(--mono); letter-spacing: .06em; padding: 10px 13px; text-decoration: none; color: var(--ink); border: 1px solid #ffffff2a; background: #0b0c0e99; transition: all .2s; }
   .hb-cta a:first-child { border-color: #ff8a8a88; }
   .hb-cta a:hover { border-color: var(--red); color: var(--red); box-shadow: 0 0 12px #ff8a8a33; }
-  .hb-spec { position: absolute; right: 0; top: 16vh; margin: 0; padding: 26px 30px 18px; border: 1px solid #ffffff12; background: #ffffff03; }
-  .hb-spec canvas { display: block; }
-  .hb-spec .c { position: absolute; width: 10px; height: 10px; border: 1px solid var(--red); }
-  .hb-spec .tl { top: -5px; left: -5px; border-right: 0; border-bottom: 0; } .hb-spec .tr { top: -5px; right: -5px; border-left: 0; border-bottom: 0; }
-  .hb-spec .bl { bottom: -5px; left: -5px; border-right: 0; border-top: 0; } .hb-spec .br { bottom: -5px; right: -5px; border-left: 0; border-top: 0; }
-  .hb-spec figcaption { margin-top: 12px; font: 10px/1.6 var(--mono); color: var(--dim); letter-spacing: .06em; border-top: 1px dashed #ffffff1c; padding-top: 10px; }
-  .hb-spec figcaption b { color: var(--red); font-weight: 500; } .hb-spec figcaption em { font: italic 13px var(--serif); color: var(--ink-2); letter-spacing: 0; }
-  @media (max-width: 1180px) { .hb-spec { display: none; } }
   .hb-scroll { position: absolute; right: 0; bottom: 30px; margin: 0; font: 10px/1.2 var(--mono); color: var(--dim); text-align: center; }
 
   /* about */
@@ -196,7 +190,15 @@ const fam = (p: (typeof D.projects)[number]) => p.skills.some((s) => s.key === '
   /* pollination map */
   .hb-map { position: relative; display: grid; grid-template-columns: 1fr 1fr; gap: 0 32%; }
   .hb-map ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; position: relative; z-index: 1; }
-  .hb-map-r { align-content: space-around; }
+  .hb-map-r { display: grid; align-content: space-between; gap: 6px; position: relative; z-index: 1; }
+  .hb-map-r ul { gap: 6px; }
+  .hb-map-h { margin: 0; font: 500 10px var(--mono); letter-spacing: .16em; text-transform: uppercase; color: var(--dim); padding-left: 6px; }
+  .hb-map-h b { color: var(--gold); font-weight: 400; } .hb-map-h b.p { color: var(--red); }
+  .hb-map-h:not(:first-child) { margin-top: 18px; }
+  .hb-map button.is-role { flex-direction: column; gap: 0; color: var(--ink); }
+  .hb-map button.is-role small { font: 10.5px var(--mono); color: var(--dim); font-style: normal; }
+  .hb-map button i .w { font-style: normal; color: #e6c34a99; }
+  .hb-map button.is-on .w, .hb-map button.is-role.is-on small { color: #0b0c0ebb; }
   .hb-map button { all: unset; cursor: pointer; font: 12.5px/1.6 var(--mono); color: var(--ink-2); padding: 1px 6px; transition: color .2s, background .2s; display: inline-flex; gap: 8px; }
   .hb-map-l li { text-align: right; } .hb-map-l button { flex-direction: row; }
   .hb-map button i { font-style: normal; color: #ffffff40; }
@@ -207,6 +209,8 @@ const fam = (p: (typeof D.projects)[number]) => p.skills.some((s) => s.key === '
   .hb-map-lines { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; pointer-events: none; }
   .hb-map-lines path { fill: none; stroke: #6f9f6f2e; stroke-width: 1; transition: stroke .25s; }
   .hb-map-lines path.is-on { stroke: var(--red); filter: drop-shadow(0 0 3px #ff8a8a); }
+  .hb-map-lines path.role { stroke: #e6c34a30; stroke-dasharray: 3 3; }
+  .hb-map-lines path.role.is-on { stroke: var(--gold); filter: drop-shadow(0 0 3px #e6c34a); }
   .hb-flow { display: flex; gap: 0; margin: 50px 0 0; font: 11px var(--mono); color: var(--dim); border-top: 1px dashed #ffffff22; }
   .hb-flow span { flex: 1; padding: 12px 0; } .hb-flow b { color: var(--red); font-weight: 500; margin-right: 6px; }
 

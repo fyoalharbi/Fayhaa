@@ -47,7 +47,7 @@
       const l = L.find((x) => x.dataset.k === k); if (!l) continue;
       const a = l.getBoundingClientRect(), b = r.getBoundingClientRect();
       const x1 = a.right - m.left + 4, y1 = a.top + a.height / 2 - m.top, x2 = b.left - m.left - 6, y2 = b.top + b.height / 2 - m.top, cx = (x1 + x2) / 2;
-      html += `<path data-k="${k}" data-p="${r.dataset.p}" d="M${x1},${y1} C${cx},${y1} ${cx},${y2} ${x2},${y2}"/>`;
+      html += `<path class="${r.classList.contains('is-role') ? 'role' : ''}" data-k="${k}" data-p="${r.dataset.p}" d="M${x1},${y1} C${cx},${y1} ${cx},${y2} ${x2},${y2}"/>`;
     }
     svg.innerHTML = html;
     paths = [...svg.querySelectorAll('path')];
@@ -66,16 +66,6 @@
   map.addEventListener('mouseover', (e) => { const b = e.target.closest('button'); if (b) light(b.dataset.k, b.dataset.p); });
   map.addEventListener('mouseleave', () => light());
   map.addEventListener('click', (e) => { const b = e.target.closest('button'); if (b) light(b.dataset.k, b.dataset.p); });
-
-  // Hero specimen: the big butterfly, pinned in a plate, still breathing
-  const spec = document.querySelector('#hb-spec canvas');
-  if (spec && window.AsciiFlyer && getComputedStyle(spec.parentElement).display !== 'none') {
-    const big = new window.AsciiFlyer(spec, { cols: 23, rows: 17, cell: 11, font: 1.25 });
-    big.sampleBackground = () => {}; big.ink = '#e8e4d0'; big.accent = '#ff8a8a';
-    let l2 = performance.now();
-    const sl = (now) => { requestAnimationFrame(sl); if (scrollY > innerHeight) return; const dt = Math.min(0.05, (now - l2) / 1000); l2 = now; big.frame(dt, { landed: true }); };
-    requestAnimationFrame(sl);
-  }
 
   // Contact: a big butterfly circles the address and lands on it when you reach for it
   const rel = document.getElementById('hb-release'), mail = document.getElementById('hb-mail');
