@@ -46,7 +46,22 @@ const INFO = ar ? {
 };
 // Which subject the camera visits for each line (same order as the philosophy lines)
 const SHOTS = ['wide', 'butterfly', 'butterfly', 'bee', 'bee', 'hive', 'butterfly', 'far', 'wide', 'butterfly', 'wide', 'butterfly'];
-const steps = lines.map((line, i) => ({ line, shot: SHOTS[i] || 'wide' }));
+// Field notes: on some lines a callout points at the subject with a real fact
+const FACTS = ar ? {
+  1: ['عمر الفراشة', 'البالغة: ٢–٤ أسابيع', 'معظم الفراشات تعيش أسابيع قليلة بعد ما تطلع من الشرنقة. جيل الملكة المهاجر يعيش لين ٨ شهور.'],
+  2: ['نقل اللقاح', 'على الأرجل والجسم', 'وهي تشرب الرحيق، يعلق اللقاح على أرجلها الطويلة وجسمها وينتقل للزهرة الجاية.'],
+  3: ['النحلة العاملة', 'العمر: ~٦ أسابيع بالصيف', 'تقضي آخر أسابيعها تجمع الرحيق واللقاح للخلية.'],
+  5: ['مدى النحلة', 'غالباً أقل من ~٣ كم', 'نحل العسل يرعى عادة قريب من الخلية، ويرجع دايم لنفس الزهور.'],
+  6: ['مدى الفراشة', 'الملكة: لين ~٤٨٠٠ كم', 'فراشة الملكة تهاجر عبر قارة كاملة، وتزور زهور ما توصلها النحلة.'],
+} : {
+  1: ['Lifespan', 'ADULT: 2–4 weeks', 'Most butterflies live only a few weeks after leaving the chrysalis. The migrating monarch generation can last up to 8 months.'],
+  2: ['Pollen carrier', 'ON LEGS + BODY', 'While it drinks nectar, pollen sticks to its long legs and body and rides along to the next flower.'],
+  3: ['Worker bee', 'LIFESPAN: ~6 weeks in summer', 'It spends its last weeks foraging nectar and pollen for the hive.'],
+  5: ['Bee range', 'USUALLY < ~3 km', 'Honeybees mostly forage close to the hive, and keep returning to the same flowers.'],
+  6: ['Butterfly range', 'MONARCH: up to ~4,800 km', 'Monarchs migrate across a whole continent, reaching flowers no bee ever will.'],
+};
+const FACT_ON = { 1: 'butterfly', 2: 'butterfly', 3: 'bee', 5: 'bee', 6: 'butterfly' };
+const steps = lines.map((line, i) => ({ line, shot: SHOTS[i] || 'wide', fact: FACTS[i] || null, on: FACT_ON[i] || null }));
 // Projects pinned to flowers at the end of the journey
 const projects = (await getProjects(lang)).slice(0, 6).map((p) => ({ title: p.data.title, summary: p.data.summary, ...projectHref(p) }));
 ---
@@ -63,6 +78,7 @@ const projects = (await getProjects(lang)).slice(0, 6).map((p) => ({ title: p.da
 
     <!-- 3. The end: projects pinned to flowers with retro callout lines -->
     <svg class="g3-lines" id="g3-lines" aria-hidden="true"></svg>
+    <div class="g3-pin g3-fact" id="g3-fact" aria-live="polite"><b></b><em></em><span></span></div>
     <nav class="g3-pins" id="g3-pins" aria-label={ar ? 'مشاريعي' : 'My projects'}>
       {projects.map((p) => (
         <a class="g3-pin" href={p.href} target={p.external ? '_blank' : undefined} rel={p.external ? 'noopener' : undefined}>
@@ -123,7 +139,8 @@ const projects = (await getProjects(lang)).slice(0, 6).map((p) => ({ title: p.da
         el._raf = requestAnimationFrame(frame);
       }
       const root = document.getElementById('g3'), subEl = document.getElementById('g3-sub');
-      const pins = [...document.querySelectorAll('.g3-pin')], svg = document.getElementById('g3-lines');
+      const fact = document.getElementById('g3-fact');
+      const pins = [...document.querySelectorAll('.g3-pins .g3-pin')], svg = document.getElementById('g3-lines');
       let anchors = [];
       const setPhase = (ph) => { root.dataset.phase = ph; setTimeout(() => dispatchEvent(new Event('resize')), 30); };
 
@@ -137,6 +154,12 @@ const projects = (await getProjects(lang)).slice(0, 6).map((p) => ({ title: p.da
         whoEl.textContent = String(i + 1).padStart(2, '0') + ' / ' + String(steps.length).padStart(2, '0') + ' · ' + t.who[st.shot];
         decode(lineEl, st.line);
         nextBtn.textContent = t.next;
+        fact.dataset.on = '0';
+        if (st.fact) {
+          const [a, b, c] = st.fact;
+          fact.querySelector('b').textContent = a; fact.querySelector('em').textContent = b; fact.querySelector('span').textContent = c;
+          setTimeout(() => { if (step === i) fact.dataset.on = '1'; }, REDUCED ? 0 : 1100);    // after the camera arrives
+        }
       }
       // 2. The journey: the garden fades in, the story starts on its own
       function begin() {
@@ -147,7 +170,7 @@ const projects = (await getProjects(lang)).slice(0, 6).map((p) => ({ title: p.da
       }
       // 3. The end: header back, camera wide and slow, projects bloom on the flowers
       function finish() {
-        step = steps.length;
+        step = steps.length; fact.dataset.on = '0';
         box.dataset.state = 'end'; whoEl.textContent = '';
         decode(lineEl, t.end); nextBtn.textContent = t.again;
         if (g) { g.setShot('wide'); g.slowSpin = true; anchors = g.spreadFlowers(nPins); }
@@ -180,6 +203,20 @@ const projects = (await getProjects(lang)).slice(0, 6).map((p) => ({ title: p.da
       function drawPins() {
         requestAnimationFrame(drawPins);
         const now = performance.now(), dt = Math.min(0.05, (now - lastT) / 1000); lastT = now;
+        if (root.dataset.phase === 'journey' && g) {
+          // Journey: one callout from the subject to its fact card
+          const st = steps[step];
+          if (!st || !st.on || fact.dataset.on !== '1') { svg.innerHTML = ''; return; }
+          const pos = st.on === 'bee' ? g.bee.p : g.flyers[0].p, sc = g.toScreen(pos);
+          if (!sc) { svg.innerHTML = ''; return; }
+          const W = root.clientWidth, lw = fact.offsetWidth, lh = fact.offsetHeight, side = sc[0] < W / 2 ? 1 : 0;
+          const lx = side ? W - 24 - lw : 24, ly = Math.max(90, Math.min(root.clientHeight - 220 - lh, sc[1] - lh - 40));
+          const ex = side ? lx - 6 : lx + lw + 6, ey = ly + lh / 2, dy = ey - sc[1];
+          const mx = sc[0] + (side ? 1 : -1) * Math.abs(dy) * 0.6, bx = side ? Math.min(Math.max(mx, sc[0]), ex) : Math.max(Math.min(mx, sc[0]), ex);
+          fact.style.transform = `translate(${lx}px, ${ly}px)`;
+          svg.innerHTML = `<polyline points="${sc[0]},${sc[1]} ${bx},${ey} ${ex},${ey}"/><circle class="g3-glow is-lit" cx="${sc[0]}" cy="${sc[1]}" r="18"/>`;
+          return;
+        }
         if (root.dataset.phase !== 'end' || !g || !anchors.length) return;
         const W = root.clientWidth, H = root.clientHeight, top = 150, bot = H - 190;
         const pts = anchors.map((h, k) => ({ k, s: g.toScreen([h.x, h.y, h.z]) })).filter((o) => o.s);
@@ -346,7 +383,12 @@ const projects = (await getProjects(lang)).slice(0, 6).map((p) => ({ title: p.da
     transition: transform .45s cubic-bezier(.2, .8, .2, 1), opacity .5s, box-shadow .2s; opacity: 0; visibility: hidden;
   }
   .g3[data-phase='end'] .g3-pin[data-on='1'] { opacity: 1; visibility: visible; }
-  .g3[data-phase='end'] .g3-lines { opacity: 1; }
+  .g3[data-phase='end'] .g3-lines, .g3[data-phase='journey'] .g3-lines { opacity: 1; }
+  .g3-fact { z-index: 5; pointer-events: none; width: min(260px, 44vw); transition: opacity .5s, visibility .5s; }
+  .g3[data-phase='journey'] .g3-fact[data-on='1'] { opacity: 1; visibility: visible; }
+  .g3-fact em { display: block; font-style: normal; color: #ffe0a8; font-size: .64rem; letter-spacing: .08em; margin: 1px 0 3px; }
+  .g3-fact span { -webkit-line-clamp: 4 !important; display: -webkit-box !important; }   /* facts keep their note, even on phones */
+  .g3[dir='rtl'] .g3-fact em { letter-spacing: 0; }
   .g3-pin b { display: block; color: #ff8a8a; font-size: .74rem; letter-spacing: .05em; text-transform: uppercase; text-shadow: 0 0 6px #ff8a8a; }
   .g3-pin span { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; color: #8a8a92; margin-top: 2px; }
   .g3-pin:hover, .g3-pin:focus-visible { box-shadow: 0 0 18px #ff8a8aaa, inset 0 0 10px #ff8a8a44; outline-color: #ff8a8a; }
