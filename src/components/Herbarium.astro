@@ -444,6 +444,7 @@ const lead = featured[0] ?? D.projects[0], camp = camps[0], post = D.posts[0];
   @keyframes hb-up { from { opacity: 0; transform: translateY(16px); } }
 
   @media (max-width: 1100px) {
+    .hb-slip { display: none; }   /* it would sit on the drawing; the title and date are right below anyway */
     .hb-hero { grid-template-columns: 1fr; gap: 50px; padding-top: 90px; }
     .hb-now { grid-template-columns: 1fr 1fr; gap: 30px; align-items: start; }
     .hb-museum { grid-template-columns: auto auto; gap: 2px 12px; }
