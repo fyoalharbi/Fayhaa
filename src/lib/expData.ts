@@ -44,6 +44,8 @@ export async function expData(lang: Lang = 'en') {
   const posts = (await getPosts(lang)).map((p) => ({
     title: p.data.title, summary: p.data.summary, date: formatDate(p.data.date, lang),
     tags: p.data.tags, href: langUrl(lang, `blog/${postSlug(p)}/`),
+    month: p.data.date.getMonth() + 1, year: p.data.date.getFullYear(),
+    minutes: Math.max(1, Math.round((p.body ?? '').split(/\s+/).length / 220)),
   }));
   const workUse = (k: string) => WORK_SKILLS.map((ks, i) => (ks.includes(k) ? i : -1)).filter((i) => i >= 0);
   const used = (k: string) => projects.filter((p) => p.skills.some((s) => s.key === k)).map((p) => p.slug);

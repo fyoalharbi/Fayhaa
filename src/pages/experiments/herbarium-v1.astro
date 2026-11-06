@@ -1,0 +1,261 @@
+---
+// Experiment 03 · Herbarium — a conventional, readable, scrolling portfolio that
+// speaks Papillon's language: specimen plates, decoding type, callout brackets,
+// pictures that develop out of 0/1, and a pollination map instead of a skills list.
+import ExpShell from '../../components/ExpShell.astro';
+import { expData } from '../../lib/expData';
+const D = await expData('en');
+const roman = ['I', 'II', 'III', 'IV', 'V'];
+const secs = [['about', 'About'], ['work', 'Work'], ['tools', 'Tools'], ['notes', 'Notes'], ['contact', 'Contact']];
+// Tools on the map: anything used in a project or in a role, most used first
+const usedSkills = D.skills.filter((s) => s.used.length || s.work.length).sort((a, b) => b.used.length - a.used.length || b.work.length - a.work.length);
+const roles = D.experience.filter((e) => e.skills.length);
+const fam = (p: (typeof D.projects)[number]) => p.skills.some((s) => s.key === 'airflow' || s.key === 'dbt') ? 'Pipelines' : p.skills.some((s) => s.key === 'power-bi') ? 'Dashboards' : 'Analysis';
+---
+<ExpShell title="Herbarium v1" n="03·v1" scripts={['js/flyer.js', 'experiments/kit.js', 'experiments/herbarium-v1.js']}>
+  <nav class="hb-rail" id="hb-rail" aria-label="Sections">
+    <span class="hb-stem"><i id="hb-grow"></i></span>
+    {secs.map(([id, label], i) => <a href={`#${id}`} data-id={id}><b>{roman[i]}</b><span>{label}</span></a>)}
+  </nav>
+
+  <div class="hb-gwrap"><canvas id="hb-garden" aria-hidden="true"></canvas></div>
+  <main class="hb">
+    <header class="hb-hero">
+      <div class="hb-hero-in">
+        <p class="hb-k">Herbarium · collected 2022 — 2026</p>
+        <h1 data-decode>{D.name}</h1>
+        <p class="hb-role">{D.role}, <em>who flies a little farther.</em></p>
+        <p class="hb-intro">{D.intro}</p>
+        <p class="hb-cta"><a href="#work">See the plates ↓</a><a href={`mailto:${D.email}`}>Email me</a></p>
+      </div>
+      <p class="hb-scroll" aria-hidden="true">scroll ·<br/>·<br/>·</p>
+    </header>
+
+    <section id="about" class="hb-sec">
+      <p class="hb-num">Pl. I</p>
+      <h2 data-decode>About</h2>
+      <div class="hb-about">
+        <blockquote class="hb-quote">
+          <p>{D.philosophy.paragraphs[1]}</p>
+          <a href={D.papillon}>{D.philosophy.title} — the full story ↗</a>
+        </blockquote>
+        <ol class="hb-time">
+          {D.experience.map((e) => <li><small>{e.period}</small><b>{e.title}</b><span>{e.org}</span><p>{e.points[0]}</p></li>)}
+          {D.education.map((e) => <li class="is-root"><small>{e.period}</small><b>{e.title}</b><span>{e.org}{e.note && ` · ${e.note}`}</span></li>)}
+        </ol>
+      </div>
+    </section>
+
+    <section id="work" class="hb-sec">
+      <p class="hb-num">Pl. II</p>
+      <h2 data-decode>Work</h2>
+      <p class="hb-lead">Eight specimens, pressed and labelled. Each picture develops as it comes into view.</p>
+      <div class="hb-plates">
+        {D.projects.map((p, i) => (
+          <article class={`hb-plate ${i === 0 ? 'is-big' : ''}`} data-skills={p.skills.map((s) => s.key).join(' ')}>
+            <a class="hb-img" href={p.href}>
+              {p.thumb ? <><img src={p.thumb} alt="" loading="lazy" /><canvas data-src={p.thumb}></canvas></> : <pre class="hb-fallback" data-seed={i + 5}></pre>}
+              <i class="c tl"></i><i class="c tr"></i><i class="c bl"></i><i class="c br"></i>
+            </a>
+            <div class="hb-label">
+              <p class="hb-tag">Pl. II.{String(i + 1).padStart(2, '0')} · fam. {fam(p)} · {p.date}</p>
+              <h3><a href={p.href}>{p.title}</a></h3>
+              {p.sub && <p class="hb-sub">{p.sub}</p>}
+              <p class="hb-sum">{p.summary}</p>
+              <p class="hb-links">
+                <a href={p.href}>Case study →</a>
+                {p.live && <a href={p.live}>Live demo ↗</a>}
+                {p.code && <a href={p.code}>Code ↗</a>}
+              </p>
+            </div>
+          </article>
+        ))}
+      </div>
+    </section>
+
+    <section id="tools" class="hb-sec">
+      <p class="hb-num">Pl. III</p>
+      <h2 data-decode>Tools</h2>
+      <p class="hb-lead">A pollination map: every tool is threaded to where it was used, in my work and in my projects. Hover either side.</p>
+      <div class="hb-map" id="hb-map">
+        <svg class="hb-map-lines" id="hb-map-lines" aria-hidden="true"></svg>
+        <ul class="hb-map-l">{usedSkills.map((s) => <li><button type="button" data-k={s.key} class={s.core ? 'is-core' : ''}>{s.label}{s.work.length > 0 && <em class="wk">work</em>}<i title={`used in ${s.used.length} project(s)`}>{s.used.length || '–'}</i></button></li>)}</ul>
+        <div class="hb-map-r">
+          <p class="hb-map-h"><b class="wk">work</b> at my jobs</p>
+          <ul>{roles.map((e) => <li><button type="button" class="is-role" data-p={`role-${e.period}`} data-ks={e.skills.join(' ')}>{e.title}<small>{e.org} · {e.period}</small></button></li>)}</ul>
+          <p class="hb-map-h"><b class="p">4</b> = number of projects</p>
+          <ul>{D.projects.map((p) => <li><button type="button" data-p={p.slug} data-ks={p.skills.map((s) => s.key).join(' ')}>{p.title}</button></li>)}</ul>
+        </div>
+      </div>
+      <p class="hb-flow">{D.workflow.map((w, i) => <span><b>0{i + 1}</b> {w}</span>)}</p>
+    </section>
+
+    <section id="notes" class="hb-sec">
+      <p class="hb-num">Pl. IV</p>
+      <h2 data-decode>Notes</h2>
+      <ul class="hb-notes">
+        {D.posts.map((p) => <li><a href={p.href}><small>{p.date} · {p.tags.join(', ')}</small><b>{p.title}</b><span>{p.summary}</span><em>read →</em></a></li>)}
+      </ul>
+    </section>
+
+    <section id="contact" class="hb-sec hb-end">
+      <p class="hb-num">Pl. V</p>
+      <h2 data-decode>Contact</h2>
+      <p class="hb-lead">Email is the fastest way to reach me.</p>
+      <a class="hb-mail" href={`mailto:${D.email}`} id="hb-mail">{D.email}</a>
+      <p class="hb-cta"><a href={D.links.linkedin}>LinkedIn ↗</a><a href={D.links.github}>GitHub ↗</a></p>
+      <div class="hb-release" id="hb-release"><canvas></canvas></div>
+    </section>
+  </main>
+</ExpShell>
+
+<style is:global>
+  html { scroll-behavior: smooth; }
+  .hb { --col: min(1080px, calc(100vw - 220px)); margin-left: 180px; }
+  .hb-sec { width: var(--col); margin: 0 auto; padding: 120px 0 40px; position: relative; }
+  .hb-num { margin: 0; font: 500 10.5px var(--mono); letter-spacing: .2em; color: var(--red); text-transform: uppercase; }
+  .hb h2 { margin: 6px 0 28px; font: 400 clamp(44px, 6vw, 84px)/0.95 var(--serif); font-style: italic; letter-spacing: -.02em; color: var(--ink); }
+  .hb-lead { max-width: 52ch; margin: -12px 0 40px; color: var(--dim); font-size: 15px; line-height: 1.6; }
+
+  /* rail */
+  .hb-rail { position: fixed; z-index: 20; left: 34px; top: 50%; transform: translateY(-50%); display: grid; gap: 22px; padding-left: 18px; }
+  .hb-stem { position: absolute; left: 0; top: 4px; bottom: 4px; width: 1px; background: #ffffff1a; }
+  .hb-stem i { position: absolute; left: 0; top: 0; width: 1px; height: 0; background: var(--leaf); }
+  .hb-rail a { position: relative; display: grid; gap: 2px; text-decoration: none; color: var(--dim); font: 500 10px/1 var(--mono); letter-spacing: .14em; text-transform: uppercase; transition: color .3s; }
+  .hb-rail a b { font: italic 400 15px/1 var(--serif); letter-spacing: 0; color: #ffffff55; transition: color .3s; }
+  .hb-rail a::before { content: ''; position: absolute; left: -21px; top: 3px; width: 7px; height: 7px; border-radius: 50%; background: var(--night); border: 1px solid #ffffff33; transition: all .3s; }
+  .hb-rail a.is-on { color: var(--ink); } .hb-rail a.is-on b { color: var(--red); }
+  .hb-rail a.is-on::before { background: var(--red); border-color: var(--red); box-shadow: 0 0 8px var(--red); }
+
+  /* hero */
+  .hb-hero { position: relative; min-height: 100svh; display: grid; align-items: center; width: var(--col); margin: 0 auto; }
+  .hb-gwrap { position: absolute; left: 0; top: 54svh; width: 100%; height: 46svh; }
+  #hb-garden { width: 100%; height: 100%; display: block; }
+  .hb-hero-in { position: relative; padding-bottom: 22vh; }
+  .hb-k { font: 500 10.5px var(--mono); letter-spacing: .2em; text-transform: uppercase; color: var(--dim); margin: 0 0 18px; }
+  .hb-hero h1 { margin: 0; font: 400 clamp(72px, 13vw, 190px)/.85 var(--serif); font-style: italic; letter-spacing: -.04em; }
+  .hb-role { margin: 16px 0 0; font: 400 clamp(18px, 2.2vw, 26px)/1.3 var(--serif); color: var(--ink-2); }
+  .hb-role em { color: var(--red); }
+  .hb-intro { max-width: 54ch; margin: 18px 0 0; font-size: 15px; line-height: 1.65; color: var(--dim); }
+  .hb-cta { display: flex; gap: 10px; flex-wrap: wrap; margin: 26px 0 0; }
+  .hb-cta a { font: 500 11.5px/1 var(--mono); letter-spacing: .06em; padding: 10px 13px; text-decoration: none; color: var(--ink); border: 1px solid #ffffff2a; background: #0b0c0e99; transition: all .2s; }
+  .hb-cta a:first-child { border-color: #ff8a8a88; }
+  .hb-cta a:hover { border-color: var(--red); color: var(--red); box-shadow: 0 0 12px #ff8a8a33; }
+  .hb-scroll { position: absolute; right: 0; bottom: 30px; margin: 0; font: 10px/1.2 var(--mono); color: var(--dim); text-align: center; }
+
+  /* about */
+  .hb-about { display: grid; grid-template-columns: 1.1fr 1fr; gap: 70px; align-items: start; }
+  .hb-quote { margin: 0; position: sticky; top: 100px; }
+  .hb-quote p { margin: 0; font: italic 400 clamp(22px, 2.4vw, 31px)/1.35 var(--serif); color: var(--ink); text-wrap: pretty; }
+  .hb-quote p::before { content: '“'; color: var(--red); }
+  .hb-quote a { display: inline-block; margin-top: 18px; font: 500 11px var(--mono); color: var(--red); text-decoration: none; letter-spacing: .06em; }
+  .hb-time { list-style: none; margin: 0; padding: 0 0 0 26px; border-left: 1px solid #6f9f6f55; }
+  .hb-time li { position: relative; padding: 0 0 26px; }
+  .hb-time li::before { content: '0'; position: absolute; left: -32px; top: 0; width: 12px; text-align: center; font: 11px/1.2 var(--mono); color: var(--leaf); background: var(--night); }
+  .hb-time li.is-root::before { content: '1'; color: var(--gold); }
+  .hb-time small { display: block; font: 10.5px var(--mono); color: var(--dim); letter-spacing: .04em; }
+  .hb-time b { display: block; margin-top: 3px; font-weight: 500; font-size: 15.5px; }
+  .hb-time span { font-size: 13px; color: var(--leaf); }
+  .hb-time p { margin: 6px 0 0; font-size: 13.5px; line-height: 1.6; color: var(--dim); }
+
+  /* plates */
+  .hb-plates { display: grid; grid-template-columns: repeat(2, 1fr); gap: 70px 56px; }
+  .hb-plate { display: grid; gap: 18px; }
+  .hb-plate:nth-child(even) { margin-top: 90px; }
+  .hb-plate.is-big { grid-column: 1 / -1; grid-template-columns: 1.5fr 1fr; align-items: end; gap: 40px; }
+  .hb-plate.is-big + .hb-plate { margin-top: 0; }
+  .hb-plate.is-big ~ .hb-plate:nth-child(odd) { margin-top: 90px; }
+  .hb-img { position: relative; display: block; aspect-ratio: 16/10; background: #0e100f; outline: 1px solid #ffffff12; outline-offset: 6px; }
+  .hb-img img, .hb-img canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; object-fit: cover; object-position: top; }
+  .hb-img canvas { z-index: 0; } .hb-img img { z-index: 1; }
+  .hb-img img { clip-path: inset(0 0 100% 0); transition: clip-path 1.4s cubic-bezier(.6, 0, .2, 1) .3s; }
+  .hb-plate.is-dev .hb-img img { clip-path: inset(0 0 0 0); }
+  .hb-img .c { position: absolute; width: 12px; height: 12px; border: 1px solid var(--red); opacity: 0; transition: all .3s; filter: drop-shadow(0 0 4px var(--red)); }
+  .hb-img .tl { top: -12px; left: -12px; border-right: 0; border-bottom: 0; } .hb-img .tr { top: -12px; right: -12px; border-left: 0; border-bottom: 0; }
+  .hb-img .bl { bottom: -12px; left: -12px; border-right: 0; border-top: 0; } .hb-img .br { bottom: -12px; right: -12px; border-left: 0; border-top: 0; }
+  .hb-plate:hover .hb-img .c, .hb-plate.is-hot .hb-img .c { opacity: 1; }
+  .hb-plate:hover .hb-img .tl, .hb-plate.is-hot .hb-img .tl { transform: translate(4px, 4px); } .hb-plate:hover .hb-img .tr, .hb-plate.is-hot .hb-img .tr { transform: translate(-4px, 4px); }
+  .hb-plate:hover .hb-img .bl, .hb-plate.is-hot .hb-img .bl { transform: translate(4px, -4px); } .hb-plate:hover .hb-img .br, .hb-plate.is-hot .hb-img .br { transform: translate(-4px, -4px); }
+  .hb-fallback { position: absolute; inset: 0; margin: 0; }
+  .hb-tag { margin: 0; font: 500 10px var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--dim); }
+  .hb-label h3 { margin: 8px 0 0; font: 400 30px/1.05 var(--serif); font-style: italic; }
+  .hb-plate.is-big h3 { font-size: 44px; }
+  .hb-label h3 a { text-decoration: none; } .hb-label h3 a:hover { color: var(--red); }
+  .hb-sub { margin: 6px 0 0; font-size: 14px; color: var(--leaf); }
+  .hb-sum { margin: 10px 0 0; font-size: 14px; line-height: 1.6; color: var(--dim); max-width: 50ch; }
+  .hb-links { display: flex; gap: 16px; margin: 14px 0 0; font: 500 11px var(--mono); }
+  .hb-links a { color: var(--ink); text-decoration: none; border-bottom: 1px solid #ff8a8a66; padding-bottom: 2px; }
+  .hb-links a:hover { color: var(--red); }
+
+  /* pollination map */
+  .hb-map { position: relative; display: grid; grid-template-columns: 1fr 1fr; gap: 0 32%; }
+  .hb-map ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; position: relative; z-index: 1; }
+  .hb-map-r { display: grid; align-content: space-between; gap: 6px; position: relative; z-index: 1; }
+  .hb-map-r ul { gap: 6px; }
+  .hb-map-h { margin: 0; font: 500 10px var(--mono); letter-spacing: .16em; text-transform: uppercase; color: var(--dim); padding-left: 6px; }
+  .hb-map-h b { color: var(--gold); font-weight: 400; } .hb-map-h b.p { color: var(--red); }
+  .hb-map-h:not(:first-child) { margin-top: 18px; }
+  .hb-map button.is-role { flex-direction: column; gap: 0; color: var(--ink); }
+  .hb-map button.is-role small { font: 10.5px var(--mono); color: var(--dim); font-style: normal; }
+  .hb-map .wk { font: normal 9px/1 var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--gold); border: 1px solid #e6c34a66; padding: 2px 4px; align-self: center; }
+  .hb-map button.is-on .wk { color: #0b0c0e; border-color: #0b0c0e66; }
+  .hb-map button.is-role.is-on small { color: #0b0c0ebb; }
+  .hb-map button { all: unset; cursor: pointer; font: 12.5px/1.6 var(--mono); color: var(--ink-2); padding: 1px 6px; transition: color .2s, background .2s; display: inline-flex; gap: 8px; }
+  .hb-map-l li { text-align: right; } .hb-map-l button { flex-direction: row; }
+  .hb-map button i { font-style: normal; color: #ffffff40; }
+  .hb-map button.is-core { color: var(--gold); }
+  .hb-map button.is-on { color: #0b0c0e; background: var(--red); } .hb-map button.is-on i { color: #0b0c0e99; }
+  .hb-map.is-hovering button:not(.is-on) { color: #ffffff38; }
+  .hb-map-r button { font: italic 400 19px/1.3 var(--serif); }
+  .hb-map-lines { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; pointer-events: none; }
+  .hb-map-lines path { fill: none; stroke: #6f9f6f2e; stroke-width: 1; transition: stroke .25s; }
+  .hb-map-lines path.is-on { stroke: var(--red); filter: drop-shadow(0 0 3px #ff8a8a); }
+  .hb-map-lines path.role { stroke: #e6c34a30; stroke-dasharray: 3 3; }
+  .hb-map-lines path.role.is-on { stroke: var(--gold); filter: drop-shadow(0 0 3px #e6c34a); }
+  .hb-flow { display: flex; gap: 0; margin: 50px 0 0; font: 11px var(--mono); color: var(--dim); border-top: 1px dashed #ffffff22; }
+  .hb-flow span { flex: 1; padding: 12px 0; } .hb-flow b { color: var(--red); font-weight: 500; margin-right: 6px; }
+
+  /* notes */
+  .hb-notes { list-style: none; margin: 0; padding: 0; border-top: 1px solid #ffffff14; }
+  .hb-notes a { display: grid; grid-template-columns: 180px 1fr auto; gap: 4px 30px; padding: 26px 0; border-bottom: 1px solid #ffffff14; text-decoration: none; transition: padding .3s; }
+  .hb-notes a:hover { padding-left: 14px; } .hb-notes a:hover b { color: var(--red); }
+  .hb-notes small { font: 10.5px/2 var(--mono); color: var(--dim); grid-row: span 2; }
+  .hb-notes b { font: 400 26px/1.15 var(--serif); font-style: italic; transition: color .2s; }
+  .hb-notes span { grid-column: 2; font-size: 14px; color: var(--dim); line-height: 1.55; max-width: 60ch; }
+  .hb-notes em { grid-row: 1; grid-column: 3; font: 500 11px var(--mono); color: var(--red); font-style: normal; }
+
+  /* contact */
+  .hb-end { min-height: 90vh; padding-bottom: 140px; }
+  .hb-mail { display: inline-block; font: 400 clamp(26px, 5vw, 64px)/1.1 var(--serif); font-style: italic; color: var(--ink); text-decoration: none; border-bottom: 1px solid var(--red); padding-bottom: 6px; }
+  .hb-mail:hover { color: var(--red); }
+  .hb-release { position: absolute; right: 0; top: 140px; pointer-events: none; }
+
+  /* reveal */
+  .hb-sec > *:not(.hb-plates), .hb-plate { opacity: 0; transform: translateY(24px); transition: opacity .9s ease, transform .9s cubic-bezier(.2, .8, .2, 1); }
+  .is-in, .hb-sec > .is-in, .hb-plate.is-in { opacity: 1; transform: none; }
+
+  @media (max-width: 860px) {
+    .hb { margin-left: 0; --col: calc(100vw - 32px); }
+    .hb-rail { left: 0; right: 0; top: 0; transform: none; padding: 10px 70px 0 16px; grid-auto-flow: column; justify-content: start; gap: 18px; height: 40px; background: linear-gradient(#0b0c0e, #0b0c0ee0 70%, transparent); }
+    .hb-rail a span { display: none; }
+    .hb-rail a::before { display: none; }
+    .hb-rail a b { font-size: 16px; }
+    .hb-stem { left: 16px; right: 70px; top: auto; bottom: 0; width: auto; height: 1px; }
+    .hb-stem i { height: 1px; width: 0; }
+    .hb-gwrap { top: 64svh; height: 36svh; }
+    .hb-hero-in { padding-bottom: 26vh; padding-top: 50px; }
+    .hb-sec { padding-top: 80px; }
+    .hb-about, .hb-plates, .hb-plate.is-big { grid-template-columns: 1fr; gap: 40px; }
+    .hb-plate:nth-child(even), .hb-plate.is-big ~ .hb-plate:nth-child(odd) { margin-top: 0; }
+    .hb-plate.is-big h3 { font-size: 32px; }
+    .hb-quote { position: static; }
+    .hb-map { grid-template-columns: 1fr; gap: 24px; }
+    .hb-map-lines { display: none; }
+    .hb-map .hb-map-l { display: flex; flex-wrap: wrap; gap: 6px; } .hb-map-l li { text-align: left; }
+    .hb-map-l button { border: 1px solid #ffffff1c; padding: 4px 8px; }
+    .hb-map-r { gap: 8px; } .hb-map-r button { font-size: 20px; }
+    .hb-notes a { grid-template-columns: 1fr; } .hb-notes small, .hb-notes em { grid-row: auto; grid-column: auto; } .hb-notes span { grid-column: auto; }
+    .hb-flow { flex-wrap: wrap; } .hb-flow span { flex: 1 1 50%; }
+    .hb-release { top: auto; bottom: 40px; }
+  }
+</style>
