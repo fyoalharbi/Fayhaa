@@ -5,6 +5,8 @@
   const RTL = document.documentElement.dir === 'rtl';
   const wide = () => !matchMedia('(max-width: 860px)').matches;
   decodeOnView();
+  // Keep your place when switching language
+  const lang = $('.hb-lang'); if (lang) lang.addEventListener('click', () => { const on = $('.hb-rail a.is-on'); if (on) lang.href = lang.href.split('#')[0] + '#' + on.dataset.id; });
 
   // ── Garden band along the foot of the landing, paused once it scrolls away ──
   const hero = $('.hb-hero'), gwrap = $('.hb-gwrap'), gc = $('#hb-garden');

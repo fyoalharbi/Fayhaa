@@ -41,6 +41,7 @@ import { flowerHTML } from '../../lib/flowerArt';
               <p class="hub-idea">{x.idea}</p>
               <p class="hub-nav">{x.nav}</p>
               <dl><dt>desktop</dt><dd>{x.desk}</dd><dt>phone</dt><dd>{x.phone}</dd></dl>
+              {x.slug === 'herbarium' && <p class="hub-nav" style="margin-top:12px"><span style="color:var(--red)">also in Arabic</span> · <span lang="ar">العربية</span></p>}
             </div>
           </a>
         </li>

@@ -8,6 +8,7 @@ import ExpShell from './ExpShell.astro';
 import { expData } from '../lib/expData';
 import { flowerHTML } from '../lib/flowerArt';
 import type { Lang } from '../data/profile';
+import { url } from '../lib/site';
 
 interface Props { lang: Lang }
 const { lang } = Astro.props;
@@ -51,6 +52,8 @@ const T = AR ? {
   js: { hint: 'Hover or tap a tool, a job or a project.', pinned: 'pinned · tap again or esc', jobs: 'jobs', camp: 'bootcamp', projects: 'projects', tools: 'tools', tip: 'Why butterflies? Open the garden →' },
 };
 const ids = ['about', 'work', 'tools', 'notes', 'contact'];
+// The same page in the other language
+const other = AR ? { href: url('experiments/herbarium/'), label: 'English', lang: 'en' } : { href: url('ar/experiments/herbarium/'), label: 'العربية', lang: 'ar' };
 
 // Stages (the home page's pipeline split) plus two shelves for everything else
 const KEYS = [
@@ -77,6 +80,7 @@ const lead = featured[0] ?? D.projects[0], camp = camps[0], post = D.posts[0];
 ---
 <ExpShell title="Herbarium" n="03" lang={lang} scripts={['js/flyer.js', 'experiments/kit.js', 'experiments/herbarium.js']}>
   <script is:inline define:vars={{ t: T.js }} slot="head">window.HB_T = t;</script>
+  <a class="hb-lang" href={other.href} lang={other.lang} hreflang={other.lang} data-keep-hash>{other.label}</a>
   <nav class="hb-rail" id="hb-rail" aria-label="Sections">
     <span class="hb-stem"><i id="hb-grow"></i></span>
     {ids.map((id, i) => <a href={`#${id}`} data-id={id}><b>{pad(i + 1)}</b><span>{T.secs[i]}</span></a>)}
@@ -258,6 +262,11 @@ const lead = featured[0] ?? D.projects[0], camp = camps[0], post = D.posts[0];
   html[lang='ar'] .hb h2 { font-weight: 500; line-height: 1.15; }
   .hb-lead { max-width: 46ch; margin: 0 0 6px; justify-self: end; color: var(--dim); font-size: 14.5px; line-height: 1.6; }
 
+  /* language switch, beside the lab chip */
+  .hb-lang { position: fixed; z-index: 90; top: max(10px, env(safe-area-inset-top)); inset-inline-end: 98px; padding: 5px 9px; text-decoration: none;
+    font: 500 11px/1 'IBM Plex Sans Arabic', var(--mono); color: var(--ink-2); background: rgba(11, 12, 14, .6); border: 1px solid #ffffff1f; backdrop-filter: blur(6px); transition: color .2s, border-color .2s; }
+  .hb-lang[lang='en'] { font-family: var(--mono); letter-spacing: .06em; }
+  .hb-lang:hover { color: var(--ink); border-color: #ff8a8a88; }
   /* rail */
   .hb-rail { position: fixed; z-index: 20; inset-inline-start: 34px; top: 50%; transform: translateY(-50%); display: grid; gap: 22px; padding-inline-start: 18px; transition: opacity .6s; }
   .hb-stem { position: absolute; inset-inline-start: 0; top: 4px; bottom: 4px; width: 1px; background: #ffffff1a; }
@@ -451,10 +460,10 @@ const lead = featured[0] ?? D.projects[0], camp = camps[0], post = D.posts[0];
   }
   @media (max-width: 860px) {
     .hb { margin-inline-start: 0; --col: calc(100vw - 32px); }
-    .hb-rail { inset-inline: 0; top: 0; transform: none; padding: 12px 16px 0; padding-inline-end: 86px; grid-auto-flow: column; justify-content: start; gap: 18px; height: 40px; background: linear-gradient(#0b0c0e, #0b0c0ee0 70%, transparent); }
+    .hb-rail { inset-inline: 0; top: 0; transform: none; padding: 12px 16px 0; padding-inline-end: 170px; grid-auto-flow: column; justify-content: start; gap: 18px; height: 40px; background: linear-gradient(#0b0c0e, #0b0c0ee0 70%, transparent); }
     .hb-rail.is-hero { opacity: 1; pointer-events: auto; }
     .hb-rail a span { display: none; } .hb-rail a::before { display: none; } .hb-rail a b { font-size: 12px; }
-    .hb-stem { inset-inline: 16px 86px; top: auto; bottom: 0; width: auto; height: 1px; } .hb-stem i { height: 1px; width: 0; }
+    .hb-stem { inset-inline: 16px 170px; top: auto; bottom: 0; width: auto; height: 1px; } .hb-stem i { height: 1px; width: 0; }
     .hb-hero { padding: 76px 0 24svh; min-height: auto; }
     .hb-ruler { top: 50px; }
     .hb-gwrap { height: 22svh; }
