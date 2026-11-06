@@ -139,7 +139,7 @@ const projects = (await getProjects(lang)).slice(0, 6).map((p) => ({ title: p.da
         el._raf = requestAnimationFrame(frame);
       }
       const root = document.getElementById('g3'), subEl = document.getElementById('g3-sub');
-      const fact = document.getElementById('g3-fact');
+      const fact = document.getElementById('g3-fact'), FS = { init: false };
       const pins = [...document.querySelectorAll('.g3-pins .g3-pin')], svg = document.getElementById('g3-lines');
       let anchors = [];
       const setPhase = (ph) => { root.dataset.phase = ph; setTimeout(() => dispatchEvent(new Event('resize')), 30); };
@@ -154,7 +154,7 @@ const projects = (await getProjects(lang)).slice(0, 6).map((p) => ({ title: p.da
         whoEl.textContent = String(i + 1).padStart(2, '0') + ' / ' + String(steps.length).padStart(2, '0') + ' · ' + t.who[st.shot];
         decode(lineEl, st.line);
         nextBtn.textContent = t.next;
-        fact.dataset.on = '0';
+        fact.dataset.on = '0'; FS.init = false;
         if (st.fact) {
           const [a, b, c] = st.fact;
           fact.querySelector('b').textContent = a; fact.querySelector('em').textContent = b; fact.querySelector('span').textContent = c;
@@ -209,12 +209,20 @@ const projects = (await getProjects(lang)).slice(0, 6).map((p) => ({ title: p.da
           if (!st || !st.on || fact.dataset.on !== '1') { svg.innerHTML = ''; return; }
           const pos = st.on === 'bee' ? g.bee.p : g.flyers[0].p, sc = g.toScreen(pos);
           if (!sc) { svg.innerHTML = ''; return; }
-          const W = root.clientWidth, lw = fact.offsetWidth, lh = fact.offsetHeight, side = sc[0] < W / 2 ? 1 : 0;
-          const lx = side ? W - 24 - lw : 24, ly = Math.max(90, Math.min(root.clientHeight - 220 - lh, sc[1] - lh - 40));
-          const ex = side ? lx - 6 : lx + lw + 6, ey = ly + lh / 2, dy = ey - sc[1];
-          const mx = sc[0] + (side ? 1 : -1) * Math.abs(dy) * 0.6, bx = side ? Math.min(Math.max(mx, sc[0]), ex) : Math.max(Math.min(mx, sc[0]), ex);
-          fact.style.transform = `translate(${lx}px, ${ly}px)`;
-          svg.innerHTML = `<polyline points="${sc[0]},${sc[1]} ${bx},${ey} ${ex},${ey}"/><circle class="g3-glow is-lit" cx="${sc[0]}" cy="${sc[1]}" r="18"/>`;
+          // Steady callout near the subject: the anchor is smoothed (the butterfly jitters as it
+          // flutters), the card eases after it, and it only swaps sides with some hysteresis
+          const W = root.clientWidth, H = root.clientHeight, lw = fact.offsetWidth, lh = fact.offsetHeight;
+          const k1 = 1 - Math.exp(-dt * 9), k2 = 1 - Math.exp(-dt * 3.5);
+          if (!FS.init) Object.assign(FS, { ax: sc[0], ay: sc[1], cx: sc[0], cy: sc[1], side: sc[0] < W / 2 ? 1 : -1, init: true });
+          FS.ax += (sc[0] - FS.ax) * k1; FS.ay += (sc[1] - FS.ay) * k1;
+          if (FS.side > 0 && FS.ax > W * 0.62) FS.side = -1; else if (FS.side < 0 && FS.ax < W * 0.38) FS.side = 1;
+          const gap = 70, wantX = FS.side > 0 ? FS.ax + gap : FS.ax - gap - lw, wantY = FS.ay - lh - 46;
+          FS.cx += (wantX - FS.cx) * k2; FS.cy += (wantY - FS.cy) * k2;
+          const lx = Math.max(12, Math.min(W - lw - 12, FS.cx)), ly = Math.max(70, Math.min(H - 200 - lh, FS.cy));
+          const ex = FS.side > 0 ? lx - 4 : lx + lw + 4, ey = ly + lh;           // the line meets the card's lower corner
+          const bx = FS.ax + (ex - FS.ax) * 0.35;
+          fact.style.transform = `translate(${lx.toFixed(1)}px, ${ly.toFixed(1)}px)`;
+          svg.innerHTML = `<polyline points="${FS.ax.toFixed(1)},${FS.ay.toFixed(1)} ${bx.toFixed(1)},${ey.toFixed(1)} ${ex.toFixed(1)},${ey.toFixed(1)}"/><circle class="g3-glow is-lit" cx="${FS.ax.toFixed(1)}" cy="${FS.ay.toFixed(1)}" r="16"/>`;
           return;
         }
         if (root.dataset.phase !== 'end' || !g || !anchors.length) return;
@@ -384,7 +392,7 @@ const projects = (await getProjects(lang)).slice(0, 6).map((p) => ({ title: p.da
   }
   .g3[data-phase='end'] .g3-pin[data-on='1'] { opacity: 1; visibility: visible; }
   .g3[data-phase='end'] .g3-lines, .g3[data-phase='journey'] .g3-lines { opacity: 1; }
-  .g3-fact { z-index: 5; pointer-events: none; width: min(260px, 44vw); transition: opacity .5s, visibility .5s; }
+  .g3-fact { z-index: 5; pointer-events: none; width: min(250px, 60vw); transition: opacity .5s, visibility .5s; }
   .g3[data-phase='journey'] .g3-fact[data-on='1'] { opacity: 1; visibility: visible; }
   .g3-fact em { display: block; font-style: normal; color: #ffe0a8; font-size: .64rem; letter-spacing: .08em; margin: 1px 0 3px; }
   .g3-fact span { -webkit-line-clamp: 4 !important; display: -webkit-box !important; }   /* facts keep their note, even on phones */
