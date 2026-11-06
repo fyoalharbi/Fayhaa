@@ -117,5 +117,7 @@ const art = kind().map((r) => r.join('')).join('\n')
   .thumb pre :global(b) { color: #ff8a8a; text-shadow: 0 0 6px #ff8a8a88; font-weight: 700; }
   /* scanlines */
   .thumb::after { content: ''; position: absolute; inset: 0; pointer-events: none; background: repeating-linear-gradient(0deg, transparent 0 2px, rgba(255, 255, 255, .03) 2px 3px); }
+  /* home section on short screens: keep it to one screen */
+  @media (max-height: 760px) { :global(.band) .thumb { aspect-ratio: 16 / 5; } }
   :global(.card:hover) .thumb pre { color: #9fcf8f; transform: scale(1.04); }
 </style>

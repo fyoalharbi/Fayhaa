@@ -74,7 +74,7 @@ const tone = (id: string) => (num(id) % 2 ? 'surface' : 'paper') as 'surface' | 
     {projects.length > featured.length &&
       <a slot="aside" class="mono" href={langUrl(lang, 'projects/')}>{t.allProjects} {lang === 'ar' ? '←' : '→'}</a>}
     <div class="cards">
-      {featured.map((p, i) => <ProjectCard project={p} lang={lang} index={i} />)}
+      {featured.map((p, i) => <ProjectCard project={p} lang={lang} index={i} full />)}
     </div>
   </Section>
 
