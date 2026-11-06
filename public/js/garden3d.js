@@ -221,6 +221,10 @@
       this.bloom = new Float32Array(this.heads.length);
       this.lit = new Float32Array(64 * 64);           // 0.18-unit cells over the plot, remembered
       this.stage = 0;
+      // Atmosphere: wind gusts that sweep across the plot, rain on cue, events for sound
+      this.gust = { front: -99, dir: 1, str: 0, next: 4 };
+      this.rain = false; this.drops = [];
+      this.onBloom = null; this.wasOpen = new Uint8Array(this.heads.length);
       this.bits = Uint8Array.from({ length: this.nStatic + 12000 }, () => (Math.random() < 0.5 ? 1 : 0));
       this.wing = wingTemplate();
 
@@ -447,6 +451,10 @@
       for (let k = 0; k < n && fl.length; k++) out.push(fl[Math.floor((k + 0.5) * fl.length / n)].h);
       return out;
     }
+    capture() {
+      this.frame(0.001, performance.now() / 1000);
+      return this.canvas.toDataURL('image/png');
+    }
     toggleFollow() { this.follow = !this.follow; this.shot = null; this.idle = 0; return this.follow; }
     // Guided tour: each shot is a subject + distance; the camera glides between them
     setShot(name) { this.shot = name; this.follow = false; this.idle = 0; }
@@ -579,7 +587,18 @@
         const h = this.heads[k], d = Math.hypot(h.x - mx, h.y - my, h.z - mz);
         const want = d < 1.1 ? 1 - d / 1.1 : 0;                          // flowers open as it approaches
         this.bloom[k] += (Math.max(want, this.bloom[k] * 0.999) - this.bloom[k]) * Math.min(1, dt * (want > this.bloom[k] ? 3 : 0.25));
+        const open = this.bloom[k] > 0.55 ? 1 : this.bloom[k] < 0.25 ? 0 : this.wasOpen[k];
+        if (open && !this.wasOpen[k] && this.onBloom) this.onBloom(h);
+        this.wasOpen[k] = open;
       }
+      // Wind: every so often a gust front crosses the garden
+      const G = this.gust;
+      G.next -= dt;
+      if (G.next <= 0 && !this.reduced) { G.dir = Math.random() < 0.5 ? -1 : 1; G.front = -7 * G.dir; G.str = 0.7 + Math.random() * 0.6; G.next = 9 + Math.random() * 8; if (this.onGust) this.onGust(G.str); }
+      if (Math.abs(G.front) < 8) G.front += G.dir * dt * 3.2;
+      const gustAt = (x) => { const d = (x - G.front) * G.dir; return d > -1.4 && d < 0.6 ? G.str * Math.exp(-(d * d) / 0.35) : 0; };
+      this.gustAt = gustAt;
+      for (const b of this.flyers) { const w = gustAt(b.p[0]); if (w > 0.05 && !b.perched) { b.v[0] += G.dir * w * dt * 2.4; b.v[1] += w * dt * 0.8; } }
       {
         const ci = Math.floor((mx + 5.8) / 0.18), cj = Math.floor((mz + 5.8) / 0.18);   // light where it has been
         for (let a = -2; a <= 2; a++) for (let b = -2; b <= 2; b++) {
@@ -596,6 +615,7 @@
       for (let n = 0, o = 0; n < this.nStatic; n++, o += F) {
         const sway = P[o + 8];
         let x = P[o], y = P[o + 1], z = P[o + 2], sw = sway ? Math.sin(t * 1.3 + P[o + 9]) * 0.04 * sway : 0;
+        if (sway && G.str) { const w = gustAt(x); if (w > 0.01) sw += G.dir * w * 0.22 * sway * (1 + 0.3 * Math.sin(t * 9 + P[o + 9])); }   // the gust bends everything it passes
         if (sway) {
           // Plants bend away from the butterfly as it flies past
           const ddx = x - mx, ddz = z - mz, d2 = ddx * ddx + ddz * ddz;
@@ -607,9 +627,31 @@
           const h = HD[hk], b = BL[hk] * 0.35;
           x = h.x + (x - h.x) * (1 + b); z = h.z + (z - h.z) * (1 + b); y += (y - h.hy) * b * 0.6 + b * 0.04;
         }
-        const glow = (fogless) => (fogless ? 1 : stageLum * (1 + 0.55 * litAt(x, z) + (hk >= 0 ? BL[hk] * 0.6 : 0)));
+        const glow = (fogless) => (fogless ? 1 - 0.75 * this.stage : stageLum * (1 + 0.55 * litAt(x, z) + (hk >= 0 ? BL[hk] * 0.6 : 0)));
         put(x + sw, y, z + sw * 0.6, P[o + 3], P[o + 4], P[o + 5], P[o + 6], P[o + 7], P[o + 10], n, P[o + 11] * glow(P[o + 10]));
       }
+      // The sun rises opposite the moon over the last part of the story
+      if (this.stage > 0.45) {
+        const k = Math.min(1, (this.stage - 0.45) / 0.55), el = -0.12 + 0.34 * k, az = 0.55 + Math.PI;
+        const D = 38, dir = [Math.cos(el) * Math.cos(az), Math.sin(el), Math.cos(el) * Math.sin(az)];
+        const ax2 = norm([dir[2], 0, -dir[0]]), ay2 = [dir[1] * ax2[2] - dir[2] * ax2[1], dir[2] * ax2[0] - dir[0] * ax2[2], dir[0] * ax2[1] - dir[1] * ax2[0]];
+        const R = 2.4;
+        for (let rr = 0; rr <= R + 1.6; rr += 0.16) for (let a = 0; a < Math.PI * 2; a += 0.16 / Math.max(rr, 0.16)) {
+          const ray = rr > R, ang = Math.round((a / (Math.PI * 2)) * 12);
+          if (ray && (Math.abs(a - (ang / 12) * Math.PI * 2) > 0.05 || rr > R + 0.6 + 0.8 * Math.abs(Math.sin(t + ang)))) continue;
+          const cx = Math.cos(a) * rr, cy = Math.sin(a) * rr;
+          put(dir[0] * D + ax2[0] * cx + ay2[0] * cy, dir[1] * D + ax2[1] * cx + ay2[1] * cy, dir[2] * D + ax2[2] * cx + ay2[2] * cy, 0, 1, 0,
+            ray ? C.gold : rr > R - 0.3 ? C.orange : C.gold, ray ? K['.'] : rr > R - 0.3 ? K[':'] : BIT, 1, 0, 0.5 + 0.7 * k);
+        }
+      }
+      // Rain: short-lived drops falling through the plot
+      if (this.rain && !this.reduced) for (let i = 0; i < 26; i++) this.drops.push([this.tgt[0] + (Math.random() - 0.5) * 9, 3 + Math.random() * 2, this.tgt[2] + (Math.random() - 0.5) * 9]);
+      for (let i = this.drops.length - 1; i >= 0; i--) {
+        const d = this.drops[i]; d[1] -= dt * 6.5; d[0] += (G.dir * gustAt(d[0]) * 0.8) * dt;
+        if (d[1] < 0) { this.drops.splice(i, 1); continue; }
+        put(d[0], d[1], d[2], 0, 1, 0, C.glass, d[1] < 0.15 ? K[','] : K["'"], 0, 0, 0.75);
+      }
+      if (this.drops.length > 1400) this.drops.splice(0, this.drops.length - 1400);
       // Fireflies: drift and blink
       for (const q of this.flies) {
         q.p[0] += Math.sin(t * 0.4 * q.sp + q.ph) * 0.004; q.p[2] += Math.cos(t * 0.33 * q.sp + q.ph) * 0.004;

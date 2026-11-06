@@ -16,10 +16,10 @@ const { lang } = Astro.props;
 const ar = lang === 'ar';
 const t = ar
   ? { title: 'الحديقة', kicker: '// GARDEN_3D', hint: 'اسحب للالتفاف · مرّر للتقريب', follow: 'تابع الفراشة', free: 'كاميرا حرة', back: 'رجوع للموقع',
-      tour: 'ابدأ رحلة «ليش فراشات؟»', bloom: 'مشاريعي تزهر هنا · اضغط على زهرة', next: 'التالي', skip: 'تخطَّ', again: 'من جديد', blog: 'اقرأ المدونة', end: 'طارت. وأنت؟', ask: 'هذي الحديقة هي طريقتي بالشغل. تبي جولة؟', sub: 'فلسفتي بالشغل، تحكيها حديقة',
+      tour: 'ابدأ رحلة «ليش فراشات؟»', soundOn: 'الصوت: شغّال', soundOff: 'الصوت: مطفي', capture: 'التقط صورة', bloom: 'مشاريعي تزهر هنا · اضغط على زهرة', next: 'التالي', skip: 'تخطَّ', again: 'من جديد', blog: 'اقرأ المدونة', end: 'طارت. وأنت؟', ask: 'هذي الحديقة هي طريقتي بالشغل. تبي جولة؟', sub: 'فلسفتي بالشغل، تحكيها حديقة',
       who: { butterfly: 'الفراشة', bee: 'النحلة', hive: 'الخلية', far: 'زهرة بعيدة', wide: 'الحديقة' } }
   : { title: 'The garden', kicker: '// GARDEN_3D', hint: 'drag to orbit · scroll to zoom', follow: 'Follow the butterfly', free: 'Free camera', back: 'Back to the site',
-      tour: 'Start the “Why butterflies?” journey', bloom: 'my projects bloom here · pick a flower', next: 'Next', skip: 'Skip', again: 'Replay', blog: 'Read the blog', end: 'It flew away. Your turn.', ask: 'This garden is how I work. Want the tour?', sub: 'my work philosophy, told by a garden',
+      tour: 'Start the “Why butterflies?” journey', soundOn: 'sound: on', soundOff: 'sound: off', capture: 'capture', bloom: 'my projects bloom here · pick a flower', next: 'Next', skip: 'Skip', again: 'Replay', blog: 'Read the blog', end: 'It flew away. Your turn.', ask: 'This garden is how I work. Want the tour?', sub: 'my work philosophy, told by a garden',
       who: { butterfly: 'the butterfly', bee: 'the bee', hive: 'the hive', far: 'a far flower', wide: 'the garden' } };
 const lines = philosophy.lines[lang];
 // Hover cards, old-game style: name, a "stat" line, a note
@@ -107,6 +107,11 @@ const projects = (await getProjects(lang)).slice(0, 6).map((p) => ({ title: p.da
       </div>
     </section>
 
+    <div class="g3-tools">
+      <button class="btn" id="g3-sound" type="button" aria-pressed="false">{t.soundOff}</button>
+      <button class="btn" id="g3-cap" type="button">{t.capture}</button>
+    </div>
+
     <div class="g3-actions">
       <button class="btn" id="g3-follow" type="button" data-on={t.free} data-off={t.follow}>{t.follow}</button>
       <a class="btn" href={langUrl(lang)}>{t.back}</a>
@@ -150,7 +155,7 @@ const projects = (await getProjects(lang)).slice(0, 6).map((p) => ({ title: p.da
         if (i >= steps.length) return finish();
         box.dataset.state = 'tour';
         const st = steps[i];
-        if (g) { g.setShot(st.shot); g.stage = i / (steps.length - 1); }
+        if (g) { g.setShot(st.shot); g.stage = i / (steps.length - 1); g.rain = i === 1; }      // a brief rain on "their lifespan is short"
         root.style.setProperty('--stage', (i / (steps.length - 1)).toFixed(2));
         whoEl.textContent = String(i + 1).padStart(2, '0') + ' / ' + String(steps.length).padStart(2, '0') + ' · ' + t.who[st.shot];
         decode(lineEl, st.line);
@@ -174,7 +179,7 @@ const projects = (await getProjects(lang)).slice(0, 6).map((p) => ({ title: p.da
         step = steps.length; fact.dataset.on = '0';
         box.dataset.state = 'end'; whoEl.textContent = '';
         decode(lineEl, t.end); nextBtn.textContent = t.again;
-        if (g) { g.setShot('wide'); g.slowSpin = true; g.stage = 1; anchors = g.spreadFlowers(nPins); }
+        if (g) { g.setShot('wide'); g.slowSpin = true; g.stage = 1; g.rain = false; anchors = g.spreadFlowers(nPins); }
         root.style.setProperty('--stage', '1');
         subEl.textContent = t.bloom;
         setPhase('end');
@@ -289,6 +294,73 @@ const projects = (await getProjects(lang)).slice(0, 6).map((p) => ({ title: p.da
       s.src = src;
       s.onload = () => {
         g = new window.Garden3D(document.getElementById('g3-canvas'));
+        // ── Sound (off until asked): crickets, a hum near the bee, a chime when a flower opens, wind ──
+        let A = null;
+        const sndBtn = document.getElementById('g3-sound');
+        function startAudio() {
+          const ac = new (window.AudioContext || window.webkitAudioContext)(), out = ac.createGain();
+          out.gain.value = 0.5; out.connect(ac.destination);
+          const noiseBuf = ac.createBuffer(1, ac.sampleRate * 2, ac.sampleRate), nd = noiseBuf.getChannelData(0);
+          for (let i = 0; i < nd.length; i++) nd[i] = Math.random() * 2 - 1;
+          // Crickets: short high chirps in little trains
+          function chirp() {
+            if (!A || ac.state !== 'running') return;
+            const n = 2 + ((Math.random() * 3) | 0), f = 4200 + Math.random() * 900, pan = ac.createStereoPanner ? ac.createStereoPanner() : null;
+            for (let k = 0; k < n; k++) {
+              const o = ac.createOscillator(), gg = ac.createGain(), t0 = ac.currentTime + k * 0.07;
+              o.frequency.value = f; gg.gain.setValueAtTime(0, t0); gg.gain.linearRampToValueAtTime(0.025, t0 + 0.01); gg.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.05);
+              o.connect(gg); if (pan) { pan.pan.value = Math.random() * 2 - 1; gg.connect(pan); pan.connect(out); } else gg.connect(out);
+              o.start(t0); o.stop(t0 + 0.06);
+            }
+            setTimeout(chirp, 500 + Math.random() * 1600);
+          }
+          // Bee hum: a soft buzzy drone, louder when the bee is near the centre of the view
+          const hum = ac.createOscillator(), humF = ac.createBiquadFilter(), humG = ac.createGain();
+          hum.type = 'sawtooth'; hum.frequency.value = 210; humF.type = 'lowpass'; humF.frequency.value = 700; humG.gain.value = 0;
+          hum.connect(humF); humF.connect(humG); humG.connect(out); hum.start();
+          // Wind: filtered noise swelling with each gust
+          const wind = ac.createBufferSource(), wF = ac.createBiquadFilter(), wG = ac.createGain();
+          wind.buffer = noiseBuf; wind.loop = true; wF.type = 'bandpass'; wF.frequency.value = 500; wF.Q.value = 0.6; wG.gain.value = 0.004;
+          wind.connect(wF); wF.connect(wG); wG.connect(out); wind.start();
+          g.onGust = (str) => { const t0 = ac.currentTime; wG.gain.cancelScheduledValues(t0); wG.gain.setTargetAtTime(0.05 * str, t0, 0.6); wG.gain.setTargetAtTime(0.004, t0 + 2.2, 1.2); };
+          g.onBloom = () => {
+            const t0 = ac.currentTime, notes = [880, 988, 1175, 1319, 1568], f = notes[(Math.random() * notes.length) | 0];
+            for (const [m, v] of [[1, 0.05], [2, 0.015]]) {
+              const o = ac.createOscillator(), gg = ac.createGain();
+              o.type = 'sine'; o.frequency.value = f * m; gg.gain.setValueAtTime(v, t0); gg.gain.exponentialRampToValueAtTime(0.0001, t0 + 1.4);
+              o.connect(gg); gg.connect(out); o.start(t0); o.stop(t0 + 1.5);
+            }
+          };
+          (function follow() {
+            if (!A) return; requestAnimationFrame(follow);
+            const sc = g.toScreen(g.bee.p), W = innerWidth, H = innerHeight;
+            const near = sc ? Math.max(0, 1 - Math.hypot(sc[0] - W / 2, sc[1] - H / 2) / (W * 0.5)) / Math.max(1, sc[2] / 3) : 0;
+            humG.gain.setTargetAtTime(0.02 * near, ac.currentTime, 0.2);
+            hum.frequency.setTargetAtTime(205 + Math.sin(performance.now() / 300) * 8, ac.currentTime, 0.1);
+          })();
+          A = { ac, out }; chirp();
+        }
+        sndBtn.addEventListener('click', () => {
+          const on = sndBtn.getAttribute('aria-pressed') !== 'true';
+          sndBtn.setAttribute('aria-pressed', String(on)); sndBtn.textContent = on ? t.soundOn : t.soundOff;
+          if (on) { if (!A) startAudio(); else A.ac.resume(); } else if (A) A.ac.suspend();
+        });
+        // ── Capture: the current frame on the garden's night background, with a small caption ──
+        document.getElementById('g3-cap').addEventListener('click', () => {
+          const src = g.capture(), cv2 = document.createElement('canvas'), img = new Image();
+          const c0 = document.getElementById('g3-canvas');
+          cv2.width = c0.width; cv2.height = c0.height;
+          img.onload = () => {
+            const x = cv2.getContext('2d'), gr = x.createRadialGradient(cv2.width / 2, cv2.height * 1.15, 0, cv2.width / 2, cv2.height * 1.15, cv2.height * 1.1);
+            gr.addColorStop(0, '#1f2a1f'); gr.addColorStop(0.38, '#141814'); gr.addColorStop(0.72, '#0d0d0f'); gr.addColorStop(1, '#0d0d0f');
+            x.fillStyle = gr; x.fillRect(0, 0, cv2.width, cv2.height); x.drawImage(img, 0, 0);
+            const d = cv2.width / c0.clientWidth;
+            x.font = `600 ${14 * d}px "JetBrains Mono", monospace`; x.fillStyle = '#cfcfcf'; x.fillText('Why butterflies?', 20 * d, cv2.height - 38 * d);
+            x.font = `${11 * d}px "JetBrains Mono", monospace`; x.fillStyle = '#ff8a8a'; x.fillText('— fyoalharbi.github.io/Fayhaa', 20 * d, cv2.height - 20 * d);
+            const a = document.createElement('a'); a.download = 'why-butterflies.png'; a.href = cv2.toDataURL('image/png'); a.click();
+          };
+          img.src = src;
+        });
         const btn = document.getElementById('g3-follow');
         btn.addEventListener('click', () => { btn.textContent = g.toggleFollow() ? btn.dataset.on : btn.dataset.off; });
         // Hover cards: point at something in the garden to read about it
@@ -411,6 +483,12 @@ const projects = (await getProjects(lang)).slice(0, 6).map((p) => ({ title: p.da
   .g3[dir='rtl'] .g3-pin { font-family: var(--font-ar); font-size: .78rem; }
   .g3[dir='rtl'] .g3-pin b { letter-spacing: 0; font-size: .82rem; }
   @media (max-width: 600px) { .g3-pin span { display: none; } .g3-pin { width: 40vw; } }
+
+  /* Sound + capture: small bracket links, bottom right, visible once the garden is showing */
+  .g3-tools { position: absolute; right: 20px; bottom: 26px; z-index: 6; display: flex; gap: 14px; transition: opacity 1s; }
+  .g3[data-phase='intro'] .g3-tools { opacity: 0; pointer-events: none; }
+  .g3-tools .btn[aria-pressed='true'] { color: #ff8a8a; }
+  @media (max-width: 760px) { .g3-tools { top: 70px; bottom: auto; right: 16px; } }
 
   /* Old-game hover card: neon double border, pixel corners, scanlines */
   .g3-tip {
