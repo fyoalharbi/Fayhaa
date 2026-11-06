@@ -421,6 +421,23 @@
       }
       return best;
     }
+    // Screen position (CSS px) of a world point with the last frame's camera, or null if behind
+    toScreen(p) {
+      const V = this.view; if (!V) return null;
+      const dx = p[0] - V.cam[0], dy = p[1] - V.cam[1], dz = p[2] - V.cam[2];
+      const zc = dx * V.f[0] + dy * V.f[1] + dz * V.f[2];
+      if (zc < 0.2) return null;
+      return [this.W / 2 + ((dx * V.r[0] + dy * V.r[1] + dz * V.r[2]) / zc) * V.FOC, this.H / 2 - ((dx * V.u[0] + dy * V.u[1] + dz * V.u[2]) / zc) * V.FOC, zc];
+    }
+    // N flowers spread around the plot (by angle), for pinning labels to
+    spreadFlowers(n) {
+      const fl = this.heads.map((h, i) => ({ h, i, a: Math.atan2(h.z, h.x), r: Math.hypot(h.x, h.z) }))
+        .filter((o) => o.h.type && !o.h.type.includes('bush') && o.r > 0.8 && o.r < 3.6);
+      fl.sort((a, b) => a.a - b.a);
+      const out = [];
+      for (let k = 0; k < n && fl.length; k++) out.push(fl[Math.floor((k + 0.5) * fl.length / n)].h);
+      return out;
+    }
     toggleFollow() { this.follow = !this.follow; this.shot = null; this.idle = 0; return this.follow; }
     // Guided tour: each shot is a subject + distance; the camera glides between them
     setShot(name) { this.shot = name; this.follow = false; this.idle = 0; }
@@ -514,7 +531,7 @@
 
       // Camera: idle auto-orbit; follow mode eases toward the white butterfly
       this.idle += dt;
-      if (!this.dragging() && this.idle > 2.5 && !this.reduced) this.yaw += dt * 0.09;
+      if (!this.dragging() && this.idle > 2.5 && !this.reduced) this.yaw += dt * (this.slowSpin ? 0.025 : 0.09);
       const st = this.shot ? this.shotTarget() : null;
       const want = st ? st[0] : this.follow ? this.flyers[0].p : [0, 0.7, 0];
       for (let k = 0; k < 3; k++) this.tgt[k] += (want[k] - this.tgt[k]) * Math.min(1, dt * (st ? 1.6 : 2.5));

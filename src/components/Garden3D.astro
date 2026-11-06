@@ -3,20 +3,23 @@
 // bushes, a bee and butterflies (public/js/garden3d.js), with a guided tour: a
 // dialogue box at the bottom tells the philosophy line by line while the camera
 // moves to each line's subject (the white butterfly, the bee, the hive, a far
-// flower, the whole garden).
+// flower, the whole garden). It runs as one experience: an intro screen asks to
+// start the journey; the garden appears and the story plays with the site header
+// tucked away; at the end the header returns and retro callout lines pin my
+// projects to flowers in the garden.
 import Base from '../layouts/Base.astro';
 import { philosophy, type Lang } from '../data/profile';
-import { url, langUrl } from '../lib/site';
+import { url, langUrl, getProjects, projectHref } from '../lib/site';
 
 interface Props { lang: Lang }
 const { lang } = Astro.props;
 const ar = lang === 'ar';
 const t = ar
   ? { title: 'الحديقة', kicker: '// GARDEN_3D', hint: 'اسحب للالتفاف · مرّر للتقريب', follow: 'تابع الفراشة', free: 'كاميرا حرة', back: 'رجوع للموقع',
-      tour: 'ابدأ الجولة', next: 'التالي', skip: 'تخطَّ', again: 'من جديد', blog: 'اقرأ المدونة', end: 'طارت. وأنت؟', ask: 'هذي الحديقة هي طريقتي بالشغل. تبي جولة؟', sub: 'فلسفتي بالشغل، تحكيها حديقة',
+      tour: 'ابدأ رحلة «ليش فراشات؟»', bloom: 'مشاريعي تزهر هنا · اضغط على زهرة', next: 'التالي', skip: 'تخطَّ', again: 'من جديد', blog: 'اقرأ المدونة', end: 'طارت. وأنت؟', ask: 'هذي الحديقة هي طريقتي بالشغل. تبي جولة؟', sub: 'فلسفتي بالشغل، تحكيها حديقة',
       who: { butterfly: 'الفراشة', bee: 'النحلة', hive: 'الخلية', far: 'زهرة بعيدة', wide: 'الحديقة' } }
   : { title: 'The garden', kicker: '// GARDEN_3D', hint: 'drag to orbit · scroll to zoom', follow: 'Follow the butterfly', free: 'Free camera', back: 'Back to the site',
-      tour: 'Start the tour', next: 'Next', skip: 'Skip', again: 'Replay', blog: 'Read the blog', end: 'It flew away. Your turn.', ask: 'This garden is how I work. Want the tour?', sub: 'my work philosophy, told by a garden',
+      tour: 'Start the “Why butterflies?” journey', bloom: 'my projects bloom here · pick a flower', next: 'Next', skip: 'Skip', again: 'Replay', blog: 'Read the blog', end: 'It flew away. Your turn.', ask: 'This garden is how I work. Want the tour?', sub: 'my work philosophy, told by a garden',
       who: { butterfly: 'the butterfly', bee: 'the bee', hive: 'the hive', far: 'a far flower', wide: 'the garden' } };
 const lines = philosophy.lines[lang];
 // Hover cards, old-game style: name, a "stat" line, a note
@@ -44,21 +47,40 @@ const INFO = ar ? {
 // Which subject the camera visits for each line (same order as the philosophy lines)
 const SHOTS = ['wide', 'butterfly', 'butterfly', 'bee', 'bee', 'hive', 'butterfly', 'far', 'wide', 'butterfly', 'wide', 'butterfly'];
 const steps = lines.map((line, i) => ({ line, shot: SHOTS[i] || 'wide' }));
+// Projects pinned to flowers at the end of the journey
+const projects = (await getProjects(lang)).slice(0, 6).map((p) => ({ title: p.data.title, summary: p.data.summary, ...projectHref(p) }));
 ---
 <Base lang={lang} title={t.title} path="papillon/" noindex>
-  <div class="g3" dir={ar ? 'rtl' : 'ltr'}>
+  <div class="g3" id="g3" data-phase="intro" dir={ar ? 'rtl' : 'ltr'}>
     <canvas id="g3-canvas" aria-label={t.title}></canvas>
+
+    <!-- 1. Intro: nothing but the question -->
+    <div class="g3-intro" id="g3-intro">
+      <p class="g3-intro-k mono">{t.sub}</p>
+      <h1 class="g3-intro-t">{philosophy.title[lang]}</h1>
+      <button class="btn g3-start" id="g3-start" type="button">{t.tour}</button>
+    </div>
+
+    <!-- 3. The end: projects pinned to flowers with retro callout lines -->
+    <svg class="g3-lines" id="g3-lines" aria-hidden="true"></svg>
+    <nav class="g3-pins" id="g3-pins" aria-label={ar ? 'مشاريعي' : 'My projects'}>
+      {projects.map((p) => (
+        <a class="g3-pin" href={p.href} target={p.external ? '_blank' : undefined} rel={p.external ? 'noopener' : undefined}>
+          <b>{p.title}</b><span>{p.summary}</span>
+        </a>
+      ))}
+    </nav>
     <div class="g3-ui mono">
-      <h1 class="g3-title">{philosophy.title[lang]}</h1>
-      <p class="g3-sub">{t.sub}</p>
+      <p class="g3-title">{philosophy.title[lang]}</p>
+      <p class="g3-sub" id="g3-sub">{t.sub}</p>
       <p class="g3-hint">{t.hint}</p>
     </div>
 
     <div class="g3-tip" id="g3-tip" role="tooltip" hidden><b id="g3-tip-t"></b><em id="g3-tip-s"></em><span id="g3-tip-n"></span></div>
 
-    <section class="g3-box is-enter" id="g3-box" aria-live="polite" data-state="intro">
+    <section class="g3-box" id="g3-box" aria-live="polite" data-state="off">
       <p class="g3-who mono" id="g3-who"></p>
-      <p class="g3-line" id="g3-line">{t.ask}</p>
+      <p class="g3-line" id="g3-line"></p>
       <div class="g3-row">
         <span class="g3-dots" aria-hidden="true">{steps.map(() => <i></i>)}</span>
         <span class="g3-btns">
@@ -75,7 +97,7 @@ const steps = lines.map((line, i) => ({ line, shot: SHOTS[i] || 'wide' }));
     </div>
   </div>
 
-  <script is:inline define:vars={{ src: url('js/garden3d.js'), steps, t, INFO }}>
+  <script is:inline define:vars={{ src: url('js/garden3d.js'), steps, t, INFO, nPins: projects.length }}>
     (function () {
       try { localStorage.setItem('fayhaa:papillon', '1'); } catch (e) {}
       const REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -100,45 +122,80 @@ const steps = lines.map((line, i) => ({ line, shot: SHOTS[i] || 'wide' }));
         };
         el._raf = requestAnimationFrame(frame);
       }
+      const root = document.getElementById('g3'), subEl = document.getElementById('g3-sub');
+      const pins = [...document.querySelectorAll('.g3-pin')], svg = document.getElementById('g3-lines');
+      let anchors = [];
+      const setPhase = (ph) => { root.dataset.phase = ph; setTimeout(() => dispatchEvent(new Event('resize')), 30); };
+
       function show(i) {
         step = i;
         dots.forEach((d, k) => { d.classList.toggle('is-on', k <= i); d.classList.toggle('is-now', k === i); });
-        if (i >= steps.length) {                    // the end: pull back, offer the blog
-          box.dataset.state = 'end';
-          if (g) g.setShot('wide');
-          whoEl.textContent = '';
-          decode(lineEl, t.end);
-          nextBtn.textContent = t.again;
-          return;
-        }
+        if (i >= steps.length) return finish();
         box.dataset.state = 'tour';
-        const s = steps[i];
-        if (g) g.setShot(s.shot);
-        whoEl.textContent = String(i + 1).padStart(2, '0') + ' / ' + String(steps.length).padStart(2, '0') + ' · ' + t.who[s.shot];
-        decode(lineEl, s.line);
+        const st = steps[i];
+        if (g) g.setShot(st.shot);
+        whoEl.textContent = String(i + 1).padStart(2, '0') + ' / ' + String(steps.length).padStart(2, '0') + ' · ' + t.who[st.shot];
+        decode(lineEl, st.line);
         nextBtn.textContent = t.next;
       }
-      function stop() {
-        step = -1; box.dataset.state = 'off';
-        if (g) g.setShot(null);
+      // 2. The journey: the garden fades in, the story starts on its own
+      function begin() {
+        setPhase('journey');
+        box.classList.add('is-enter');
+        setTimeout(() => box.classList.remove('is-enter'), REDUCED ? 0 : 2300);
+        setTimeout(() => show(0), REDUCED ? 0 : 900);
       }
-      // Greeting decodes in as the box finishes rising
-      { const ask = lineEl.textContent; lineEl.textContent = ''; setTimeout(() => decode(lineEl, ask), REDUCED ? 0 : 1000); }
-      setTimeout(() => box.classList.remove('is-enter'), REDUCED ? 0 : 2300);   // after the whole entrance has played
-      nextBtn.addEventListener('click', () => show(step >= steps.length ? 0 : step + 1));
-      skipBtn.addEventListener('click', stop);
+      // 3. The end: header back, camera wide and slow, projects bloom on the flowers
+      function finish() {
+        step = steps.length;
+        box.dataset.state = 'end'; whoEl.textContent = '';
+        decode(lineEl, t.end); nextBtn.textContent = t.again;
+        if (g) { g.setShot('wide'); g.slowSpin = true; anchors = g.spreadFlowers(nPins); }
+        subEl.textContent = t.bloom;
+        setPhase('end');
+      }
+      document.getElementById('g3-start').addEventListener('click', begin);
+      nextBtn.addEventListener('click', () => { if (step >= steps.length) { if (g) g.slowSpin = false; setPhase('journey'); show(0); } else show(step + 1); });
+      skipBtn.addEventListener('click', finish);
       addEventListener('keydown', (e) => {
-        if (box.dataset.state === 'off' || box.dataset.state === 'intro') return;
+        if (root.dataset.phase === 'intro') { if (e.key === 'Enter') begin(); return; }
+        if (box.dataset.state !== 'tour') return;
         if (e.key === 'ArrowRight' || e.key === 'Enter') { e.preventDefault(); nextBtn.click(); }
-        if (e.key === 'Escape') stop();
+        if (e.key === 'Escape') finish();
       });
+
+      // Callout lines: from each flower, a short diagonal then a straight run to its label
+      function drawPins() {
+        requestAnimationFrame(drawPins);
+        if (root.dataset.phase !== 'end' || !g || !anchors.length) return;
+        const W = root.clientWidth, H = root.clientHeight, top = 150, bot = H - 190;
+        const pts = anchors.map((h, k) => ({ k, s: g.toScreen([h.x, h.y, h.z]) })).filter((o) => o.s);
+        const sides = [pts.filter((o) => o.s[0] < W / 2), pts.filter((o) => o.s[0] >= W / 2)];
+        let paths = '';
+        const on = new Set();
+        sides.forEach((list, side) => {
+          list.sort((a, b) => a.s[1] - b.s[1]);
+          list.forEach((o, j) => {
+            const el = pins[o.k]; if (!el) return;
+            const ly = top + (bot - top) * ((j + 0.5) / list.length), lw = el.offsetWidth, lh = el.offsetHeight;
+            const lx = side ? W - 24 - lw : 24, ex = side ? lx - 6 : lx + lw + 6, ey = ly + lh / 2;
+            el.style.transform = `translate(${lx}px, ${ly}px)`; on.add(el);
+            const [fx, fy] = o.s, dy = ey - fy, mx = fx + (side ? 1 : -1) * Math.abs(dy) * 0.6;
+            const bx = side ? Math.min(Math.max(mx, fx), ex) : Math.max(Math.min(mx, fx), ex);
+            paths += `<polyline points="${fx},${fy} ${bx},${ey} ${ex},${ey}"/><rect x="${fx - 3}" y="${fy - 3}" width="6" height="6"/>`;
+          });
+        });
+        svg.innerHTML = paths;
+        pins.forEach((el) => { const v = on.has(el) ? '1' : '0'; if (el.dataset.on !== v) el.dataset.on = v; });   // only on change, so the fade isn't restarted
+      }
+      drawPins();
 
       const s = document.createElement('script');
       s.src = src;
       s.onload = () => {
         g = new window.Garden3D(document.getElementById('g3-canvas'));
         const btn = document.getElementById('g3-follow');
-        btn.addEventListener('click', () => { stop(); btn.textContent = g.toggleFollow() ? btn.dataset.on : btn.dataset.off; });
+        btn.addEventListener('click', () => { btn.textContent = g.toggleFollow() ? btn.dataset.on : btn.dataset.off; });
         // Hover cards: point at something in the garden to read about it
         const cv = document.getElementById('g3-canvas'), tip = document.getElementById('g3-tip');
         const tT = document.getElementById('g3-tip-t'), tS = document.getElementById('g3-tip-s'), tN = document.getElementById('g3-tip-n');
@@ -164,6 +221,7 @@ const steps = lines.map((line, i) => ({ line, shot: SHOTS[i] || 'wide' }));
         })();
         // Dragging the garden mid-tour hands the camera back for that line
         document.getElementById('g3-canvas').addEventListener('pointerdown', () => { if (box.dataset.state === 'tour') g.setShot(null); });
+        if (root.dataset.phase === 'end') anchors = g.spreadFlowers(nPins);
       };
       document.body.appendChild(s);
     })();
@@ -200,6 +258,48 @@ const steps = lines.map((line, i) => ({ line, shot: SHOTS[i] || 'wide' }));
   :global(html[dir='rtl'] body:has(.g3) .site-nav a), :global(html[dir='rtl'] body:has(.g3) .lang-link) { font-family: var(--font-ar); letter-spacing: 0; font-size: .85rem; }
   .g3-actions { position: absolute; top: 16px; inset-inline-end: 20px; display: flex; flex-wrap: wrap; gap: 8px; justify-content: flex-end; }
   .g3-actions { gap: 14px; }
+
+  /* ── Phases ── intro and journey take the whole screen (the header steps aside) */
+  .g3[data-phase='intro'], .g3[data-phase='journey'] { position: fixed; inset: 0; height: 100svh; z-index: 60; }
+  .g3 canvas, .g3-ui, .g3-actions { transition: opacity 1.2s ease; }
+  .g3[data-phase='intro'] canvas, .g3[data-phase='intro'] .g3-ui, .g3[data-phase='intro'] .g3-actions,
+  .g3[data-phase='journey'] .g3-actions, .g3[data-phase='journey'] .g3-hint { opacity: 0; pointer-events: none; }
+  :global(body:has(.g3[data-phase='end']) .site-header) { animation: g3-head .7s cubic-bezier(.2, .8, .2, 1) both; }
+  @keyframes g3-head { from { transform: translateY(-100%); opacity: 0; } to { transform: none; opacity: 1; } }
+
+  .g3-intro {
+    position: absolute; inset: 0; z-index: 6; display: grid; place-content: center; justify-items: center; gap: 14px; text-align: center;
+    padding: 24px; transition: opacity .8s ease, visibility .8s;
+  }
+  .g3:not([data-phase='intro']) .g3-intro { opacity: 0; visibility: hidden; }
+  .g3-intro-k { margin: 0; color: #ff8a8a; animation: g3-fade .8s ease .2s both; }
+  .g3-intro-t { margin: 0; font: 600 clamp(1.8rem, 5vw, 3.2rem)/1.1 var(--font-mono); color: var(--paper); animation: g3-fade .9s ease .5s both; }
+  .g3[dir='rtl'] .g3-intro-t, .g3[dir='rtl'] .g3-intro-k { font-family: var(--font-ar); }
+  .g3-intro .g3-start { margin-top: 10px; font-size: .85rem !important; color: #ff8a8a !important; animation: g3-fade .8s ease 1s both; }
+  .g3-intro .g3-start:hover { color: var(--paper) !important; }
+
+  /* ── The end: retro callouts ── */
+  .g3-lines { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 4; pointer-events: none; opacity: 0; transition: opacity .8s ease .6s; }
+  .g3-lines :global(polyline) { fill: none; stroke: #7fe0ff; stroke-width: 1; stroke-dasharray: 4 3; filter: drop-shadow(0 0 3px #7fe0ff); animation: g3-march 1.2s linear infinite; }
+  .g3-lines :global(rect) { fill: none; stroke: #7fe0ff; stroke-width: 1; }
+  @keyframes g3-march { to { stroke-dashoffset: -14; } }
+  .g3-pins { position: absolute; inset: 0; z-index: 5; pointer-events: none; }
+  .g3-pin {
+    position: absolute; top: 0; left: 0; width: min(230px, 38vw); padding: 7px 10px 8px; pointer-events: auto; text-decoration: none;
+    background-color: rgba(6, 8, 12, .82); border: 1px solid #7fe0ff; outline: 1px solid #7fe0ff44; outline-offset: 2px;
+    box-shadow: 0 0 10px #7fe0ff55, inset 0 0 8px #7fe0ff22; color: #cfcfcf; font: .68rem/1.4 var(--font-mono);
+    background-image: repeating-linear-gradient(0deg, transparent 0 2px, rgba(255, 255, 255, .035) 2px 3px);
+    transition: transform .45s cubic-bezier(.2, .8, .2, 1), opacity .5s, box-shadow .2s; opacity: 0; visibility: hidden;
+  }
+  .g3[data-phase='end'] .g3-pin[data-on='1'] { opacity: 1; visibility: visible; }
+  .g3[data-phase='end'] .g3-lines { opacity: 1; }
+  .g3-pin b { display: block; color: #7fe0ff; font-size: .74rem; letter-spacing: .05em; text-transform: uppercase; text-shadow: 0 0 6px #7fe0ff; }
+  .g3-pin span { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; color: #8a8a92; margin-top: 2px; }
+  .g3-pin:hover, .g3-pin:focus-visible { box-shadow: 0 0 18px #7fe0ffaa, inset 0 0 10px #7fe0ff44; outline-color: #7fe0ff; }
+  .g3-pin:hover b::after { content: ' ▸'; }
+  .g3[dir='rtl'] .g3-pin { font-family: var(--font-ar); font-size: .78rem; }
+  .g3[dir='rtl'] .g3-pin b { letter-spacing: 0; font-size: .82rem; }
+  @media (max-width: 600px) { .g3-pin span { display: none; } .g3-pin { width: 40vw; } }
 
   /* Old-game hover card: neon double border, pixel corners, scanlines */
   .g3-tip {
