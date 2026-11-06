@@ -172,8 +172,14 @@ const projects = (await getProjects(lang)).slice(0, 6).map((p) => ({ title: p.da
       root.addEventListener('pointermove', (e) => { const r = root.getBoundingClientRect(); pmx = e.clientX - r.left; pmy = e.clientY - r.top; });
       root.addEventListener('pointerleave', () => { pmx = -1; });
       pins.forEach((el, k) => { el.addEventListener('pointerenter', () => { hoverPin = k; }); el.addEventListener('pointerleave', () => { if (hoverPin === k) hoverPin = -1; }); });
+      // Rising pollen on each project flower: tiny glyphs drift up and fade; pointing at a
+      // flower makes more of it rise, and some climbs the callout line to the label
+      const POLLEN = ['.', '·', '·', '*', '°'], motes = [];
+      let lastT = performance.now();
+      const esc = (c) => (c === '<' ? '&lt;' : c);
       function drawPins() {
         requestAnimationFrame(drawPins);
+        const now = performance.now(), dt = Math.min(0.05, (now - lastT) / 1000); lastT = now;
         if (root.dataset.phase !== 'end' || !g || !anchors.length) return;
         const W = root.clientWidth, H = root.clientHeight, top = 150, bot = H - 190;
         const pts = anchors.map((h, k) => ({ k, s: g.toScreen([h.x, h.y, h.z]) })).filter((o) => o.s);
@@ -198,11 +204,35 @@ const projects = (await getProjects(lang)).slice(0, 6).map((p) => ({ title: p.da
             const bx = side ? Math.min(Math.max(mx, fx), ex) : Math.max(Math.min(mx, fx), ex);
             const lit = !HOVER || o.k === openPin;
             if (lit) { on.add(el); paths += `<polyline points="${fx},${fy} ${bx},${ey} ${ex},${ey}"/>`; }
+            // Spawn: a slow trickle always, a fountain while pointed at
+            const rate = REDUCED ? 0 : lit ? 18 : 5.5;
+            if (Math.random() < rate * dt) motes.push({ k: o.k, x: (Math.random() - 0.5) * 14, y: 0, vx: (Math.random() - 0.5) * 8, vy: -(14 + Math.random() * 16) * (lit ? 1.6 : 1), age: 0, life: 1.6 + Math.random() * 1.4, ch: POLLEN[(Math.random() * POLLEN.length) | 0], line: lit && Math.random() < 0.35, path: [fx, fy, bx, ey, ex, ey] });
+            o.fx = fx; o.fy = fy;
             // Every project flower keeps a small target marker, so there is something to point at
-            const d = lit ? 13 : 9;
-            paths += `<g class="g3-mk${lit ? ' is-lit' : ''}" style="--d:${(o.k * 0.37) % 1.8}s"><circle cx="${fx}" cy="${fy}" r="${d}"/><path d="M${fx} ${fy - d - 5}L${fx + 2} ${fy - 2}L${fx + d + 5} ${fy}L${fx + 2} ${fy + 2}L${fx} ${fy + d + 5}L${fx - 2} ${fy + 2}L${fx - d - 5} ${fy}L${fx - 2} ${fy - 2}Z"/><rect x="${fx - 3}" y="${fy - 3}" width="6" height="6"/></g>`;
+            // The flower head glows: a soft warm light behind it, brighter when pointed at
+            paths += `<circle class="g3-glow${lit ? ' is-lit' : ''}" style="--d:${(o.k * 0.37) % 2.4}s" cx="${fx}" cy="${fy}" r="${lit ? 24 : 17}"/>`;
+            o.lit = lit;
           });
         });
+        // Pollen motes, in the garden's own glyphs
+        const where = {};
+        for (const o of pts) where[o.k] = o;
+        for (let i = motes.length - 1; i >= 0; i--) {
+          const m = motes[i]; m.age += dt;
+          const o = where[m.k];
+          if (!o || m.age > m.life) { motes.splice(i, 1); continue; }
+          let x, y, a = Math.sin(Math.PI * Math.min(1, m.age / m.life));
+          if (m.line && o.lit) {
+            // Climb the callout: along the diagonal, then the straight run to the label
+            const P = m.path, k = Math.min(1, m.age / m.life) * 2;
+            const [x0, y0, x1, y1] = k < 1 ? [P[0], P[1], P[2], P[3]] : [P[2], P[3], P[4], P[5]], f = k < 1 ? k : k - 1;
+            x = x0 + (x1 - x0) * f; y = y0 + (y1 - y0) * f;
+          } else {
+            m.x += (m.vx + Math.sin((m.age + m.k) * 3) * 6) * dt; m.y += m.vy * dt;
+            x = o.fx + m.x; y = o.fy + m.y;
+          }
+          paths += `<text class="g3-mote" x="${x.toFixed(1)}" y="${y.toFixed(1)}" opacity="${(a * (o.lit ? 1 : 0.85)).toFixed(2)}">${esc(m.ch)}</text>`;
+        }
         svg.innerHTML = paths;
         pins.forEach((el) => { const v = on.has(el) ? '1' : '0'; if (el.dataset.on !== v) el.dataset.on = v; });   // only on change, so the fade isn't restarted
       }
@@ -300,15 +330,11 @@ const projects = (await getProjects(lang)).slice(0, 6).map((p) => ({ title: p.da
   /* ── The end: retro callouts ── */
   .g3-lines { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 4; pointer-events: none; opacity: 0; transition: opacity .8s ease .6s; }
   .g3-lines :global(polyline) { fill: none; stroke: #ff8a8a; stroke-width: 1; stroke-dasharray: 4 3; filter: drop-shadow(0 0 3px #ff8a8a); animation: g3-march 1.2s linear infinite; }
-  /* Shining markers: a bright core, a twinkling sparkle and a soft halo that breathes */
-  .g3-lines :global(.g3-mk) { filter: drop-shadow(0 0 4px #ffd0a0) drop-shadow(0 0 10px #ff8a8a); }
-  .g3-lines :global(.g3-mk rect) { fill: #fff3e0; }
-  .g3-lines :global(.g3-mk path) { fill: #ffe2c4; transform-box: fill-box; transform-origin: center; animation: g3-twinkle 1.8s ease-in-out var(--d) infinite; }
-  .g3-lines :global(.g3-mk circle) { fill: #ff8a8a22; stroke: #ff8a8a; stroke-width: 1; transform-box: fill-box; transform-origin: center; animation: g3-halo 1.8s ease-out var(--d) infinite; }
-  .g3-lines :global(.g3-mk.is-lit path) { animation-duration: .9s; }
-  .g3-lines :global(.g3-mk.is-lit circle) { fill: #ff8a8a44; }
-  @keyframes g3-twinkle { 0%, 100% { transform: scale(.55) rotate(0deg); opacity: .65; } 50% { transform: scale(1.1) rotate(45deg); opacity: 1; } }
-  @keyframes g3-halo { from { transform: scale(.6); opacity: .9; } to { transform: scale(1.8); opacity: 0; } }
+  /* Project flowers: a warm glow behind the head, and pollen glyphs rising from it */
+  .g3-lines :global(.g3-glow) { fill: #ffb48a; opacity: .38; filter: blur(6px); transform-box: fill-box; transform-origin: center; animation: g3-breathe 2.4s ease-in-out var(--d) infinite; }
+  .g3-lines :global(.g3-glow.is-lit) { opacity: .45; fill: #ffc79a; animation-duration: 1.2s; }
+  @keyframes g3-breathe { 50% { transform: scale(1.3); opacity: .55; } }
+  .g3-lines :global(.g3-mote) { fill: #ffe0a8; font: 700 11px var(--font-mono); text-anchor: middle; filter: drop-shadow(0 0 3px #ffb48a); }
   .g3.is-pointing canvas { cursor: pointer; }
   @keyframes g3-march { to { stroke-dashoffset: -14; } }
   .g3-pins { position: absolute; inset: 0; z-index: 5; pointer-events: none; }
