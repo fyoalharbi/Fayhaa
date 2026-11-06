@@ -17,6 +17,12 @@ const WORK_SKILLS: string[][] = [
   ['web-scraping', 'data-cleaning', 'power-query', 'power-bi', 'python', 'rest-apis'], // Hackathonat
   [],                                                                               // TechVerse (community)
 ];
+// Tools of each education entry (same order as profile.ts). The SDA bootcamp list
+// follows its capstone, InvaSight; the degree has none listed.
+const EDU_SKILLS: string[][] = [
+  ['sql', 'python', 'airflow', 'dbt', 'etl', 'snowflake', 'data-modeling', 'docker', 'ci-cd', 'git', 'aws', 'azure', 'power-bi'],
+  [],
+];
 const WORK_ONLY = [
   { key: 'ibm-api-connect', label: { en: 'IBM API Connect', ar: 'IBM API Connect' } },
   { key: 'outsystems', label: { en: 'OutSystems', ar: 'OutSystems' } },
@@ -48,16 +54,17 @@ export async function expData(lang: Lang = 'en') {
     minutes: Math.max(1, Math.round((p.body ?? '').split(/\s+/).length / 220)),
   }));
   const workUse = (k: string) => WORK_SKILLS.map((ks, i) => (ks.includes(k) ? i : -1)).filter((i) => i >= 0);
+  const trainUse = (k: string) => EDU_SKILLS.map((ks, i) => (ks.includes(k) ? i : -1)).filter((i) => i >= 0);
   const used = (k: string) => projects.filter((p) => p.skills.some((s) => s.key === k)).map((p) => p.slug);
   return {
     name: profile.name[lang], role: profile.role[lang], intro: profile.intro[lang],
     workflow: profile.workflow[lang], email: profile.email, links: profile.links,
     skills: [
-      ...skills.map((s) => ({ key: s.key, label: s.label[lang], group: s.group, groupLabel: skillGroups[s.group][lang], core: s.core, used: used(s.key), work: workUse(s.key), workOnly: false })),
-      ...WORK_ONLY.map((s) => ({ key: s.key, label: s.label[lang], group: 'eng', groupLabel: skillGroups.eng[lang], core: false, used: [] as string[], work: workUse(s.key), workOnly: true })),
+      ...skills.map((s) => ({ key: s.key, label: s.label[lang], group: s.group, groupLabel: skillGroups[s.group][lang], core: s.core, used: used(s.key), work: workUse(s.key), train: trainUse(s.key), workOnly: false })),
+      ...WORK_ONLY.map((s) => ({ key: s.key, label: s.label[lang], group: 'eng', groupLabel: skillGroups.eng[lang], core: false, used: [] as string[], work: workUse(s.key), train: trainUse(s.key), workOnly: true })),
     ],
     experience: experience.map((e, i) => ({ title: e.title[lang], org: e.org[lang], period: e.period, points: e.points[lang], skills: WORK_SKILLS[i] ?? [] })),
-    education: education.map((e) => ({ title: e.title[lang], org: e.org[lang], period: e.period, note: e.note?.[lang] ?? null })),
+    education: education.map((e, i) => ({ title: e.title[lang], org: e.org[lang], period: e.period, note: e.note?.[lang] ?? null, skills: EDU_SKILLS[i] ?? [] })),
     certifications: certifications.map((c) => ({ title: c.title[lang], org: c.org[lang], period: c.period })),
     philosophy: { title: philosophy.title[lang], lines: philosophy.lines[lang], paragraphs: philosophy.paragraphs[lang] },
     projects, posts,
