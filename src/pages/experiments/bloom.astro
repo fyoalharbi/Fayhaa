@@ -1,0 +1,92 @@
+---
+// Experiment 04 · Bloom — no pages, no menu. The portfolio is one meadow seen from
+// above; zooming is navigation. A flower opens into its section as you get close,
+// and the petals of the Projects flower open into each case study.
+import ExpShell from '../../components/ExpShell.astro';
+---
+<ExpShell title="Bloom" n="04" scripts={['js/flyer.js', 'experiments/kit.js', 'experiments/bloom.js']}>
+  <main class="bl" id="bl">
+    <canvas class="bl-grass" id="bl-grass" aria-hidden="true"></canvas>
+    <div class="bl-world" id="bl-world"></div>
+    <div class="bl-fly" id="bl-fly" aria-hidden="true"><canvas></canvas></div>
+
+    <nav class="bl-crumbs" id="bl-crumbs" aria-label="Where you are"></nav>
+    <div class="bl-gauge" aria-label="Zoom">
+      <button type="button" id="bl-in" aria-label="Zoom in">+</button>
+      <span class="bl-stem"><i id="bl-leaf"></i><em>petal</em><em>flower</em><em>meadow</em></span>
+      <button type="button" id="bl-out" aria-label="Zoom out">−</button>
+    </div>
+    <button class="bl-index-btn" id="bl-index-btn" type="button">index</button>
+    <div class="bl-index" id="bl-index" hidden></div>
+    <p class="bl-hint" id="bl-hint">scroll or pinch to zoom into a flower · drag to wander</p>
+  </main>
+</ExpShell>
+
+<style is:global>
+  html, body { overflow: hidden; overscroll-behavior: none; }
+  .bl { position: fixed; inset: 0; overflow: hidden; touch-action: none; cursor: grab; user-select: none;
+    background: radial-gradient(ellipse at 50% 50%, #131a13 0%, #0e110e 55%, #0a0b0c 100%); }
+  .bl.is-drag { cursor: grabbing; }
+  .bl-grass { position: absolute; inset: 0; width: 100%; height: 100%; }
+  .bl-world { position: absolute; left: 0; top: 0; transform-origin: 0 0; }
+  .bl-n { position: absolute; left: 0; top: 0; transform-origin: 0 0; }
+  .bl-art { margin: 0; font: 10px/1 var(--mono); white-space: pre; cursor: pointer; text-align: left; }
+  .bl-art:hover { filter: drop-shadow(0 0 6px #ff8a8a66); }
+  .tone-white .t-p { color: #f4f4f4; } .tone-white .t-r { color: #9a9a9a; }
+  .tone-gold .t-p { color: #e6c34a; } .tone-gold .t-r { color: #8a7428; } .tone-gold .t-c { color: #ff8a8a; }
+  .tone-violet .t-p { color: #c49aff; } .tone-violet .t-r { color: #6f5a99; }
+  .tone-blush .t-p { color: #ffc0d0; } .tone-blush .t-r { color: #a07080; }
+  .tone-orange .t-p { color: #ffb070; } .tone-orange .t-r { color: #a06a3a; }
+  .bl-name { margin: 6px 0 0; font: 500 14px/1 var(--mono); letter-spacing: .18em; text-transform: uppercase; color: var(--ink-2); text-align: center; white-space: nowrap; pointer-events: none; }
+  .bl-name b { color: var(--red); font-weight: 500; }
+  .bl-sprout { margin: 0; font: 11px/1.1 var(--mono); color: var(--leaf); white-space: pre; text-align: center; }
+  .bl-sprout b { display: block; font-weight: 500; color: var(--ink-2); font-size: 12px; margin-top: 3px; }
+  .bl-sprout.is-core b { color: var(--gold); }
+  .bl-sprout small { display: block; font-size: 9px; color: var(--dim); }
+
+  /* cards: authored at normal size, shrunk into the flower's heart */
+  .bl-card { width: 380px; padding: 20px 22px; background: rgba(9, 10, 12, .86); border: 1px solid #ffffff14; border-top: 1px solid #ff8a8a88; color: var(--ink-2); font: 14px/1.6 var(--sans); cursor: auto; user-select: text; }
+  .bl-card.is-p { width: 340px; }
+  .bl-card .k { margin: 0 0 6px; font: 500 10px var(--mono); letter-spacing: .16em; text-transform: uppercase; color: var(--red); }
+  .bl-card h2 { margin: 0 0 10px; font: 400 30px/1.05 var(--serif); font-style: italic; color: var(--ink); }
+  .bl-card p { margin: 0 0 10px; }
+  .bl-card .m { font: 11px/1.6 var(--mono); color: var(--dim); }
+  .bl-card .row { padding: 7px 0; border-top: 1px solid #ffffff0d; font-size: 13px; }
+  .bl-card .row b { color: var(--ink); font-weight: 500; display: block; } .bl-card .row small { font: 10px var(--mono); color: var(--dim); }
+  .bl-card a.b { display: inline-block; margin: 4px 6px 0 0; padding: 7px 9px; font: 500 11px/1 var(--mono); color: var(--ink); text-decoration: none; border: 1px solid #ffffff26; }
+  .bl-card a.b:hover { border-color: var(--red); color: var(--red); }
+  .bl-card img { width: 100%; aspect-ratio: 16/9; object-fit: cover; object-position: top; display: block; margin: 0 0 12px; border: 1px solid #ffffff14; }
+  .bl-card .tags { font: 11px/1.6 var(--mono); color: var(--leaf); }
+  .bl-card .ptr { font: 11px var(--mono); color: var(--pollen); }
+
+  .bl-path { position: absolute; left: 0; top: 0; overflow: visible; pointer-events: none; }
+  .bl-path path { fill: none; stroke: #e6d27a40; stroke-width: 2; stroke-dasharray: 1 9; stroke-linecap: round; vector-effect: non-scaling-stroke; }
+
+  .bl-fly { position: absolute; left: 0; top: 0; pointer-events: none; z-index: 5; }
+
+  /* chrome */
+  .bl-crumbs { position: absolute; top: max(14px, env(safe-area-inset-top)); left: 18px; display: flex; gap: 6px; font: 500 11px/1 var(--mono); letter-spacing: .08em; color: var(--dim); flex-wrap: wrap; max-width: calc(100vw - 110px); }
+  .bl-crumbs button { all: unset; cursor: pointer; padding: 6px 8px; background: rgba(9, 10, 12, .7); border: 1px solid #ffffff14; }
+  .bl-crumbs button:last-child { color: var(--ink); border-color: #ff8a8a66; }
+  .bl-crumbs button:hover { color: var(--red); }
+  .bl-crumbs span { align-self: center; color: #ffffff33; }
+  .bl-gauge { position: absolute; right: 18px; top: 50%; transform: translateY(-50%); display: grid; justify-items: center; gap: 8px; }
+  .bl-gauge button { all: unset; cursor: pointer; width: 28px; height: 28px; display: grid; place-items: center; font: 14px var(--mono); color: var(--ink-2); background: rgba(9, 10, 12, .7); border: 1px solid #ffffff1a; }
+  .bl-gauge button:hover { color: var(--red); border-color: var(--red); }
+  .bl-stem { position: relative; width: 1px; height: 160px; background: #6f9f6f66; }
+  .bl-stem i { position: absolute; left: -4px; width: 9px; height: 9px; background: var(--red); transform: rotate(45deg); box-shadow: 0 0 8px var(--red); transition: top .15s; }
+  .bl-stem em { position: absolute; right: 12px; font: normal 9px var(--mono); color: var(--dim); letter-spacing: .1em; text-transform: uppercase; }
+  .bl-stem em:nth-of-type(1) { top: -2px; } .bl-stem em:nth-of-type(2) { top: 45%; } .bl-stem em:nth-of-type(3) { bottom: -2px; }
+  .bl-index-btn { all: unset; position: absolute; left: 18px; bottom: max(18px, env(safe-area-inset-bottom)); z-index: 3; cursor: pointer; padding: 7px 10px; font: 500 10.5px var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--ink-2); background: rgba(9, 10, 12, .75); border: 1px solid #ffffff1c; }
+  .bl-index-btn:hover { border-color: var(--red); color: var(--red); }
+  .bl-index { position: absolute; left: 18px; bottom: 60px; width: min(300px, calc(100vw - 36px)); max-height: 60vh; overflow: auto; padding: 10px 12px; background: rgba(9, 10, 12, .9); border: 1px solid #ffffff1c; border-left: 1px solid #ff8a8a88; font: 12px/1.5 var(--mono); }
+  .bl-index button { all: unset; cursor: pointer; display: block; width: 100%; padding: 4px 0; color: var(--ink-2); }
+  .bl-index button.sub { padding-left: 16px; color: var(--dim); }
+  .bl-index button:hover { color: var(--red); }
+  .bl-hint { position: absolute; left: 50%; bottom: max(20px, env(safe-area-inset-bottom)); transform: translateX(-50%); margin: 0; font: 10.5px var(--mono); letter-spacing: .08em; color: #ffffff77; transition: opacity 1s; white-space: nowrap; pointer-events: none; }
+  @media (max-width: 760px) {
+    .bl-gauge { top: auto; bottom: max(18px, env(safe-area-inset-bottom)); transform: none; grid-auto-flow: row; }
+    .bl-stem { height: 80px; } .bl-stem em { display: none; }
+    .bl-hint { bottom: auto; top: 58px; font-size: 10px; }
+  }
+</style>

@@ -1,0 +1,108 @@
+---
+// Experiment 02 · Garden OS — the garden never goes away. Sections are windows
+// that grow out of their flowers on a vine; you arrange them over the garden.
+import ExpShell from '../../components/ExpShell.astro';
+---
+<ExpShell title="Garden OS" n="02" scripts={['js/flyer.js', 'experiments/kit.js', 'experiments/garden-os.js']}>
+  <main class="os" id="os">
+    <div class="os-garden" id="os-garden"><canvas id="os-canvas" aria-hidden="true"></canvas></div>
+    <svg class="os-vines" id="os-vines" aria-hidden="true"></svg>
+    <div class="os-labels" id="os-labels"></div>
+    <div class="os-desk" id="os-desk"></div>
+    <header class="os-bar">
+      <span class="os-logo">{'}{'} papillon<b>.os</b></span>
+      <span class="os-clock" id="os-clock"></span>
+    </header>
+    <p class="os-tip" id="os-tip">click a flower to open it · drag windows by their title</p>
+  </main>
+</ExpShell>
+
+<style is:global>
+  .os { position: fixed; inset: 0; overflow: hidden; background: radial-gradient(ellipse at 50% 120%, #1c271c 0%, #121512 40%, #0b0c0e 75%); }
+  .os-garden { position: absolute; inset: 0; }
+  .os-garden canvas { width: 100%; height: 100%; display: block; }
+  .os-vines { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+  .os-vines path { fill: none; stroke: #6f9f6f88; stroke-width: 1; stroke-dasharray: 2 4; }
+  .os-vines path.is-top { stroke: var(--red); stroke-dasharray: none; filter: drop-shadow(0 0 3px #ff8a8a99); }
+  .os-vines circle { fill: var(--red); }
+
+  .os-bar { position: absolute; top: 0; left: 0; right: 0; height: 30px; display: flex; align-items: center; gap: 16px; padding: 0 92px 0 14px;
+    font: 500 10.5px/1 var(--mono); letter-spacing: .1em; color: var(--dim); background: linear-gradient(#0b0c0ecc, transparent); }
+  .os-logo { color: var(--ink); } .os-logo b { color: var(--red); font-weight: 500; }
+  .os-clock { margin-left: auto; }
+  .os-tip { position: absolute; left: 50%; top: 40px; transform: translateX(-50%); margin: 0; font: 10px var(--mono); color: #ffffff55; letter-spacing: .08em; transition: opacity 1s; white-space: nowrap; }
+
+  /* section plaques under each section flower */
+  .os-labels { position: absolute; inset: 0; pointer-events: none; }
+  .os-lab { all: unset; pointer-events: auto; cursor: pointer; position: absolute; left: 0; top: 0; padding: 4px 7px; white-space: nowrap;
+    font: 500 10.5px/1 var(--mono); color: var(--ink-2); background: rgba(6, 8, 10, .7); border: 1px solid #ffffff1a; transition: color .2s, border-color .2s, box-shadow .2s; }
+  .os-lab::before { content: ''; position: absolute; left: 50%; top: -9px; height: 8px; border-left: 1px dashed #ffffff33; }
+  .os-lab:hover, .os-lab.is-open { color: #fff; border-color: var(--red); box-shadow: 0 0 10px #ff8a8a44; }
+  .os-lab.is-open::after { content: '●'; color: var(--red); margin-left: 6px; font-size: 7px; vertical-align: 2px; }
+
+  /* ── windows ── */
+  .os-desk { position: absolute; inset: 0; pointer-events: none; }
+  .os-win {
+    position: absolute; pointer-events: auto; display: flex; flex-direction: column; min-width: 280px; min-height: 140px;
+    background: rgba(9, 10, 12, .8); backdrop-filter: blur(9px) saturate(1.1); -webkit-backdrop-filter: blur(9px) saturate(1.1);
+    border: 1px solid #ffffff17; box-shadow: 0 18px 50px #00000080; resize: both; overflow: hidden;
+    transform-origin: var(--ox, 50%) var(--oy, 100%);
+    animation: os-grow .5s cubic-bezier(.2, .8, .2, 1) both;
+  }
+  .os-win.is-top { border-color: #ff8a8a55; }
+  .os-win.is-closing { animation: os-wilt .38s cubic-bezier(.6, 0, .8, .4) both; }
+  @keyframes os-grow { from { opacity: 0; transform: scale(.06); filter: blur(4px); } 60% { filter: none; } to { opacity: 1; transform: none; } }
+  @keyframes os-wilt { to { opacity: 0; transform: scale(.05); filter: blur(3px); } }
+  .os-tb { display: flex; align-items: center; gap: 10px; height: 28px; padding: 0 6px 0 10px; cursor: grab; user-select: none; touch-action: none;
+    font: 500 10.5px/1 var(--mono); color: var(--dim); border-bottom: 1px solid #ffffff10;
+    background-image: repeating-linear-gradient(90deg, #ffffff06 0 1px, transparent 1px 4px); }
+  .os-win.is-top .os-tb { color: var(--ink); }
+  .os-tb b { color: var(--red); font-weight: 500; }
+  .os-tb em { font-style: normal; color: var(--dim); margin-left: auto; font-size: 9.5px; }
+  .os-x { all: unset; cursor: pointer; width: 20px; height: 20px; display: grid; place-items: center; color: var(--dim); }
+  .os-x:hover { color: var(--red); }
+  .os-body { flex: 1; overflow: auto; padding: 14px 16px 16px; font: 13.5px/1.6 var(--sans); color: var(--ink-2); scrollbar-width: thin; scrollbar-color: #ffffff22 transparent; }
+  .os-body h2 { margin: 0 0 8px; font: 400 26px/1.1 var(--serif); font-style: italic; color: var(--ink); }
+  .os-body p { margin: 0 0 10px; }
+  .os-m { font: 11px/1.6 var(--mono); color: var(--dim); }
+  .os-m b { color: var(--gold); font-weight: 400; }
+  .os-hr { border: 0; border-top: 1px dashed #ffffff1c; margin: 14px 0; }
+  .os-job { margin: 0 0 12px; } .os-job b { color: var(--ink); font-weight: 500; } .os-job small { font: 10.5px var(--mono); color: var(--dim); display: block; }
+
+  /* projects/ as a folder of pressed specimens */
+  .os-files { display: grid; grid-template-columns: repeat(auto-fill, minmax(124px, 1fr)); gap: 14px 12px; }
+  .os-file { all: unset; cursor: pointer; display: grid; gap: 6px; text-align: left; }
+  .os-file .th { position: relative; aspect-ratio: 4/3; border: 1px solid #ffffff14; background: #0d0f0e; overflow: hidden; }
+  .os-file .th img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: top; opacity: 0; transition: opacity .35s; }
+  .os-file .th canvas { position: absolute; inset: 0; width: 100%; height: 100%; transition: opacity .35s; }
+  .os-file:hover .th img, .os-file.is-hot .th img { opacity: 1; } .os-file:hover .th canvas, .os-file.is-hot .th canvas { opacity: 0; }
+  .os-file.is-hot .th { border-color: var(--red); box-shadow: 0 0 12px #ff8a8a55; }
+  .os-file.is-dim { opacity: .3; }
+  .os-file b { font: 500 11px/1.3 var(--mono); color: var(--ink); }
+  .os-file span { font: 10px var(--mono); color: var(--dim); }
+
+  /* skills.map as a tree */
+  .os-tree { font: 12px/1.75 var(--mono); color: var(--dim); white-space: pre; margin: 0; }
+  .os-tree button { all: unset; cursor: pointer; color: var(--ink-2); }
+  .os-tree button:hover, .os-tree button.is-on { color: var(--red); }
+  .os-tree .c { color: var(--gold); }
+  .os-tree i { font-style: normal; color: #ffffff44; }
+
+  .os-post { all: unset; cursor: pointer; display: block; padding: 10px 0; border-bottom: 1px solid #ffffff0d; }
+  .os-post b { display: block; color: var(--ink); font-weight: 500; } .os-post small { font: 10.5px var(--mono); color: var(--dim); }
+  .os-post:hover b { color: var(--red); }
+  .os-btn { display: inline-block; font: 500 11px/1 var(--mono); padding: 8px 10px; border: 1px solid #ffffff26; color: var(--ink); text-decoration: none; margin: 4px 6px 4px 0; background: none; cursor: pointer; }
+  .os-btn:hover { border-color: var(--red); color: var(--red); }
+  .os-shot { width: 100%; aspect-ratio: 16/9; object-fit: cover; object-position: top; border: 1px solid #ffffff14; display: block; margin-bottom: 12px; background: #0d0f0e; }
+  .os-term { font: 12.5px/1.7 var(--mono); color: var(--ink-2); }
+  .os-term .pr { color: var(--leaf); } .os-term .out { color: var(--dim); }
+  .os-caret { display: inline-block; width: 7px; height: 14px; background: var(--red); vertical-align: -2px; animation: os-blink 1s steps(1) infinite; }
+  @keyframes os-blink { 50% { opacity: 0; } }
+
+  /* ── phones: one window at a time, as a sheet; the flowers stay visible above it ── */
+  @media (max-width: 760px) {
+    .os-win { left: 0 !important; right: 0; top: auto !important; bottom: 0; width: auto !important; height: 58vh !important; resize: none; border-left: 0; border-right: 0; border-bottom: 0; --ox: 50%; --oy: 0%; }
+    .os-tb { cursor: default; }
+    .os-tip { top: 38px; }
+  }
+</style>

@@ -1,0 +1,83 @@
+---
+// The experiments hub: four directions for merging Papillon and the portfolio.
+// Unlinked and noindex; nothing here changes the live portfolio or /papillon/.
+import ExpShell from '../../components/ExpShell.astro';
+import { url } from '../../lib/site';
+const X = [
+  { n: '01', slug: 'expedition', name: 'Expedition', kind: 'Fully immersive', tone: 'white', petals: 7,
+    idea: 'The whole portfolio is the 3D garden. Five places in it are the five sections: the white butterfly is About, the flower beds are Projects, the hive is Skills, the farthest flower is Blog, the moonlit sky is Contact.',
+    nav: 'A trail map. You travel; the camera flies; a field-guide card decodes in. Project flowers carry neon callouts; hovering a hive cell draws pollen lines to the flowers it touched.',
+    desk: 'Card docked right, trail across the bottom, arrows to travel.', phone: 'Card becomes a bottom sheet; the trail moves to the top.' },
+  { n: '02', slug: 'garden-os', name: 'Garden OS', kind: 'Persistent garden + panels', tone: 'gold', petals: 6,
+    idea: 'The garden never leaves. Sections are windows that grow out of their flowers and stay tied to them by a vine. Open several, drag them, arrange your own reading desk over a living meadow.',
+    nav: 'Click a flower. The butterfly flies to whichever window is on top. Hover a skill in skills.map and its projects light up in projects/, whose thumbnails are 0/1 until you hover.',
+    desk: 'Free windows, z-order, resize, Esc to wilt the top one.', phone: 'One window at a time as a sheet; the garden shrinks above it so the flowers stay tappable.' },
+  { n: '03', slug: 'herbarium', name: 'Herbarium', kind: 'Conventional page, Papillon language', tone: 'blush', petals: 8,
+    idea: 'A normal scrolling portfolio — fast to read, easy to skim — written in the garden’s grammar: specimen plates, decoding headings, old-game corner brackets, pictures that develop out of 0/1, a stem that grows as you read.',
+    nav: 'A plate index rail. Skills are a pollination map: every tool is threaded to the projects it was used in. A butterfly lands on the email when you reach for it.',
+    desk: 'Two-column plates, sticky quote, rail on the left.', phone: 'Single column; the rail becomes a top strip; the map becomes tap-to-filter chips.' },
+  { n: '04', slug: 'bloom', name: 'Bloom', kind: 'Navigation rethought', tone: 'violet', petals: 12,
+    idea: 'No pages and no menu. The portfolio is one meadow seen from above, and zoom is the navigation: get close to a flower and it opens into its section; the petals of the Projects flower open into each case study.',
+    nav: 'Scroll or pinch to zoom into whatever you are curious about, drag to wander, breadcrumbs to climb back out. Skills grow in a golden-angle spiral, most used at the centre. An index is always one tap away.',
+    desk: 'Wheel zooms to the cursor, double-click dives, +/− keys.', phone: 'Pinch and tap; the zoom stem sits under your thumb.' },
+];
+import { flowerHTML } from '../../lib/flowerArt';
+---
+<ExpShell title="Four gardens" n="00" scripts={['js/flyer.js', 'experiments/kit.js']}>
+  <main class="hub">
+    <header class="hub-head">
+      <p class="hub-k">Experiments · Papillon × portfolio</p>
+      <h1>Four gardens</h1>
+      <p class="hub-lead">Four ways to make the philosophy garden and the portfolio one product, from fully immersive to a quiet page that just speaks its language. Each is a working prototype with real content. The live portfolio and <a href={url('papillon/')}>Papillon</a> are untouched.</p>
+    </header>
+    <ol class="hub-list">
+      {X.map((x) => (
+        <li>
+          <a class="hub-x" href={url(`experiments/${x.slug}/`)}>
+            <pre class={`hub-art tone-${x.tone}`} set:html={flowerHTML({ R: 9, petals: x.petals, seed: +x.n * 13, stem: 5 })}></pre>
+            <div class="hub-body">
+              <p class="hub-n"><b>{x.n}</b> · {x.kind}</p>
+              <h2>{x.name} <span>→</span></h2>
+              <p class="hub-idea">{x.idea}</p>
+              <p class="hub-nav">{x.nav}</p>
+              <dl><dt>desktop</dt><dd>{x.desk}</dd><dt>phone</dt><dd>{x.phone}</dd></dl>
+            </div>
+          </a>
+        </li>
+      ))}
+    </ol>
+    <div class="hub-ground"><canvas id="hub-garden" aria-hidden="true"></canvas></div>
+  </main>
+  <script is:inline>addEventListener('load', () => new KIT.Garden2D(document.getElementById('hub-garden'), { plants: 40, font: 11, groundRows: 3, butterfly: true, moon: true, stars: 0.01, seed: 'hub' }));</script>
+</ExpShell>
+
+<style is:global>
+  .hub { max-width: 1120px; margin: 0 auto; padding: 90px 24px 0; }
+  .hub-k { margin: 0; font: 500 10.5px var(--mono); letter-spacing: .2em; text-transform: uppercase; color: var(--red); }
+  .hub h1 { margin: 10px 0 0; font: 400 clamp(56px, 10vw, 128px)/.9 var(--serif); font-style: italic; letter-spacing: -.03em; }
+  .hub-lead { max-width: 60ch; margin: 22px 0 0; color: var(--dim); font-size: 16px; line-height: 1.65; }
+  .hub-lead a { color: var(--ink); text-decoration-color: var(--red); }
+  .hub-list { list-style: none; margin: 70px 0 0; padding: 0; border-top: 1px solid #ffffff14; }
+  .hub-x { display: grid; grid-template-columns: 220px 1fr; gap: 40px; padding: 40px 0; border-bottom: 1px solid #ffffff14; text-decoration: none; align-items: center; }
+  .hub-art { margin: 0; font: 11px/1.05 var(--mono); justify-self: center; transition: transform .6s cubic-bezier(.2, .8, .2, 1), filter .4s; }
+  .hub-x:hover .hub-art { transform: scale(1.12) rotate(-4deg); filter: drop-shadow(0 0 10px #ff8a8a55); }
+  .tone-white .t-p { color: #f4f4f4; } .tone-white .t-r { color: #9a9a9a; } .tone-gold .t-p { color: #e6c34a; } .tone-gold .t-r { color: #8a7428; } .tone-gold .t-c { color: #ff8a8a; }
+  .tone-violet .t-p { color: #c49aff; } .tone-violet .t-r { color: #6f5a99; } .tone-blush .t-p { color: #ffc0d0; } .tone-blush .t-r { color: #a07080; }
+  .hub-n { margin: 0; font: 500 10.5px var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--dim); }
+  .hub-n b { color: var(--red); font-weight: 500; }
+  .hub h2 { margin: 8px 0 12px; font: 400 44px/1 var(--serif); font-style: italic; }
+  .hub h2 span { color: var(--red); display: inline-block; transition: transform .3s; font-style: normal; font-size: .7em; }
+  .hub-x:hover h2 span { transform: translateX(8px); }
+  .hub-idea { margin: 0 0 10px; color: var(--ink-2); line-height: 1.65; max-width: 66ch; }
+  .hub-nav { margin: 0 0 14px; color: var(--dim); font-size: 14px; line-height: 1.6; max-width: 66ch; }
+  .hub dl { display: grid; grid-template-columns: auto 1fr; gap: 3px 14px; margin: 0; font: 11.5px/1.5 var(--mono); }
+  .hub dt { color: var(--leaf); } .hub dd { margin: 0; color: var(--dim); }
+  .hub-ground { position: relative; height: 260px; margin: 40px -24px 0; }
+  .hub-ground canvas { width: 100%; height: 100%; display: block; }
+  @media (max-width: 720px) {
+    .hub { padding-top: 70px; }
+    .hub-x { grid-template-columns: 1fr; gap: 18px; }
+    .hub-art { justify-self: start; font-size: 9px; }
+    .hub h2 { font-size: 36px; }
+  }
+</style>

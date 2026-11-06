@@ -1,0 +1,54 @@
+---
+// Bare full-screen shell for the /experiments/ prototypes: no site header or
+// footer, noindex, the portfolio data inlined as JSON, and a small "back to
+// the lab" chip. Each prototype brings its own layout, styles and script.
+import { expData } from '../lib/expData';
+import { url } from '../lib/site';
+
+interface Props { title: string; n: string; scripts?: string[] }
+const { title, n, scripts = [] } = Astro.props;
+const data = await expData('en');
+---
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>{title} · Experiments</title>
+  <meta name="robots" content="noindex, nofollow" />
+  <link rel="icon" href={url('favicon.svg')} type="image/svg+xml" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Serif:ital,wght@0,400;0,500;1,400&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet" />
+  <style is:global>
+    :root {
+      --night: #0b0c0e; --night-2: #121512; --ink: #e8e4d0; --ink-2: #cfcfcf; --dim: #8a8a9a; --faint: #ffffff14;
+      --red: #ff8a8a; --gold: #e6c34a; --leaf: #6f9f6f; --moss: #3f6b3f; --pollen: #e6d27a;
+      --mono: 'JetBrains Mono', ui-monospace, monospace; --sans: 'IBM Plex Sans', system-ui, sans-serif; --serif: 'IBM Plex Serif', Georgia, serif;
+    }
+    *, *::before, *::after { box-sizing: border-box; }
+    html, body { margin: 0; background: var(--night); color: var(--ink); font-family: var(--sans); -webkit-font-smoothing: antialiased; }
+    a { color: inherit; }
+    button { font: inherit; color: inherit; }
+    ::selection { background: #ff8a8a55; }
+    .x-back {
+      position: fixed; z-index: 90; top: max(10px, env(safe-area-inset-top)); right: 12px;
+      font: 500 10px/1 var(--mono); letter-spacing: .12em; text-transform: uppercase; text-decoration: none;
+      padding: 6px 8px; color: var(--dim); background: rgba(11, 12, 14, .6); border: 1px solid var(--faint);
+      backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+    }
+    .x-back:hover { color: var(--ink); border-color: #ff8a8a66; }
+    .x-back b { color: var(--red); font-weight: 500; }
+    /* ASCII flower tones (KIT.flowerHTML) */
+    .t-c { color: var(--gold); } .t-d { color: #8a7428; } .t-p { color: var(--red); } .t-r { color: #b35a5a; } .t-s { color: #5f8f5f; } .t-l { color: var(--leaf); }
+    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01s !important; transition-duration: .01s !important; } }
+  </style>
+  <slot name="head" />
+</head>
+<body>
+  <a class="x-back" href={url('experiments/')}><b>{n}</b> · lab</a>
+  <slot />
+  <script is:inline define:vars={{ data }}>window.EXP = data;</script>
+  {scripts.map((s) => <script is:inline src={url(s)}></script>)}
+</body>
+</html>

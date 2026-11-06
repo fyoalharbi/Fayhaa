@@ -1,0 +1,141 @@
+---
+// Experiment 01 · Expedition — the whole portfolio is the 3D garden. Each place
+// in it is a section; travelling between them is the navigation.
+import ExpShell from '../../components/ExpShell.astro';
+---
+<ExpShell title="Expedition" n="01" scripts={['js/garden3d.js', 'experiments/kit.js', 'experiments/expedition.js']}>
+  <main class="ex" id="ex" data-loc="about">
+    <canvas id="ex-canvas" aria-hidden="true"></canvas>
+    <svg class="ex-lines" id="ex-lines" aria-hidden="true"></svg>
+    <div class="ex-pins" id="ex-pins"></div>
+
+    <header class="ex-place">
+      <p class="ex-kicker"><span id="ex-n">01 / 05</span> · <span id="ex-where">the white butterfly</span></p>
+      <h1 class="ex-title" id="ex-title">About</h1>
+      <p class="ex-travel" id="ex-travel" aria-live="polite"></p>
+    </header>
+
+    <article class="ex-card" id="ex-card" aria-live="polite">
+      <button class="ex-grip" id="ex-grip" type="button" aria-label="Expand"><i></i></button>
+      <div class="ex-card-in" id="ex-body"></div>
+    </article>
+
+    <nav class="ex-trail" id="ex-trail" aria-label="Garden locations"></nav>
+    <p class="ex-hint">drag to look around · ← → to travel</p>
+  </main>
+</ExpShell>
+
+<style is:global>
+  .ex {
+    position: fixed; inset: 0; overflow: hidden;
+    background: radial-gradient(ellipse at 50% 115%, #1f2a1f 0%, #141814 38%, #0b0c0e 72%);
+  }
+  .ex[data-loc='contact'] { background: radial-gradient(ellipse at 50% 120%, #2a2016 0%, #15130f 40%, #0b0c0e 75%); }
+  #ex-canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; cursor: grab; touch-action: none; }
+  /* desktop: the garden is centred in the space left of the card */
+  @media (min-width: 761px) { #ex-canvas { left: -420px; width: calc(100% + 420px); } }
+  .ex-lines { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; overflow: visible; }
+  .ex-lines path { fill: none; stroke: var(--red); stroke-width: 1; stroke-dasharray: 3 3; filter: drop-shadow(0 0 3px #ff8a8a88); }
+  .ex-lines circle { fill: var(--red); }
+
+  /* ── place name, top left ── */
+  .ex-place { position: absolute; top: max(18px, env(safe-area-inset-top)); left: 22px; pointer-events: none; max-width: 60vw; }
+  .ex-kicker { margin: 0; font: 500 10px/1.4 var(--mono); letter-spacing: .16em; text-transform: uppercase; color: var(--dim); }
+  .ex-kicker span:first-child { color: var(--red); }
+  .ex-title { margin: 4px 0 0; font: 400 clamp(28px, 4.4vw, 54px)/1 var(--serif); letter-spacing: -.01em; color: var(--ink); font-style: italic; }
+  .ex-travel { margin: 8px 0 0; font: 11px/1.4 var(--mono); color: var(--pollen); min-height: 1.4em; }
+
+  /* ── the field-guide card ── */
+  .ex-card {
+    position: absolute; top: 50%; right: 22px; transform: translateY(-50%); width: min(400px, 36vw); max-height: min(72vh, 640px);
+    display: flex; flex-direction: column;
+    background: rgba(9, 10, 12, .74); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+    border: 1px solid #ffffff12; border-inline-start: 1px solid #ff8a8a77;
+    transition: opacity .35s, transform .5s cubic-bezier(.2, .8, .2, 1);
+  }
+  .ex-card::before, .ex-card::after { content: ''; position: absolute; width: 7px; height: 7px; border: 1px solid var(--red); }
+  .ex-card::before { top: -4px; right: -4px; border-left: 0; border-bottom: 0; }
+  .ex-card::after { bottom: -4px; right: -4px; border-left: 0; border-top: 0; }
+  .ex.is-flying .ex-card { opacity: .0; transform: translateY(-50%) translateX(14px); }
+  .ex-card-in { overflow: auto; padding: 18px 20px 20px; scrollbar-width: thin; scrollbar-color: #ffffff22 transparent; }
+  .ex-grip { display: none; }
+  .ex-sec { font: 500 10px/1 var(--mono); letter-spacing: .16em; text-transform: uppercase; color: var(--dim); margin: 18px 0 8px; display: flex; gap: 8px; align-items: center; }
+  .ex-sec::after { content: ''; flex: 1; border-top: 1px dashed #ffffff1c; }
+  .ex-sec:first-child { margin-top: 0; }
+  .ex-lead { margin: 0; font: 400 15px/1.6 var(--sans); color: var(--ink); }
+  .ex-p { margin: 0 0 8px; font: 13.5px/1.6 var(--sans); color: var(--ink-2); }
+  .ex-row { display: grid; grid-template-columns: 1fr auto; gap: 2px 10px; padding: 9px 0; border-bottom: 1px solid #ffffff0d; }
+  .ex-row b { font-weight: 500; font-size: 14px; color: var(--ink); }
+  .ex-row small { font: 10.5px var(--mono); color: var(--dim); white-space: nowrap; }
+  .ex-row span { grid-column: 1 / -1; font-size: 12.5px; color: var(--dim); line-height: 1.5; }
+  .ex-quote { margin: 14px 0 0; padding: 10px 12px; border-inline-start: 1px solid var(--gold); font: italic 13px/1.6 var(--serif); color: var(--ink-2); background: #e6c34a0a; }
+  .ex-link { display: inline-flex; gap: 6px; align-items: center; font: 500 11px/1 var(--mono); letter-spacing: .06em; color: var(--ink); text-decoration: none; padding: 7px 9px; border: 1px solid #ffffff22; margin: 0 6px 6px 0; }
+  .ex-link:hover { border-color: var(--red); color: var(--red); }
+
+  /* projects list + detail */
+  .ex-proj { all: unset; cursor: pointer; display: grid; grid-template-columns: 64px 1fr; gap: 12px; align-items: center; padding: 8px 0; border-bottom: 1px solid #ffffff0d; width: 100%; }
+  .ex-proj:hover b, .ex-proj.is-hot b { color: var(--red); }
+  .ex-proj .th { width: 64px; height: 40px; background: #ffffff08 center top / cover; border: 1px solid #ffffff14; font: 6px/1 var(--mono); color: var(--leaf); overflow: hidden; }
+  .ex-proj b { display: block; font-weight: 500; font-size: 14px; transition: color .2s; }
+  .ex-proj span { display: block; font-size: 12px; color: var(--dim); line-height: 1.4; }
+  .ex-back { all: unset; cursor: pointer; font: 500 10.5px var(--mono); color: var(--dim); letter-spacing: .08em; }
+  .ex-back:hover { color: var(--red); }
+  .ex-shot { width: 100%; aspect-ratio: 16/9; margin: 12px 0; background: #ffffff08 center top / cover; border: 1px solid #ffffff14; }
+  .ex-tags { font: 11px/1.7 var(--mono); color: var(--leaf); margin: 10px 0 14px; }
+
+  /* honeycomb */
+  .ex-hive { display: flex; flex-wrap: wrap; gap: 0 4px; padding-left: 2px; }
+  .ex-hex { all: unset; cursor: pointer; position: relative; width: 74px; height: 64px; margin-bottom: -12px; display: grid; place-items: center; text-align: center;
+    clip-path: polygon(25% 3%, 75% 3%, 100% 50%, 75% 97%, 25% 97%, 0 50%); background: #e6c34a2a; transition: background .2s; }
+  .ex-hex::before { content: ''; position: absolute; inset: 1px; clip-path: inherit; background: #0d0e0f; z-index: -0; }
+  .ex-hex i { position: relative; font: normal 500 9.5px/1.15 var(--mono); color: var(--ink-2); padding: 0 12px; }
+  .ex-hex:nth-child(even) { transform: translateY(26px); }
+  .ex-hex.is-core { background: #e6c34a88; }
+  .ex-hex.is-core i { color: var(--gold); }
+  .ex-hex:hover, .ex-hex.is-on { background: var(--red); }
+  .ex-hex:hover i, .ex-hex.is-on i { color: #fff; }
+  .ex-hive-wrap { padding-bottom: 34px; }
+  .ex-legend { font: 10.5px/1.5 var(--mono); color: var(--dim); margin: 6px 0 0; }
+
+  /* ── project pins (old-game callouts on the flowers) ── */
+  .ex-pins { position: absolute; inset: 0; pointer-events: none; }
+  .ex-pin {
+    position: absolute; left: 0; top: 0; pointer-events: auto; cursor: pointer; white-space: nowrap;
+    font: 500 10px/1 var(--mono); letter-spacing: .06em; color: var(--ink); text-decoration: none;
+    padding: 5px 7px; background: rgba(6, 8, 12, .8); border: 1px solid #ff8a8a66; opacity: 0; transition: opacity .4s, border-color .2s, color .2s;
+  }
+  .ex-pin b { color: var(--red); font-weight: 500; }
+  .ex[data-loc='projects'] .ex-pin, .ex[data-loc='skills'] .ex-pin.is-hot { opacity: 1; }
+  .ex[data-loc='skills'] .ex-pin { opacity: 0; }
+  .ex-pin:hover, .ex-pin.is-hot { border-color: var(--red); color: #fff; box-shadow: 0 0 12px #ff8a8a55; }
+
+  /* ── the trail map ── */
+  .ex-trail { position: absolute; left: 50%; bottom: max(18px, env(safe-area-inset-bottom)); transform: translateX(-50%); display: flex; align-items: center; gap: 0; font: 11px/1 var(--mono); }
+  .ex-stop { all: unset; cursor: pointer; display: grid; justify-items: center; gap: 6px; padding: 4px 6px; color: var(--dim); }
+  .ex-stop pre { margin: 0; font: 12px/1 var(--mono); color: var(--leaf); transition: color .2s, text-shadow .2s; }
+  .ex-stop span { font-size: 9.5px; letter-spacing: .14em; text-transform: uppercase; }
+  .ex-stop:hover pre, .ex-stop:hover span { color: var(--ink); }
+  .ex-stop.is-on pre { color: var(--red); text-shadow: 0 0 8px #ff8a8a; }
+  .ex-stop.is-on span { color: var(--ink); }
+  .ex-path { color: #ffffff2a; letter-spacing: 2px; padding-bottom: 16px; }
+  .ex-path.is-walked { color: #ff8a8a77; }
+  .ex-hint { position: absolute; left: 22px; bottom: max(22px, env(safe-area-inset-bottom)); margin: 0; font: 10px var(--mono); color: #ffffff44; letter-spacing: .08em; }
+
+  /* ── phones: the card becomes a sheet, the trail moves to the top ── */
+  @media (max-width: 760px) {
+    .ex-place { top: max(54px, env(safe-area-inset-top)); left: 16px; }
+    .ex-title { font-size: 30px; }
+    .ex-trail { top: max(10px, env(safe-area-inset-top)); bottom: auto; left: 12px; transform: none; right: 96px; justify-content: space-between; }
+    .ex-pin { padding: 3px 5px; } .ex-pin span { display: none; }
+    .ex-stop span { display: none; }
+    .ex-path { padding-bottom: 0; letter-spacing: 0; flex: 1; min-width: 0; text-align: center; overflow: hidden; }
+    .ex-hint { display: none; }
+    .ex-card { top: auto; bottom: 0; right: 0; left: 0; width: auto; transform: translateY(calc(100% - 38vh)); max-height: 78vh; border-inline-start: 0; border-top: 1px solid #ff8a8a77; }
+    .ex-card.is-open { transform: translateY(0); }
+    .ex.is-flying .ex-card { transform: translateY(calc(100% - 38vh + 30px)); }
+    .ex-card::before, .ex-card::after { display: none; }
+    .ex-grip { all: unset; display: grid; place-items: center; height: 22px; cursor: pointer; }
+    .ex-grip i { width: 36px; height: 3px; background: #ffffff33; border-radius: 2px; }
+    .ex-card-in { padding-top: 4px; }
+  }
+</style>
