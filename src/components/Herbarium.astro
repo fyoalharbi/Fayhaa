@@ -55,14 +55,8 @@ const T = AR ? {
   js: { hint: 'Hover or tap a tool, a job or a project.', pinned: 'pinned · tap again or esc', jobs: 'jobs', camp: 'bootcamp', projects: 'projects', tools: 'tools', tip: 'Why butterflies? Open the garden →' },
 };
 const ids = ['about', 'work', 'tools', 'notes', 'contact'];
-// Each project's ASCII plate and its figure note (Arabic notes below; English ones come with the drawing)
-const CAP_AR: Record<string, string> = {
-  invasight: 'أربعة مصادر، جذر واحد، ونموذج نجمي', 'finance-analyzer': 'كشف حساب يُقرأ سطراً سطراً ويتفرّع لوين تروح الفلوس',
-  'ewc-2024-dashboard': 'أدوار إقصائية تضيق إلى كأس واحدة، والجوائز حسب الدولة', 'qafiyah-feelings': 'ثمانية مشاعر تتفتح من ديوان شعر',
-  'bellabeat-case-study': 'يوم من الخطوات والنوم ونبض القلب', 'x-api-report': 'تغريدات كثيرة تدخل، ومؤشرات وتقرير يطلع',
-  'saudi-sectors-dashboard': 'جذر واحد، 32 قطاعاً، و638 جهة', 'coworking-spaces-dashboard': 'مساحات عمل متجمعة في ثلاث مدن، مكتباً مكتباً',
-};
-const plate = (slug: string) => { const a = projectArt(slug); return { html: a.html, cap: AR ? CAP_AR[slug] ?? '' : a.caption }; };
+// Each project's flower plate and its specimen note
+const plate = (slug: string) => { const a = projectArt(slug); return { html: a.html, cap: AR ? a.ar : a.en }; };
 // The same page in the other language
 const other = AR ? { href: url('experiments/herbarium/'), label: 'English', lang: 'en' } : { href: url('ar/experiments/herbarium/'), label: 'العربية', lang: 'ar' };
 

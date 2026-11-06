@@ -1,8 +1,9 @@
-// Monochrome ASCII plates for the Herbarium project frames: one drawing per
-// project, about what the project actually does. Drawn at build time on a fixed
-// 64×20 character grid, so every plate has the same size and visual weight.
+// Herbarium plates: one ASCII flower per project, each a different specimen
+// (in bud, in full bloom, gone to seed, on a long stem, in a bunch…). All drawn
+// at build time on the same 64×20 grid, in the same quiet palette, so the
+// archive reads as one collection.
 //
-// Tones: w = bright ink, g = grey, d = dim, u = muted blue, q = live bits (0/1, flicker in the browser).
+// Tones: w = bright ink, g = grey, d = dim, u = muted blue (stems, leaves), q = live bits (0/1 that flicker).
 
 const W = 64, H = 20;
 type Tone = 'w' | 'g' | 'd' | 'u' | 'q';
@@ -10,20 +11,42 @@ type Tone = 'w' | 'g' | 'd' | 'u' | 'q';
 class Grid {
   c: (string | null)[][] = Array.from({ length: H }, () => Array(W).fill(null));
   t: Tone[][] = Array.from({ length: H }, () => Array(W).fill('g'));
-  /** Write a string; spaces are transparent. */
   put(x: number, y: number, s: string, tone: Tone = 'g') {
     [...s].forEach((ch, i) => {
       const xx = Math.round(x) + i, yy = Math.round(y);
       if (ch === ' ' || xx < 0 || yy < 0 || xx >= W || yy >= H) return;
-      this.c[yy][xx] = ch; this.t[yy][xx] = tone;
+      this.c[yy][xx] = ch; this.t[yy][xx] = /[01]/.test(ch) && tone !== 'u' ? 'q' : tone;
     });
   }
-  h(x0: number, x1: number, y: number, tone: Tone = 'g', ch = '─') { for (let x = x0; x <= x1; x++) this.put(x, y, ch, tone); }
-  v(x: number, y0: number, y1: number, tone: Tone = 'g', ch = '│') { for (let y = y0; y <= y1; y++) this.put(x, y, ch, tone); }
-  /** A dotted thread between two points (the "flow" in a drawing). */
-  dots(x0: number, y0: number, x1: number, y1: number, tone: Tone = 'u', gap = 1.6) {
-    const n = Math.hypot((x1 - x0) / 2, y1 - y0) / gap | 0;
-    for (let i = 1; i < n; i++) this.put(x0 + ((x1 - x0) * i) / n, y0 + ((y1 - y0) * i) / n, '·', tone);
+  /** Several lines at once; spaces are transparent, 0/1 become live bits. */
+  block(x: number, y: number, lines: string[], tone: Tone = 'g') { lines.forEach((l, i) => this.put(x, y + i, l, tone)); }
+  /** A stem through points; each step gets the glyph of its direction. */
+  path(pts: [number, number][], tone: Tone = 'u') {
+    for (let k = 1; k < pts.length; k++) {
+      let [x, y] = pts[k - 1].map(Math.round); const [x1, y1] = pts[k].map(Math.round);
+      const dx = Math.abs(x1 - x), dy = -Math.abs(y1 - y), sx = x < x1 ? 1 : -1, sy = y < y1 ? 1 : -1;
+      let err = dx + dy;
+      for (;;) {
+        if (x === x1 && y === y1) break;
+        const e2 = 2 * err; let mx = false, my = false;
+        if (e2 >= dy) { err += dy; x += sx; mx = true; }
+        if (e2 <= dx) { err += dx; y += sy; my = true; }
+        this.put(x, y, mx && my ? ((sx > 0) === (sy > 0) ? '╲' : '╱') : mx ? '─' : '│', tone);
+      }
+    }
+  }
+  /** Points around an ellipse (rx in columns, ry in rows); glyph chosen by angle. */
+  ring(cx: number, cy: number, rx: number, ry: number, n: number, glyph: (a: number, i: number) => [string, Tone] | null, phase = 0) {
+    for (let i = 0; i < n; i++) {
+      const a = phase + (i / n) * Math.PI * 2, r = glyph(a, i);
+      if (r) this.put(cx + Math.cos(a) * rx, cy + Math.sin(a) * ry, r[0], r[1]);
+    }
+  }
+  fill(cx: number, cy: number, rx: number, ry: number, glyph: (x: number, y: number, r: number) => [string, Tone] | null) {
+    for (let y = Math.floor(cy - ry); y <= cy + ry; y++) for (let x = Math.floor(cx - rx); x <= cx + rx; x++) {
+      const r = Math.hypot((x - cx) / rx, (y - cy) / ry);
+      if (r <= 1) { const gph = glyph(x, y, r); if (gph) this.put(x, y, gph[0], gph[1]); }
+    }
   }
   html() {
     return this.c.map((row, y) => {
@@ -35,153 +58,141 @@ class Grid {
     }).join('\n');
   }
 }
+// petal glyph for a ray pointing at angle a (screen y down)
+const ray = (a: number) => { const d = ((a % Math.PI) + Math.PI) % Math.PI; return d < Math.PI / 8 || d > Math.PI * 7 / 8 ? '─' : d < Math.PI * 3 / 8 ? '╲' : d < Math.PI * 5 / 8 ? '│' : '╱'; };
+const leafR = [' .-~~-.', "'-~~-'"], leafL = ['.-~~-. ', " '-~~-'"];
 
-// ── InvaSight: four sources grow into one root, which feeds a star schema ──
-function invasight(g: Grid) {
-  [['ledger', 4], ['fx', 7], ['metals', 11], ['equity', 14]].forEach(([l, y]) => {
-    g.put(2, +y, String(l), 'd'); g.put(10, +y, '○', 'g'); g.h(11, 13, +y, 'u');
-  });
-  g.v(14, 5, 13, 'u'); g.put(14, 4, '╮', 'u'); g.put(14, 7, '┤', 'u'); g.put(14, 11, '┤', 'u'); g.put(14, 14, '╯', 'u'); g.put(14, 9, '├', 'u');
-  g.h(15, 46, 9, 'u');
-  g.put(19, 9, ' 0110 1001 0111 ', 'q');
-  g.put(18, 11, 'land', 'd'); g.put(27, 11, 'load', 'd'); g.put(36, 11, 'dbt', 'd');
-  // the star: fact in the middle, five dimensions around it
-  g.put(48, 9, '◆', 'w');
-  g.v(48, 5, 8, 'g'); g.put(48, 4, '○', 'g'); g.put(46, 3, 'asset', 'd');
-  g.put(50, 8, '╱', 'g'); g.put(52, 7, '╱', 'g'); g.put(54, 6, '○', 'g'); g.put(56, 6, 'client', 'd');
-  g.h(49, 57, 9, 'g'); g.put(58, 9, '○', 'g'); g.put(60, 9, 'date', 'd');
-  g.put(50, 10, '╲', 'g'); g.put(52, 11, '╲', 'g'); g.put(54, 12, '○', 'g'); g.put(56, 12, 'source', 'd');
-  g.v(48, 10, 13, 'g'); g.put(48, 14, '○', 'g'); g.put(47, 15, 'ccy', 'd');
-  g.put(45, 17, 'fact_holdings', 'd');
-  return 'four sources, one root, a star schema';
+// 1 · Tulip: a long stem, the cup fully open, two blade leaves
+function tulip(g: Grid) {
+  g.block(26, 2, [
+    '  _     _  ',
+    ' / \\ _ / \\ ',
+    '|   ( )   |',
+    '|  01|10  |',
+    ' \\ 10|01 / ',
+    "  '.___.'  ",
+  ], 'g');
+  g.put(31, 4, '( )', 'w');
+  g.path([[31, 8], [31, 13], [32, 18]]);
+  g.path([[25, 11], [30, 17]]); g.put(24, 10, "'", 'u');
+  g.path([[38, 13], [33, 17]]); g.put(39, 12, "'", 'u');
+  g.put(29, 19, '`~~~´', 'd');
+  return { en: 'Tulipa · a long stem, the cup fully open', ar: 'توليب · ساق طويلة وكأس متفتحة' };
 }
 
-// ── Personal Finance Analyzer: a statement read line by line, split into where money goes ──
-function finance(g: Grid) {
-  g.put(3, 2, '╭──────────────╮', 'g'); g.put(3, 17, '╰──────────────╯', 'g'); g.v(3, 3, 16, 'g'); g.v(18, 3, 16, 'g');
-  g.put(5, 3, 'statement.pdf', 'd');
-  [[5, 9, 'w'], [7, 5, 'g'], [9, 3, 'g'], [11, 6, 'g'], [13, 2, 'g'], [15, 4, 'g']].forEach(([y, n, tn]) => {
-    g.put(5, +y, '·······', 'd'); g.put(13, +y, '━'.repeat(+n > 4 ? 4 : +n), tn as Tone);
-  });
-  g.h(19, 25, 9, 'u'); g.put(26, 9, '▸', 'u');
-  g.put(28, 7, '┌─┬─┬─┐', 'd'); g.put(28, 8, '│', 'd'); g.put(29, 8, '01100', 'q'); g.put(34, 8, '│', 'd');
-  g.put(28, 9, '├─┼─┼─┤', 'd'); g.put(28, 10, '│', 'd'); g.put(29, 10, '10110', 'q'); g.put(34, 10, '│', 'd'); g.put(28, 11, '└─┴─┴─┘', 'd');
-  g.h(36, 40, 9, 'u'); g.put(41, 9, '┤', 'u'); g.v(41, 4, 15, 'u');
-  g.put(41, 4, '╭', 'u'); g.put(41, 15, '╰', 'u');
-  [[4, 'in', 12, 'w'], [7, 'rent', 7, 'g'], [10, 'food', 4, 'g'], [12, 'fuel', 3, 'g'], [15, 'other', 2, 'g']].forEach(([y, l, n, tn]) => {
-    if (+y !== 4 && +y !== 15) g.put(41, +y, '├', 'u');
-    g.put(42, +y, '─ ', 'u'); g.put(44, +y, String(l).padEnd(6), tn as Tone); g.put(50, +y, '━'.repeat(+n), tn as Tone);
-  });
-  g.put(42, 18, '▁▁▂▃▅▇▆▅▃▂▃▅▆▃▂', 'd'); g.put(58, 18, 'hour', 'd');
-  return 'a statement, read line by line, split into where money goes';
-}
-
-// ── EWC 2024: a tournament bracket narrowing to one cup ──
-function ewc(g: Grid) {
-  const R1 = [2, 4, 6, 8, 11, 13, 15, 17], R2 = [3, 7, 12, 16], R3 = [5, 14];
-  const side = (L: boolean) => {
-    const X = (x: number) => (L ? x : 63 - x), c = (a: string, b: string) => (L ? a : b);
-    R1.forEach((y, i) => { g.h(Math.min(X(2), X(6)), Math.max(X(2), X(6)), y, 'd'); g.put(X(2), y, '·', 'g'); g.put(X(7), y, i % 2 ? c('┘', '└') : c('┐', '┌'), 'd'); });
-    R2.forEach((y, i) => { g.put(X(7), y, c('├', '┤'), 'd'); g.h(Math.min(X(8), X(11)), Math.max(X(8), X(11)), y, 'd'); g.put(X(12), y, i % 2 ? c('┘', '└') : c('┐', '┌'), 'd'); });
-    R3.forEach((y, i) => { for (let k = R2[i * 2] + 1; k < R2[i * 2 + 1]; k++) g.put(X(12), k, '│', 'd'); g.put(X(12), y, c('├', '┤'), 'd'); g.h(Math.min(X(13), X(16)), Math.max(X(13), X(16)), y, 'd'); g.put(X(17), y, i ? c('┘', '└') : c('┐', '┌'), 'd'); });
-    for (let k = 6; k < 14; k++) g.put(X(17), k, '│', 'd');
-    g.put(X(17), 9, c('├', '┤'), 'd'); g.h(Math.min(X(18), X(27)), Math.max(X(18), X(27)), 9, 'd');
-  };
-  side(true); side(false);
-  // one team's run to the final, traced in bright ink
-  g.put(2, 4, '·', 'w'); g.h(3, 6, 4, 'w'); g.put(7, 4, '┘', 'w'); g.put(7, 3, '├', 'w'); g.h(8, 11, 3, 'w'); g.put(12, 3, '┐', 'w');
-  g.v(12, 4, 4, 'w'); g.put(12, 5, '├', 'w'); g.h(13, 16, 5, 'w'); g.put(17, 5, '┐', 'w'); g.v(17, 6, 8, 'w'); g.put(17, 9, '├', 'w'); g.h(18, 27, 9, 'w');
-  // the cup
-  g.put(28, 4, '╭───────╮', 'g'); g.put(28, 5, '│   ★   │', 'g'); g.put(32, 5, '★', 'u');
-  g.put(28, 6, '╰╮     ╭╯', 'g'); g.put(29, 7, '╰─┬─┬─╯', 'g'); g.put(31, 8, '│ │', 'g');
-  g.put(28, 9, '──┴─┴──', 'g'); g.put(35, 9, '──', 'g');
-  g.put(29, 11, 'ewc 2024', 'd'); g.put(26, 14, 'prizes by country', 'd');
-  return 'brackets narrowing to one cup, prizes by country';
-}
-
-// ── Qafiyah: a wheel of eight feelings opening out of a book of verse ──
-function qafiyah(g: Grid) {
-  const cx = 32, cy = 13;
-  g.v(cx, cy, 14, 'g'); g.put(cx, cy, '┴', 'g');
-  for (let i = 0; i < 8; i++) {
-    const a = Math.PI * (0.06 + (0.88 * i) / 7), x = cx - Math.cos(a) * 25, y = cy - Math.sin(a) * 11;
-    g.dots(cx, cy, x, y, 'u', 1.25);
-    g.put(x, y, i === 3 ? '●' : '○', i === 3 ? 'w' : 'g');
+// 2 · Daisy: in full bloom, rays of bits around a bright eye, short stem
+function daisy(g: Grid) {
+  const cx = 32, cy = 6;
+  for (let i = 0; i < 16; i++) {
+    const a = (i / 16) * Math.PI * 2;
+    for (let r = 1.9; r <= (i % 2 ? 3.2 : 4.3); r += 1.2) g.put(cx + Math.cos(a) * r * 2.1, cy + Math.sin(a) * r, i % 4 === 0 ? (r > 3 ? '1' : '0') : ray(a), 'g');
+    g.put(cx + Math.cos(a) * (i % 2 ? 4.1 : 5.1) * 2.1, cy + Math.sin(a) * (i % 2 ? 4.1 : 5.1), "'", 'd');
   }
-  g.put(14, 15, '╭────────────────╮╭────────────────╮', 'g');
-  g.put(14, 16, '│                ││                │', 'g'); g.put(14, 17, '│                ││                │', 'g');
-  g.put(16, 16, '~~ ~~~~ ~~~ ~', 'd'); g.put(16, 17, '~~~ ~~ ~~~~', 'd'); g.put(34, 16, '~~~ ~~ ~~~~ ~', 'd'); g.put(34, 17, '~ ~~~~ ~~ ~', 'd');
-  g.put(14, 18, '╰────────────────╯╰────────────────╯', 'g');
-  return 'eight feelings opening from a book of verse';
+  g.put(30, 6, '(@)', 'w'); g.put(30, 5, ' ˙ ', 'w');
+  g.path([[32, 11], [32, 14], [31, 18]]);
+  g.block(33, 13, leafR, 'u');
+  return { en: 'Bellis · a field daisy in full bloom', ar: 'أقحوان · زهرة برية في كامل تفتحها' };
 }
 
-// ── Bellabeat: a day of steps, sleep and a heartbeat ──
-function bellabeat(g: Grid) {
-  g.h(3, 50, 4, 'd');
-  [10, 27, 42].forEach((x) => { g.put(x, 4, '╯', 'w'); g.put(x + 1, 3, '╱╲', 'w'); g.put(x + 3, 4, '╲', 'w'); g.put(x + 4, 5, '╲╱', 'w'); g.put(x + 6, 4, '╭', 'w'); });
-  g.put(53, 4, 'bpm', 'd');
-  const steps = [1, 1, 0, 0, 0, 1, 3, 5, 7, 5, 4, 5, 6, 5, 4, 5, 7, 8, 6, 4, 3, 2, 1, 1];
-  steps.forEach((h, i) => {
-    const x = 4 + i * 2, sleep = i < 6 || i > 21;
-    for (let k = 0; k < h; k++) g.put(x, 15 - k, k === h - 1 ? '╷' : '│', sleep ? 'u' : 'g');
-    if (sleep) g.put(x, 11 - (i % 2), i % 2 ? 'z' : '·', 'u');
+// 3 · Sunflower: a heavy seeded head, nodding a little, on a thick stem
+function sunflower(g: Grid) {
+  const cx = 31, cy = 7;
+  g.ring(cx, cy, 10.5, 4.8, 16, (a) => [ray(a), 'g']);
+  g.ring(cx, cy, 12, 5.5, 16, () => ["'", 'd'], Math.PI / 16);
+  g.fill(cx, cy, 7, 3.2, (x, y, r) => (r < 0.25 ? ['@', 'w'] : (x + y) % 2 ? null : [(x * 7 + y) % 5 === 0 ? '1' : r > 0.8 ? '·' : ':', r < 0.7 ? 'g' : 'd']));
+  g.put(cx - 1, cy, '(@)', 'w');
+  g.path([[31, 13], [32, 15], [32, 18]]);
+  g.block(34, 14, leafR, 'u'); g.block(24, 16, leafL, 'u');
+  return { en: 'Helianthus · a heavy head, nodding a little', ar: 'دوار الشمس · رأس ثقيل مائل قليلاً' };
+}
+
+// 4 · Rose: still in bud, sepals clasping it, a thorned stem
+function rosebud(g: Grid) {
+  g.block(28, 3, [
+    '  .-~-.  ',
+    ' / 1 0 \\ ',
+    '(  (@)  )',
+    ' \\ 0 1 / ',
+    "  '._.'  ",
+  ], 'g');
+  g.put(31, 5, '(@)', 'w');
+  g.put(28, 8, '\\_\\|/_/', 'u');
+  g.path([[32, 9], [32, 12], [30, 15], [31, 18]]);
+  g.put(30, 11, '<', 'd'); g.put(32, 14, '>', 'd'); g.put(29, 16, '<', 'd');
+  g.block(33, 12, leafR, 'u');
+  return { en: 'Rosa · still in bud', ar: 'وردة · ما زالت برعماً' };
+}
+
+// 5 · Lily of the valley: an arching stem with bells hanging along it, one tall leaf
+function lily(g: Grid) {
+  for (let y = 5; y <= 17; y++) { const k = (y - 11) / 6.5, w = Math.round(3.6 * Math.sqrt(Math.max(0, 1 - k * k))); if (w) { g.put(17 - w, y, '(', 'u'); g.put(17 + w, y, ')', 'u'); } }
+  g.put(17, 4, '.', 'u'); g.path([[17, 6], [17, 17]], 'd'); g.put(17, 18, "'", 'u');
+  g.path([[22, 18], [23, 10], [26, 5], [32, 3], [40, 3], [46, 5], [49, 8]]);
+  [[29, 4, 3], [35, 4, 3], [41, 4, 2], [46, 6, 1], [49, 9, 0]].forEach(([x, y, s]) => {
+    g.put(x, y, '│', 'd');
+    if (s >= 2) { g.put(x - 1, y + 1, '/' + (s > 2 ? '0' : '1') + '\\', 'g'); g.put(x - 1, y + 2, "'v'", 'g'); }
+    else if (s === 1) { g.put(x - 1, y + 1, '(1)', 'g'); }
+    else g.put(x, y + 1, 'o', 'g');
   });
-  g.h(3, 50, 16, 'd'); g.put(3, 17, '00h', 'd'); g.put(25, 17, '12h', 'd'); g.put(48, 17, '24h', 'd');
-  g.put(53, 10, 'steps', 'd'); g.put(53, 12, 'sleep', 'u');
-  return 'a day of steps, sleep and a heartbeat';
+  g.put(19, 19, '`~~~~´', 'd');
+  return { en: 'Convallaria · bells along an arching stem', ar: 'زنبق الوادي · أجراس على ساق مقوّسة' };
 }
 
-// ── X report: many posts in, a few metrics and one report out ──
-function xreport(g: Grid) {
-  [[3, 3], [7, 6], [11, 2], [5, 9], [14, 5], [9, 12], [3, 14], [13, 15], [7, 17], [16, 9], [11, 8]].forEach(([x, y], i) => g.put(x, y, i % 3 ? '·' : '○', i % 3 ? 'd' : 'g'));
-  for (let k = 0; k < 6; k++) { g.put(19 + k, 3 + k, '╲', 'g'); g.put(36 - k, 3 + k, '╱', 'g'); }
-  g.put(25, 9, '╰────╯', 'g'); g.v(26, 10, 11, 'g'); g.v(29, 10, 11, 'g');
-  g.put(24, 4, '○', 'u'); g.put(30, 4, '○', 'u'); g.put(27, 6, '○', 'u'); g.put(28, 13, '·', 'w');
-  g.put(24, 1, 'filter', 'd');
-  g.h(31, 37, 13, 'u'); g.put(38, 13, '▸', 'u');
-  [[41, 3], [43, 5], [45, 2], [47, 6]].forEach(([x, h]) => { for (let k = 0; k < h; k++) g.put(x, 15 - k, '┃', k === h - 1 ? 'w' : 'g'); });
-  g.h(40, 48, 16, 'd'); g.put(40, 17, 'kpis', 'd');
-  g.put(52, 9, '╭──────╮', 'g'); g.put(52, 10, '│ ──── │', 'g'); g.put(52, 11, '│ ──   │', 'g'); g.put(52, 12, '│ ───  │', 'g'); g.put(52, 13, '╰──────╯', 'g');
-  g.put(53, 15, 'report', 'w');
-  return 'many posts in, a few metrics and one report out';
+// 6 · Dandelion: gone to seed, a few already drifting away
+function dandelion(g: Grid) {
+  const cx = 30, cy = 6;
+  g.ring(cx, cy, 10, 4.6, 26, (a, i) => (Math.cos(a) > 0.55 && Math.sin(a) < 0.2 && i % 2 ? null : [i % 3 ? '*' : '+', 'g']));
+  g.ring(cx, cy, 5.5, 2.6, 18, (a, i) => [i % 2 ? '·' : ':', 'd']);
+  g.ring(cx, cy, 2.6, 1.2, 10, (a, i) => [i % 2 ? '1' : '0', 'q']);
+  g.put(cx, cy, '@', 'w');
+  [[44, 4], [49, 2], [55, 3], [52, 6]].forEach(([x, y], i) => { g.put(x, y, i % 2 ? '+' : '*', i === 1 ? 'w' : 'g'); g.put(x - 1, y + 1, '╱', 'd'); });
+  g.path([[30, 11], [31, 15], [30, 18]]);
+  g.put(24, 18, '╲╱╲╱', 'u'); g.put(32, 18, '╲╱╲╱', 'u');
+  return { en: 'Taraxacum · gone to seed, a few already drifting', ar: 'هندباء · صارت بذوراً وبعضها طار' };
 }
 
-// ── Sectors in Saudi Arabia: one root, a row of sectors, a fall of agencies ──
-function sectors(g: Grid) {
-  g.put(31, 1, '◆', 'w'); g.v(31, 2, 3, 'g');
-  const xs = [6, 16, 26, 36, 46, 56], n = [7, 4, 9, 5, 8, 3];
-  g.h(6, 56, 4, 'g'); g.put(6, 4, '┌', 'g'); g.put(56, 4, '┐', 'g'); g.put(31, 4, '┴', 'g');
-  xs.forEach((x, i) => {
-    if (i > 0 && i < 5) g.put(x, 4, '┬', 'g');
-    g.put(x, 5, '│', 'g'); g.put(x, 6, i === 2 ? '●' : '○', i === 2 ? 'w' : 'g');
-    for (let k = 0; k < n[i]; k++) g.put(x - 1, 8 + k, k % 3 === 1 ? '·:·' : ' · ', i === 2 ? 'u' : 'd');
-  });
-  g.put(20, 18, '32 sectors · 638 agencies', 'd');
-  return 'one root, thirty-two sectors, a fall of agencies';
+// 7 · Lavender: three slim spikes from one root, florets crowding the tips
+function lavender(g: Grid) {
+  const spikes: [number, number, number][] = [[32, 1, 0], [25, 4, -1], [39, 3, 1]];   // tip x, tip y, lean
+  for (const [tx, ty, lean] of spikes) {
+    g.path(tx === 32 ? [[32, ty + 6], [32, 15]] : [[tx, ty + 6], [tx, 11], [Math.round(tx + (32 - tx) * 0.85), 15]]);
+    for (let k = 0; k < 6; k++) {
+      g.put(tx - 1, ty + k, k % 2 ? 'o' : '0', k < 2 ? 'g' : 'd'); g.put(tx, ty + k, '│', 'u'); g.put(tx + 1, ty + k, k % 2 ? '1' : 'o', k < 2 ? 'g' : 'd');
+    }
+    g.put(tx, ty - 1, "'", 'g');
+  }
+  g.put(30, 15, '─)(─', 'g');
+  g.path([[32, 16], [32, 18]]);
+  g.put(31, 19, '╲│╱', 'd');
+  return { en: 'Lavandula · three spikes from one root', ar: 'خزامى · ثلاث سنابل من جذر واحد' };
 }
 
-// ── Co-working: a quiet map, spaces clustered in three cities, desks in each ──
-function coworking(g: Grid) {
-  for (let y = 2; y < 19; y += 3) for (let x = 3; x < 62; x += 6) g.put(x + (y % 2 ? 3 : 0), y, '·', 'd');
-  const city = (x: number, y: number, cols: number, rows: number, l: string, main = false) => {
-    for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) g.put(x + c * 2, y + r, (r * cols + c) % 5 === 1 ? '■' : '□', main ? 'w' : 'g');
-    g.put(x - 1, y - 1, '╭' + '─'.repeat(cols * 2 - 1) + '╮', 'u'); g.put(x - 1, y + rows, '╰' + '─'.repeat(cols * 2 - 1) + '╯', 'u');
-    for (let r = 0; r < rows; r++) { g.put(x - 1, y + r, '│', 'u'); g.put(x + cols * 2 - 1, y + r, '│', 'u'); }
-    g.put(x, y + rows + 1, l, 'd');
-  };
-  city(10, 10, 3, 2, 'jeddah'); city(27, 6, 5, 3, 'riyadh', true); city(48, 5, 3, 2, 'dammam');
-  g.put(25, 16, 'focus · price · reach', 'd');
-  return 'spaces clustered across three cities, desk by desk';
+// 8 · Poppy: one flower open, one bud still nodding on a hooked stem
+function poppy(g: Grid) {
+  g.block(17, 3, [
+    ' .-~~-.-~~-. ',
+    '(   .01.    )',
+    ' \\  `@@`   / ',
+    "  '-.__.-'   ",
+  ], 'g');
+  g.put(22, 5, '@@', 'w');
+  g.path([[23, 7], [24, 12], [28, 16], [30, 18]]);
+  g.path([[30, 18], [33, 13], [36, 7], [39, 4], [42, 4], [44, 6]]);
+  g.block(43, 7, ['(1)', ' v '], 'g');
+  [[24, 10], [26, 14], [34, 11], [37, 6]].forEach(([x, y]) => g.put(x + 1, y, "'", 'd'));
+  g.put(26, 19, '`~~~~~´', 'd');
+  return { en: 'Papaver · one open, one still nodding', ar: 'خشخاش · واحدة متفتحة وأخرى مائلة' };
 }
 
-const DRAW: Record<string, (g: Grid) => string> = {
-  invasight, 'finance-analyzer': finance, 'ewc-2024-dashboard': ewc, 'qafiyah-feelings': qafiyah,
-  'bellabeat-case-study': bellabeat, 'x-api-report': xreport, 'saudi-sectors-dashboard': sectors, 'coworking-spaces-dashboard': coworking,
+const DRAW: Record<string, (g: Grid) => { en: string; ar: string }> = {
+  invasight: tulip, 'finance-analyzer': daisy, 'ewc-2024-dashboard': sunflower, 'qafiyah-feelings': rosebud,
+  'bellabeat-case-study': lily, 'x-api-report': dandelion, 'saudi-sectors-dashboard': lavender, 'coworking-spaces-dashboard': poppy,
 };
+const ORDER = Object.values(DRAW);
 
-/** The plate for a project: { html, caption } (caption is an English figure note). */
-export function projectArt(slug: string) {
+/** The flower plate for a project: { html, en, ar } (en/ar: the specimen note). Unknown slugs get a flower by position. */
+export function projectArt(slug: string, i = 0) {
   const g = new Grid();
-  const caption = (DRAW[slug] ?? ((gg: Grid) => { gg.put(30, 9, '( · )', 'g'); return ''; }))(g);
-  return { html: g.html(), caption };
+  const note = (DRAW[slug] ?? ORDER[i % ORDER.length])(g);
+  return { html: g.html(), ...note };
 }
