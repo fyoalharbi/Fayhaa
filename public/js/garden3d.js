@@ -154,8 +154,10 @@
             C.leaf, Math.abs(w) < 0.1 ? K['-'] : Math.abs(w) > 0.8 || u > 0.95 ? K[':'] : BIT, py, ph, 0, aoAt(py));
         }
       }
+      const hp0 = s.d.length / F;
       addHead(s, x, h, z, kind, col, ph);
-      heads.push({ x, y: h + (kind === 1 ? 0.12 : 0.04), z, ph, col, type: KINDS[kind].name });
+      const hp1 = s.d.length / F;
+      heads.push({ x, y: h + (kind === 1 ? 0.12 : 0.04), z, ph, col, type: KINDS[kind].name, p0: hp0, p1: hp1, hy: h });
     }
     // Rounded bushes between the flowers and around the edge of the plot
     const BLOOM = [C.blue, C.violet, C.pink, C.blush, C.white, -1, -1];
@@ -212,6 +214,13 @@
       const sc = buildScene();
       this.pts = sc.pts; this.heads = sc.heads; this.hive = sc.hive;
       this.nStatic = this.pts.length / F;
+      // Garden reacting to the butterfly: per-point head link (for blooming), per-head bloom,
+      // a coarse "discovered" light map, and the story stage (0 → 1)
+      this.headOf = new Int16Array(this.nStatic).fill(-1);
+      this.heads.forEach((h, k) => { if (h.p1) for (let n = h.p0; n < h.p1; n++) this.headOf[n] = k; });
+      this.bloom = new Float32Array(this.heads.length);
+      this.lit = new Float32Array(64 * 64);           // 0.18-unit cells over the plot, remembered
+      this.stage = 0;
       this.bits = Uint8Array.from({ length: this.nStatic + 12000 }, () => (Math.random() < 0.5 ? 1 : 0));
       this.wing = wingTemplate();
 
@@ -564,11 +573,42 @@
         co[i] = col * 4 + Math.min(3, Math.max(0, (lum * fog * 4.2 - 0.4) | 0));
       };
 
+      // ── The garden reacts to the white butterfly ──
+      const me = this.flyers[0].p, mx = me[0], my = me[1], mz = me[2];
+      for (let k = 0; k < this.heads.length; k++) {
+        const h = this.heads[k], d = Math.hypot(h.x - mx, h.y - my, h.z - mz);
+        const want = d < 1.1 ? 1 - d / 1.1 : 0;                          // flowers open as it approaches
+        this.bloom[k] += (Math.max(want, this.bloom[k] * 0.999) - this.bloom[k]) * Math.min(1, dt * (want > this.bloom[k] ? 3 : 0.25));
+      }
+      {
+        const ci = Math.floor((mx + 5.8) / 0.18), cj = Math.floor((mz + 5.8) / 0.18);   // light where it has been
+        for (let a = -2; a <= 2; a++) for (let b = -2; b <= 2; b++) {
+          const ii = ci + a, jj = cj + b; if (ii < 0 || jj < 0 || ii > 63 || jj > 63) continue;
+          const q = jj * 64 + ii, v = Math.max(0, 1 - Math.hypot(a, b) / 2.6);
+          if (v > this.lit[q]) this.lit[q] += (v - this.lit[q]) * Math.min(1, dt * 1.5);
+        }
+      }
+      const stageLum = 0.82 + 0.3 * this.stage, LIT = this.lit, HO = this.headOf, BL = this.bloom, HD = this.heads;
+      const litAt = (x, z) => { const ii = Math.floor((x + 5.8) / 0.18), jj = Math.floor((z + 5.8) / 0.18); return ii < 0 || jj < 0 || ii > 63 || jj > 63 ? 0 : LIT[jj * 64 + ii]; };
+
       // Static scene with sway
       const P = this.pts;
       for (let n = 0, o = 0; n < this.nStatic; n++, o += F) {
-        const sway = P[o + 8], sw = sway ? Math.sin(t * 1.3 + P[o + 9]) * 0.04 * sway : 0;
-        put(P[o] + sw, P[o + 1], P[o + 2] + sw * 0.6, P[o + 3], P[o + 4], P[o + 5], P[o + 6], P[o + 7], P[o + 10], n, P[o + 11]);
+        const sway = P[o + 8];
+        let x = P[o], y = P[o + 1], z = P[o + 2], sw = sway ? Math.sin(t * 1.3 + P[o + 9]) * 0.04 * sway : 0;
+        if (sway) {
+          // Plants bend away from the butterfly as it flies past
+          const ddx = x - mx, ddz = z - mz, d2 = ddx * ddx + ddz * ddz;
+          if (d2 < 0.5) { const push = (1 - d2 / 0.5) * 0.09 * sway / (Math.sqrt(d2) + 0.05); x += ddx * push; z += ddz * push; }
+        }
+        const hk = HO[n];
+        if (hk >= 0 && BL[hk] > 0.01) {
+          // Blooming: the head's petals open outward and lift a little
+          const h = HD[hk], b = BL[hk] * 0.35;
+          x = h.x + (x - h.x) * (1 + b); z = h.z + (z - h.z) * (1 + b); y += (y - h.hy) * b * 0.6 + b * 0.04;
+        }
+        const glow = (fogless) => (fogless ? 1 : stageLum * (1 + 0.55 * litAt(x, z) + (hk >= 0 ? BL[hk] * 0.6 : 0)));
+        put(x + sw, y, z + sw * 0.6, P[o + 3], P[o + 4], P[o + 5], P[o + 6], P[o + 7], P[o + 10], n, P[o + 11] * glow(P[o + 10]));
       }
       // Fireflies: drift and blink
       for (const q of this.flies) {

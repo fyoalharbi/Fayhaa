@@ -150,7 +150,8 @@ const projects = (await getProjects(lang)).slice(0, 6).map((p) => ({ title: p.da
         if (i >= steps.length) return finish();
         box.dataset.state = 'tour';
         const st = steps[i];
-        if (g) g.setShot(st.shot);
+        if (g) { g.setShot(st.shot); g.stage = i / (steps.length - 1); }
+        root.style.setProperty('--stage', (i / (steps.length - 1)).toFixed(2));
         whoEl.textContent = String(i + 1).padStart(2, '0') + ' / ' + String(steps.length).padStart(2, '0') + ' · ' + t.who[st.shot];
         decode(lineEl, st.line);
         nextBtn.textContent = t.next;
@@ -173,7 +174,8 @@ const projects = (await getProjects(lang)).slice(0, 6).map((p) => ({ title: p.da
         step = steps.length; fact.dataset.on = '0';
         box.dataset.state = 'end'; whoEl.textContent = '';
         decode(lineEl, t.end); nextBtn.textContent = t.again;
-        if (g) { g.setShot('wide'); g.slowSpin = true; anchors = g.spreadFlowers(nPins); }
+        if (g) { g.setShot('wide'); g.slowSpin = true; g.stage = 1; anchors = g.spreadFlowers(nPins); }
+        root.style.setProperty('--stage', '1');
         subEl.textContent = t.bloom;
         setPhase('end');
       }
@@ -325,7 +327,12 @@ const projects = (await getProjects(lang)).slice(0, 6).map((p) => ({ title: p.da
 <style>
   .g3 {
     position: relative; height: calc(100svh - var(--header-h)); overflow: hidden; color: var(--paper);
-    background: radial-gradient(ellipse at 50% 115%, #1f2a1f 0%, #141814 38%, #0d0d0f 72%);
+    /* The sky warms as the story goes on (--stage 0 → 1) */
+    --stage: 0;
+    background:
+      radial-gradient(ellipse at 50% 112%, rgba(255, 150, 110, calc(var(--stage) * .16)) 0%, transparent 55%),
+      radial-gradient(ellipse at 50% 115%, #1f2a1f 0%, #141814 38%, #0d0d0f 72%);
+    transition: background 2s ease;
   }
   .g3 canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; cursor: grab; touch-action: none; }
   .g3 canvas:active { cursor: grabbing; }
