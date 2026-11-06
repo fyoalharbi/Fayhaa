@@ -13,7 +13,7 @@ const projects = await getProjects(lang);
   <section class="section wrap">
     <div class="section-head"><h1>{t.allProjects}</h1></div>
     <div class="cards">
-      {projects.map((p, i) => <ProjectCard project={p} lang={lang} index={i} />)}
+      {projects.map((p, i) => <ProjectCard project={p} lang={lang} index={i} full />)}
     </div>
   </section>
 </Base>

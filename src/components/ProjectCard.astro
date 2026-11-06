@@ -1,18 +1,23 @@
 ---
 import { type Lang } from '../data/profile';
 import { ui, langUrl, projectHref, skillLabel, formatDate, type Project } from '../lib/site';
+import ProjectThumb from './ProjectThumb.astro';
 
 interface Props {
   project: Project;
   lang: Lang;
   index?: number;
+  full?: boolean;      // projects page: thumbnail, quiet tags, demo / code links
 }
-const { project, lang, index } = Astro.props;
+const { project, lang, index, full = false } = Astro.props;
 const t = ui[lang];
 const { href, external } = projectHref(project);
 const d = project.data;
+const slug = project.id.split('/').slice(1).join('/');
+const ar = lang === 'ar';
 ---
-<article class="card">
+<article class={`card${full ? ' card-full' : ''}`}>
+  {full && <ProjectThumb slug={slug} skills={d.skills} title={d.title} />}
   <div class="card-meta mono">
     {index !== undefined && <span>{String(index + 1).padStart(2, '0')}</span>}
     <time datetime={d.date.toISOString()}>{formatDate(d.date, lang)}</time>
@@ -23,10 +28,26 @@ const d = project.data;
     </a>
   </h3>
   <p class="card-summary">{d.summary}</p>
-  <ul class="tags" aria-label="Skills">
-    {d.skills.map((s) => <li><a href={langUrl(lang, `skills/${s}/`)}>{skillLabel(s, lang)}</a></li>)}
-  </ul>
+  {full ? (
+    <p class="card-stack mono">{d.skills.slice(0, 3).map((s) => skillLabel(s, lang)).join(' · ')}{d.skills.length > 3 && ` +${d.skills.length - 3}`}</p>
+  ) : (
+    <ul class="tags" aria-label="Skills">
+      {d.skills.map((s) => <li><a href={langUrl(lang, `skills/${s}/`)}>{skillLabel(s, lang)}</a></li>)}
+    </ul>
+  )}
+  {full && (d.links.live || d.links.github) && (
+    <p class="card-links">
+      {d.links.live && <a class="btn btn-primary" href={d.links.live} target="_blank" rel="noopener">{ar ? 'التجربة الحية ↗' : 'Live demo ↗'}</a>}
+      {d.links.github && <a class="btn" href={d.links.github} target="_blank" rel="noopener">{ar ? 'الكود ↗' : 'Code ↗'}</a>}
+    </p>
+  )}
   <span class="card-cta mono" aria-hidden="true">
     {external ? `${t.viewOutside} ↗` : `${t.readCase} ${lang === 'ar' ? '←' : '→'}`}
   </span>
 </article>
+
+<style>
+  .card-stack { margin: 0; color: var(--muted); font-size: 0.7rem; }
+  .card-links { position: relative; z-index: 1; display: flex; flex-wrap: wrap; gap: 8px; margin: 2px 0 0; }
+  .card-links .btn { padding: 6px 12px; font-size: 0.82rem; }
+</style>
