@@ -164,7 +164,14 @@ const projects = (await getProjects(lang)).slice(0, 6).map((p) => ({ title: p.da
         if (e.key === 'Escape') finish();
       });
 
-      // Callout lines: from each flower, a short diagonal then a straight run to its label
+      // Callout lines: from each flower, a short diagonal then a straight run to its label.
+      // With a mouse, only the flower you point at (or its open label) shows its label;
+      // on touch screens every label stays visible.
+      const HOVER = matchMedia('(hover: hover)').matches;
+      let pmx = -1, pmy = -1, hoverPin = -1, openPin = -1;
+      root.addEventListener('pointermove', (e) => { const r = root.getBoundingClientRect(); pmx = e.clientX - r.left; pmy = e.clientY - r.top; });
+      root.addEventListener('pointerleave', () => { pmx = -1; });
+      pins.forEach((el, k) => { el.addEventListener('pointerenter', () => { hoverPin = k; }); el.addEventListener('pointerleave', () => { if (hoverPin === k) hoverPin = -1; }); });
       function drawPins() {
         requestAnimationFrame(drawPins);
         if (root.dataset.phase !== 'end' || !g || !anchors.length) return;
@@ -173,16 +180,26 @@ const projects = (await getProjects(lang)).slice(0, 6).map((p) => ({ title: p.da
         const sides = [pts.filter((o) => o.s[0] < W / 2), pts.filter((o) => o.s[0] >= W / 2)];
         let paths = '';
         const on = new Set();
+        // Which flower is pointed at: the nearest marker within reach, or the label under the pointer
+        if (HOVER) {
+          let best = -1, bd = 34;
+          for (const o of pts) { const d = Math.hypot(o.s[0] - pmx, o.s[1] - pmy); if (pmx >= 0 && d < bd) { bd = d; best = o.k; } }
+          openPin = hoverPin >= 0 ? hoverPin : best;
+        }
+        root.classList.toggle('is-pointing', HOVER && openPin >= 0);
         sides.forEach((list, side) => {
           list.sort((a, b) => a.s[1] - b.s[1]);
           list.forEach((o, j) => {
             const el = pins[o.k]; if (!el) return;
             const ly = top + (bot - top) * ((j + 0.5) / list.length), lw = el.offsetWidth, lh = el.offsetHeight;
             const lx = side ? W - 24 - lw : 24, ex = side ? lx - 6 : lx + lw + 6, ey = ly + lh / 2;
-            el.style.transform = `translate(${lx}px, ${ly}px)`; on.add(el);
+            el.style.transform = `translate(${lx}px, ${ly}px)`;
             const [fx, fy] = o.s, dy = ey - fy, mx = fx + (side ? 1 : -1) * Math.abs(dy) * 0.6;
             const bx = side ? Math.min(Math.max(mx, fx), ex) : Math.max(Math.min(mx, fx), ex);
-            paths += `<polyline points="${fx},${fy} ${bx},${ey} ${ex},${ey}"/><rect x="${fx - 3}" y="${fy - 3}" width="6" height="6"/>`;
+            const lit = !HOVER || o.k === openPin;
+            if (lit) { on.add(el); paths += `<polyline points="${fx},${fy} ${bx},${ey} ${ex},${ey}"/>`; }
+            // Every project flower keeps a small target marker, so there is something to point at
+            paths += `<rect class="${lit ? 'is-lit' : ''}" x="${fx - 4}" y="${fy - 4}" width="8" height="8"/>`;
           });
         });
         svg.innerHTML = paths;
@@ -206,7 +223,7 @@ const projects = (await getProjects(lang)).slice(0, 6).map((p) => ({ title: p.da
         addEventListener('pointerup', () => { down = false; });
         (function track() {
           requestAnimationFrame(track);
-          const hit = mx >= 0 && !down ? g.pick(mx, my) : null;
+          const hit = mx >= 0 && !down && !root.classList.contains('is-pointing') ? g.pick(mx, my) : null;   // project labels win over the info card
           if (!hit || !INFO[hit.kind]) { if (shown) { tip.hidden = true; shown = null; cv.style.cursor = ''; } return; }
           if (shown !== hit.kind) {
             const [a, b, c] = INFO[hit.kind];
@@ -281,7 +298,10 @@ const projects = (await getProjects(lang)).slice(0, 6).map((p) => ({ title: p.da
   /* ── The end: retro callouts ── */
   .g3-lines { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 4; pointer-events: none; opacity: 0; transition: opacity .8s ease .6s; }
   .g3-lines :global(polyline) { fill: none; stroke: #7fe0ff; stroke-width: 1; stroke-dasharray: 4 3; filter: drop-shadow(0 0 3px #7fe0ff); animation: g3-march 1.2s linear infinite; }
-  .g3-lines :global(rect) { fill: none; stroke: #7fe0ff; stroke-width: 1; }
+  .g3-lines :global(rect) { fill: none; stroke: #7fe0ff; stroke-width: 1; opacity: .7; transform-box: fill-box; transform-origin: center; animation: g3-ping 1.8s ease-in-out infinite; }
+  .g3-lines :global(rect.is-lit) { fill: #7fe0ff55; opacity: 1; animation: none; filter: drop-shadow(0 0 4px #7fe0ff); }
+  @keyframes g3-ping { 50% { transform: scale(1.5); opacity: .25; } }
+  .g3.is-pointing canvas { cursor: pointer; }
   @keyframes g3-march { to { stroke-dashoffset: -14; } }
   .g3-pins { position: absolute; inset: 0; z-index: 5; pointer-events: none; }
   .g3-pin {
