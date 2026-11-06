@@ -23,6 +23,11 @@
   }), { threshold: 0.18, rootMargin: '0px 0px -8% 0px' });
   $$('.hb-sec > *:not(.hb-feats):not(.hb-drawer), .hb-feat, .hb-sheet, .hb-entry').forEach((el) => io.observe(el));
 
+  // ── Plate size: each drawing is 64 columns, scaled to its frame's real width ──
+  const fit = (img) => { const pre = img.querySelector('.hb-art'); if (pre) pre.style.setProperty('--art-fs', (img.clientWidth / 64 / 0.6 * 0.9).toFixed(2) + 'px'); };
+  const ro = new ResizeObserver((es) => es.forEach((e) => fit(e.target)));
+  $$('.hb-img').forEach((img) => { fit(img); ro.observe(img); });
+
   // ── Project plates: the ASCII drawing first; "Preview" reveals the real screenshot ──
   $$('.hb-prev').forEach((btn) => btn.addEventListener('click', () => {
     const art = btn.closest('article'), on = !art.classList.contains('is-prev');

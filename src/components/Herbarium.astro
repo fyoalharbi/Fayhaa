@@ -328,7 +328,8 @@ const lead = featured[0] ?? D.projects[0], camp = camps[0], post = D.posts[0];
   .hb-img { position: relative; display: block; aspect-ratio: 16/10; background: #0e100f; outline: 1px solid #ffffff12; outline-offset: 7px; }
   /* the plate: a 64×20 drawing scaled to the frame's width, in a quiet monochrome */
   .hb-img { container-type: inline-size; display: grid; place-items: center; overflow: visible; }
-  .hb-art { margin: 0; direction: ltr; white-space: pre; font: 400 calc(100cqw / 64 / .6 * .9)/1.25 'JetBrains Mono', monospace; color: #4d4d57; transition: opacity .5s; user-select: none; }
+  .hb-feat > *, .hb-sheet, .hb-drawer > *, .hb-now > * { min-width: 0; }   /* grid items never grow past their column */
+  .hb-art { margin: 0; direction: ltr; white-space: pre; max-width: 100%; overflow: hidden; font: 400 var(--art-fs, 7px)/1.25 'JetBrains Mono', monospace; color: #4d4d57; transition: opacity .5s; user-select: none; }
   .hb-img { text-decoration: none; } .hb-art i { font-style: normal !important; }
   .hb-art { transform: translateZ(0); }   /* own layer → grayscale antialiasing, no coloured fringes on thin glyphs */
   .hb-art .a-w { color: #e8e4d0; } .hb-art .a-g { color: #8d8d96; } .hb-art .a-d { color: #4d4d57; transition: color .4s; } .hb-art .a-u { color: #7f95b0; } .hb-art .a-q { color: #8d8d96; }
