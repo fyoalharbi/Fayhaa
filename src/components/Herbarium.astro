@@ -23,18 +23,18 @@ const T = AR ? {
   now: 'آخر مشروع', training: 'آخر تدريب', note: 'آخر تدوينة',
   secs: ['المشاريع', 'عني', 'الأدوات', 'المدونة', 'تواصل'],
   leads: ['الأعمال المميزة أول، وبعدها الباقي.', 'خبراتي وتعليمي.',
-    'كل أداة أستخدمها مرتبة حسب مرحلتها، ووين استخدمتها: في الشغل، وفي معسكر SDA، وفي مشاريعي.',
+    'كل أداة استخدمتها، مرتبة حسب مجالها. النقطة توضح وين استخدمتها غير مشاريعي: في وظيفة أو في معسكر SDA.',
     'أشياء أتعلمها بالطريق.', 'أسرع طريقة توصل لي هي الإيميل.'],
   preview: 'معاينة', hide: 'إخفاء', fig: 'شكل', shot: 'لقطة من',
   feat: 'عيّنات مختارة', featN: (n: number, all: number) => `· ${n} من ${all}`, explore: 'تصفّح المجموعة كاملة', exploreX: 'إغلاق المجموعة', moreN: (n: number) => `+${n}`,
   coll: 'المجموعة كاملة', collN: (n: number) => (n === 1 ? '· عيّنة واحدة' : `· ${n} عيّنات`), cols: ['رقم', 'العيّنة', 'الفصيلة · التاريخ', 'روابط'],
   featW: 'كتابات مختارة', exploreW: 'تصفّح كل الكتابات', exploreWX: 'إغلاق الأرشيف', arch: 'أرشيف الكتابات', archN: (n: number) => (n === 1 ? '· تدوينة واحدة' : `· ${n} تدوينات`),
   types: { Pipelines: 'خطوط بيانات', Dashboards: 'لوحات بيانات', Web: 'ويب', Analysis: 'تحليل' } as Record<string, string>,
-  lgWork: 'استخدمتها في وظيفة', lgTrain: 'استخدمتها في معسكر SDA', lgN: 'عدد المشاريع',
+  lgWork: 'استخدمتها في وظيفة', lgTrain: 'استخدمتها في معسكر SDA',
   atWork: 'في الشغل', trainingRow: 'التدريب', projects: 'المشاريع',
+  caps: [['البيانات والتحليل', 'تحويل البيانات لتقارير وقرارات واضحة.'], ['تطوير البرمجيات', 'الكود والتكاملات والتطبيقات.'],
+    ['هندسة البيانات', 'خطوط بيانات ونماذج ومستودعات يوثق فيها.'], ['السحابة والبنية التحتية', 'وين يشتغل كل هذا، وكيف ينشر.']],
   noteK: 'تدوينة', min: 'دقيقة قراءة', read: 'اقرأ ←', colophon: 'مبني بـ Astro. الزهور والفراشة مرسومة بالكود.',
-  extra: [['run', 'التشغيل والنشر', 'السحابة والحاويات وكل ما حولها.'], ['web', 'البناء للويب', 'لما تكون النتيجة موقع أو تطبيق.']],
-  what: ['أسحب البيانات من الـ APIs والملفات والويب.', 'أنظفها وأختبرها وأجدولها.', 'أشكّلها لجداول يوثق فيها.', 'أحوّلها لقرارات تنشاف.'],
   js: { hint: 'مرّر أو اضغط على أداة أو وظيفة أو مشروع.', pinned: 'مثبّت · اضغط مرة ثانية أو Esc', jobs: 'وظائف', camp: 'المعسكر', projects: 'مشاريع', tools: 'أدوات', tip: 'ليش فراشات؟ افتح الحديقة ←' },
 } : {
   kicker: 'Portfolio · 2022 — 2026', see: 'See the projects ↓', email: 'Email me',
@@ -42,18 +42,18 @@ const T = AR ? {
   now: 'Latest project', training: 'Latest training', note: 'Latest note',
   secs: ['Projects', 'About', 'Tools', 'Notes', 'Contact'],
   leads: ['Featured work first, then everything else.', 'Experience and education.',
-    'Every tool I use, grouped by stage, and where I used it: at work, in the SDA bootcamp, and in my projects.',
+    'Every tool I have used, grouped by what it is for. A dot marks where I used it beyond my own projects: at a job or in the SDA bootcamp.',
     'Things I learn along the way.', 'Email is the fastest way to reach me.'],
   preview: 'Preview', hide: 'Hide preview', fig: 'fig.', shot: 'Screenshot of',
   feat: 'Featured specimens', featN: (n: number, all: number) => `· ${n} of ${all}`, explore: 'Explore the complete collection', exploreX: 'Close the collection', moreN: (n: number) => `+${n}`,
   coll: 'Complete Collection', collN: (n: number) => `· ${n} specimen${n === 1 ? '' : 's'}`, cols: ['No.', 'Specimen', 'Family · collected', 'Links'],
   featW: 'Featured writings', exploreW: 'Explore all writings', exploreWX: 'Close the archive', arch: 'Writing Archive', archN: (n: number) => `· ${n} ${n === 1 ? 'entry' : 'entries'}`,
   types: { Pipelines: 'Pipelines', Dashboards: 'Dashboards', Web: 'Web', Analysis: 'Analysis' } as Record<string, string>,
-  lgWork: 'used at a job', lgTrain: 'used in the SDA bootcamp', lgN: 'projects',
+  lgWork: 'used at a job', lgTrain: 'used in the SDA bootcamp',
   atWork: 'At work', trainingRow: 'Training', projects: 'Projects',
+  caps: [['Data & Analytics', 'Turning data into clear reports and decisions.'], ['Software Development', 'Code, integrations and the apps around them.'],
+    ['Data Engineering', 'Pipelines, models and warehouses people can trust.'], ['Cloud & Infrastructure', 'Where it all runs, and how it ships.']],
   noteK: 'Note', min: 'min read', read: 'Read →', colophon: 'Built with Astro. The flowers and the butterfly are drawn in code.',
-  extra: [['run', 'Ship & run', 'Cloud, containers and the plumbing around it.'], ['web', 'Build for the web', 'When the result is a site or an app.']],
-  what: ['Pull data from APIs, files and the web.', 'Clean it, test it, schedule it.', 'Shape it into tables people can trust.', 'Turn it into decisions people can see.'],
   js: { hint: 'Hover or tap a tool, a job or a project.', pinned: 'pinned · tap again or esc', jobs: 'jobs', camp: 'bootcamp', projects: 'projects', tools: 'tools', tip: 'Why butterflies? Open the garden →' },
 };
 const ids = ['work', 'about', 'tools', 'notes', 'contact'];
@@ -62,21 +62,17 @@ const plate = (slug: string) => { const a = projectArt(slug); return { html: a.h
 // The same page in the other language
 const other = AR ? { href: url('experiments/herbarium/'), label: 'English', lang: 'en' } : { href: url('ar/experiments/herbarium/'), label: 'العربية', lang: 'ar' };
 
-// Stages (the home page's pipeline split) plus two shelves for everything else
-const KEYS = [
-  ['python', 'rest-apis', 'web-scraping', 'etl', 'ibm-api-connect', 'outsystems'],
-  ['sql', 'dbt', 'airflow', 'data-cleaning', 'power-query'],
-  ['data-modeling', 'snowflake', 'statistics'],
-  ['power-bi', 'dax', 'dashboard-design', 'streamlit'],
-  ['aws', 'azure', 'docker', 'ci-cd', 'git'],
-  ['typescript', 'javascript', 'astro', 'p5js', 'generative-viz'],
+// Capability groups; every tool sits in exactly one. Only tools with real use (a project, a job or the
+// bootcamp) are shown, so the unused keys here stay hidden until they are used somewhere.
+const CAPS = [
+  ['power-bi', 'dax', 'power-query', 'dashboard-design', 'data-cleaning', 'web-scraping', 'statistics'],
+  ['python', 'typescript', 'javascript', 'astro', 'streamlit', 'rest-apis', 'ibm-api-connect', 'outsystems', 'git', 'p5js', 'generative-viz'],
+  ['sql', 'dbt', 'airflow', 'etl', 'data-modeling', 'snowflake'],
+  ['aws', 'azure', 'docker', 'ci-cd'],
 ];
-const STAGES = [
-  ...['ingest', 'transform', 'model', 'report'].map((id, i) => ({ id, name: D.workflow[i], what: T.what[i] })),
-  ...T.extra.map(([id, name, what]) => ({ id, name, what })),
-].map((s, i) => ({ ...s, keys: KEYS[i] }));
 const live = (k: string) => D.skills.find((s) => s.key === k && (s.used.length || s.work.length || s.train.length));
-const groups = STAGES.map((g) => ({ ...g, tools: g.keys.map(live).filter(Boolean).sort((a, b) => b!.used.length - a!.used.length || b!.work.length - a!.work.length) as typeof D.skills }))
+const groups = CAPS.map((keys, i) => ({ name: T.caps[i][0], what: T.caps[i][1],
+  tools: keys.map(live).filter(Boolean).sort((a, b) => b!.used.length - a!.used.length || b!.work.length - a!.work.length) as typeof D.skills }))
   .filter((g) => g.tools.length);
 const roles = D.experience.filter((e) => e.skills.length);
 const camps = D.education.filter((e) => e.skills.length);
@@ -213,16 +209,15 @@ const lead = featured[0] ?? D.projects[0], camp = camps[0], post = D.posts[0];
     <!-- ── 03 Tools: stages on top, where they were used underneath ── -->
     <section id="tools" class="hb-sec">
       <header class="hb-head"><p class="hb-num">03</p><h2 data-decode data-perch>{T.secs[2]}</h2><p class="hb-lead">{T.leads[2]}</p></header>
-      <div class="hb-tools" id="hb-map">
-        <p class="hb-legend"><span><i class="d w"></i>{T.lgWork}</span><span><i class="d t"></i>{T.lgTrain}</span><span><b>4</b> = {T.lgN}</span></p>
-        <div class="hb-stages">
-          {groups.map((g, gi) => (
-            <div class="hb-grp">
-              <p class="hb-grp-h"><b>{pad(gi + 1)}</b> {g.name}<small>{g.what}</small></p>
-              <ul>{g.tools.map((s) => (
-                <li class={`hb-tool ${s.core ? 'is-core' : ''}`}>
-                  <span class="nm">{s.label}</span><span class="ld"></span>
-                  <span class="mk">{s.work.length > 0 && <i class="d w" title={T.lgWork}></i>}{s.train.length > 0 && <i class="d t" title={T.lgTrain}></i>}<b>{s.used.length || '–'}</b></span></li>))}</ul>
+      <div class="hb-tools">
+        <p class="hb-legend"><span><i class="d w"></i>{T.lgWork}</span><span><i class="d t"></i>{T.lgTrain}</span></p>
+        <div class="hb-caps">
+          {groups.map((g) => (
+            <div class="hb-cap">
+              <h3>{g.name}</h3>
+              <p class="hb-cap-d">{g.what}</p>
+              <ul>{g.tools.map((t) => (
+                <li>{t.label}{(t.work.length > 0 || t.train.length > 0) && <span class="mk">{t.work.length > 0 && <i class="d w" role="img" aria-label={T.lgWork} title={T.lgWork}></i>}{t.train.length > 0 && <i class="d t" role="img" aria-label={T.lgTrain} title={T.lgTrain}></i>}</span>}</li>))}</ul>
             </div>
           ))}
         </div>
@@ -467,22 +462,20 @@ const lead = featured[0] ?? D.projects[0], camp = camps[0], post = D.posts[0];
   .hb a:focus-visible, .hb button:focus-visible { outline: 1px solid var(--red); outline-offset: 4px; }
   .hb-tag { margin: 0; font: 500 9.5px var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--dim); }
 
-  /* ── tools: compact stage grid + where-used rows ── */
+  /* ── tools: four capability groups, names first, quiet where-used dots ── */
   .hb-tools { position: relative; }
-  .hb-legend { display: flex; flex-wrap: wrap; gap: 8px 22px; margin: -26px 0 26px; font: 10.5px var(--mono); color: var(--dim); }
-  .hb-legend span { display: inline-flex; gap: 7px; align-items: center; } .hb-legend b { color: var(--ink-2); font-weight: 500; }
-  .d { display: inline-block; width: 6px; height: 6px; border-radius: 50%; flex: none; }
-  .d.w { background: var(--gold); box-shadow: 0 0 5px #e6c34a88; } .d.t { background: #7fbf7f; box-shadow: 0 0 5px #7fbf7f88; }
-  .hb-stages { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 34px 46px; position: relative; z-index: 1; }
-  .hb-grp { display: grid; align-content: start; gap: 6px; }
-  .hb-grp-h { margin: 0; font: 500 10.5px/1.3 var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--ink); padding-bottom: 8px; border-bottom: 1px solid #ffffff1a; transition: color .2s; }
-  .hb-grp-h b { color: var(--red); font-weight: 500; }
-  .hb-grp-h small { display: block; margin-top: 4px; font: 400 12px/1.4 var(--sans); letter-spacing: 0; text-transform: none; color: var(--dim); }
-  .hb-grp ul { list-style: none; margin: 0; padding: 0; display: grid; }
-  .hb-tool { box-sizing: border-box; width: 100%; display: flex; align-items: baseline; gap: 8px; padding: 4px 6px; font: 12.5px/1.5 var(--mono); color: var(--ink-2); transition: color .2s, background .2s; }
-  .hb-tool .nm { white-space: nowrap; } .hb-tool.is-core .nm { color: var(--gold); }
-  .hb-tool .ld { flex: 1; border-bottom: 1px dotted #ffffff26; transform: translateY(-3px); min-width: 12px; }
-  .hb-tool .mk { display: inline-flex; gap: 5px; align-items: center; } .hb-tool .mk b { font-weight: 400; color: var(--dim); min-width: 1.2ch; text-align: end; }
+  .hb-legend { display: flex; flex-wrap: wrap; gap: 8px 22px; margin: -26px 0 34px; font: 10.5px var(--mono); color: var(--dim); }
+  .hb-legend span { display: inline-flex; gap: 7px; align-items: center; }
+  .d { display: inline-block; width: 5px; height: 5px; border-radius: 50%; flex: none; }
+  .d.w { background: var(--gold); opacity: .85; } .d.t { background: #7fbf7f; opacity: .85; }
+  .hb-caps { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 48px 72px; }
+  .hb-cap { padding-top: 16px; border-top: 1px solid #ffffff1a; }
+  .hb-cap h3 { margin: 0; font: 400 30px/1.15 var(--serif); font-style: italic; letter-spacing: -.01em; color: var(--ink); }
+  html[lang='ar'] .hb-cap h3 { font-weight: 700; font-size: 27px; line-height: 1.4; }
+  .hb-cap-d { margin: 6px 0 0; font-size: 13.5px; line-height: 1.5; color: var(--dim); }
+  .hb-cap ul { list-style: none; margin: 18px 0 0; padding: 0; display: flex; flex-wrap: wrap; gap: 8px 22px; }
+  .hb-cap li { display: inline-flex; align-items: center; gap: 7px; font: 13px/1.5 var(--mono); color: var(--ink-2); }
+  .hb-cap .mk { display: inline-flex; gap: 3px; transform: translateY(-4px); }
 
   /* ── notes ── */
   .hb-journal.n-1 { max-width: 780px; }   /* a single featured note reads at a comfortable measure */
@@ -537,7 +530,6 @@ const lead = featured[0] ?? D.projects[0], camp = camps[0], post = D.posts[0];
     .hb-slip { display: none; }   /* it would sit on the drawing; the title and date are right below anyway */
     .hb-hero { grid-template-columns: 1fr; gap: 50px; padding-top: 90px; }
     .hb-now { grid-template-columns: 1fr 1fr; gap: 30px; align-items: start; }
-    .hb-stages { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   }
   @media (max-width: 860px) {
     .hb { margin-inline-start: 0; --col: calc(100vw - 32px); }
@@ -566,7 +558,7 @@ const lead = featured[0] ?? D.projects[0], camp = camps[0], post = D.posts[0];
     .hb-toc a { flex-wrap: wrap; gap: 4px 14px; } .hb-toc .ld { display: none; } .hb-toc .dt { order: -1; flex-basis: 100%; }
 
     .hb-legend { margin-top: -14px; }
-    .hb-stages { grid-template-columns: 1fr; gap: 26px; }
+    .hb-caps { grid-template-columns: 1fr; gap: 36px; } .hb-cap h3 { font-size: 26px; }
           .hb-journal { grid-template-columns: 1fr; gap: 60px; } .hb-journal::before { display: none; }
     .hb-entry, .hb-entry + .hb-entry { padding: 0; border: 0; grid-template-columns: 64px 1fr; gap: 0 16px; }
     .hb-date b { font-size: 56px; }
