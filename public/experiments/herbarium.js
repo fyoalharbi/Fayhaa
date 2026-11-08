@@ -43,6 +43,35 @@
     addEventListener('hashchange', () => { if (location.hash === '#' + fold.id) set(true); });
   });
 
+  // ── Featured projects, one per screen: when scrolling stops between two of them, glide to the one
+  //    the reader was heading for (a small nudge falls back). Outside the featured run, scrolling is free. ──
+  const feats = $$('.hb-feat'), oneUp = matchMedia('(min-width: 861px) and (min-height: 620px)');
+  if (feats.length) {
+    let settled = scrollY, busy = false, user = false, t = 0;
+    // only the reader's own scrolling engages the lock; links and the rail land exactly where they point
+    ['wheel', 'touchmove', 'keydown'].forEach((ev) => addEventListener(ev, () => { user = true; }, { passive: true }));
+    const settle = () => {
+      const dir = Math.sign(scrollY - settled); settled = scrollY;
+      if (busy) { busy = false; return; }
+      const mine = user; user = false;
+      if (!mine || !oneUp.matches || !dir) return;
+      // layout positions (the reveal animation's transform must not shift the target)
+      const H = innerHeight, box = feats.map((f) => { let y = 0, e = f; while (e) { y += e.offsetTop; e = e.offsetParent; } return { top: y - scrollY, bottom: y - scrollY + f.offsetHeight }; });
+      // the project coming into view in the scroll direction, and the one it is replacing
+      const i = dir > 0 ? box.findIndex((r) => r.top > 1 && r.top < H - 1) : box.findIndex((r) => r.bottom > 1 && r.bottom < H - 1);
+      if (i < 0) return;
+      const j = i - dir, show = dir > 0 ? H - box[i].top : box[i].bottom;
+      // nudged only a little past a project that fills the screen: go back to it; otherwise go on
+      let k = i;
+      if (show < H * 0.12) { if (!feats[j]) return; k = j; }
+      const y = box[k].top + scrollY;
+      if (Math.abs(y - scrollY) < 2) return;
+      busy = true; scrollTo({ top: y, behavior: REDUCED ? 'auto' : 'smooth' });
+    };
+    if ('onscrollend' in window) addEventListener('scrollend', settle);
+    else addEventListener('scroll', () => { clearTimeout(t); t = setTimeout(settle, 160); }, { passive: true });
+  }
+
   // ── Project plates: the ASCII drawing first; "Preview" reveals the real screenshot ──
   $$('.hb-prev').forEach((btn) => btn.addEventListener('click', () => {
     const art = btn.closest('article'), on = !art.classList.contains('is-prev');
