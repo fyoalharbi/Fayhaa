@@ -19,7 +19,8 @@ const pad = (n: number) => String(n).padStart(2, '0');
 
 const T = AR ? {
   kicker: 'معرض أعمال · 2022 — 2026', see: 'شوف المشاريع ↓', email: 'راسلني',
-  facts: ['الدور', 'السنوات', 'الأعمال'], works: `مشاريع: ${D.projects.length} · تدوينات: ${D.posts.length}`,
+  intro: 'فضولية بطبعي، أستكشف التقاطع بين البيانات والبرمجيات والتقنية من خلال المشاريع والتجارب.',
+  facts: ['السنوات', 'الأعمال'], works: `مشاريع: ${D.projects.length} · تدوينات: ${D.posts.length}`,
   now: 'آخر مشروع', training: 'آخر تدريب', note: 'آخر تدوينة',
   secs: ['عني', 'المشاريع', 'الأدوات', 'المدونة', 'تواصل'],
   leads: ['خبراتي وتعليمي وطريقتي في الشغل.', 'الأعمال المميزة أول، وبعدها الباقي.',
@@ -39,7 +40,8 @@ const T = AR ? {
   js: { hint: 'مرّر أو اضغط على أداة أو وظيفة أو مشروع.', pinned: 'مثبّت · اضغط مرة ثانية أو Esc', jobs: 'وظائف', camp: 'المعسكر', projects: 'مشاريع', tools: 'أدوات', tip: 'ليش فراشات؟ افتح الحديقة ←' },
 } : {
   kicker: 'Portfolio · 2022 — 2026', see: 'See the projects ↓', email: 'Email me',
-  facts: ['Role', 'Years', 'Work'], works: `${D.projects.length} projects · ${D.posts.length} notes`,
+  intro: 'Curious by nature, I explore the intersection of data, software, and technology through projects and experiments.',
+  facts: ['Years', 'Work'], works: `${D.projects.length} projects · ${D.posts.length} notes`,
   now: 'Latest project', training: 'Latest training', note: 'Latest note',
   secs: ['About', 'Projects', 'Tools', 'Notes', 'Contact'],
   leads: ['Experience, education, and how I like to work.', 'Featured work first, then everything else.',
@@ -119,13 +121,11 @@ const lead = featured[0] ?? D.projects[0], camp = camps[0], post = D.posts[0];
       <div class="hb-hero-in">
         <p class="hb-k">{T.kicker}</p>
         <h1 class="hb-name" data-perch><span data-decode>{D.name}</span></h1>
-        <p class="hb-role">{D.role}</p>
-        <p class="hb-intro">{D.intro}</p>
+        <p class="hb-intro">{T.intro}</p>
         <p class="hb-cta"><a href="#work">{T.see}</a><a href={`mailto:${D.email}`}>{T.email}</a></p>
         <dl class="hb-museum">
-          <dt>{T.facts[0]}</dt><dd>{D.role}</dd>
-          <dt>{T.facts[1]}</dt><dd>2022 — 2026</dd>
-          <dt>{T.facts[2]}</dt><dd>{T.works}</dd>
+          <dt>{T.facts[0]}</dt><dd>2022 — 2026</dd>
+          <dt>{T.facts[1]}</dt><dd>{T.works}</dd>
         </dl>
       </div>
       <aside class="hb-now">
@@ -339,12 +339,12 @@ const lead = featured[0] ?? D.projects[0], camp = camps[0], post = D.posts[0];
   .hb-name span { display: inline-block; background: linear-gradient(100deg, var(--ink) 40%, #ffd7c8 50%, var(--ink) 60%) 0 0 / 300% 100%; -webkit-background-clip: text; background-clip: text; color: transparent; animation: hb-sheen 9s ease-in-out 2.5s infinite; padding: 0 .06em .32em 0; margin-bottom: -.32em; }
   @keyframes hb-sheen { 0%, 70% { background-position: 100% 0; } 100% { background-position: 0 0; } }
   .hb-role { margin: clamp(26px, 3.6vw, 52px) 0 0; font: 400 clamp(20px, 2.1vw, 27px)/1.3 var(--serif); color: var(--ink-2); }
-  .hb-intro { max-width: 50ch; margin: 16px 0 0; font-size: 15px; line-height: 1.7; color: var(--dim); }
+  .hb-intro { max-width: 50ch; margin: clamp(26px, 3.6vw, 52px) 0 0; font-size: 15px; line-height: 1.7; color: var(--dim); }
   .hb-cta { display: flex; gap: 10px; flex-wrap: wrap; margin: 28px 0 0; }
   .hb-cta a { font: 500 11.5px/1 var(--mono); letter-spacing: .06em; padding: 11px 14px; text-decoration: none; color: var(--ink); border: 1px solid #ffffff2a; background: #0b0c0e99; transition: all .2s; }
   .hb-cta a:first-child { border-color: #ff8a8a88; background: #ff8a8a12; }
   .hb-cta a:hover { border-color: var(--red); color: var(--red); box-shadow: 0 0 14px #ff8a8a33; }
-  .hb-museum { margin: 44px 0 0; display: inline-grid; grid-template-columns: repeat(6, auto); gap: 0 12px; padding-top: 9px; font: 10px/1.5 var(--mono); border-top: 1px solid #ffffff1a; }
+  .hb-museum { margin: 44px 0 0; display: inline-grid; grid-template-columns: repeat(4, auto); gap: 0 12px; padding-top: 9px; font: 10px/1.5 var(--mono); border-top: 1px solid #ffffff1a; }
   .hb-museum dt { color: var(--dim); text-transform: uppercase; letter-spacing: .14em; } .hb-museum dd { margin: 0; margin-inline-end: 14px; color: var(--ink-2); white-space: nowrap; }
 
   .hb-now { display: grid; gap: 26px; align-self: center; }
@@ -422,6 +422,7 @@ const lead = featured[0] ?? D.projects[0], camp = camps[0], post = D.posts[0];
   .hb-sub { margin: 10px 0 0; font-size: 14px; color: var(--leaf); }
   .hb-sum { margin: 14px 0 0; font-size: 14.5px; line-height: 1.65; color: var(--ink-2); max-width: 48ch; }
   html[lang='ar'] .hb-sum, html[lang='ar'] .hb-res, html[lang='ar'] .hb-intro { line-height: 1.9; }
+  html[lang='ar'] .hb-intro { margin-top: 18px; }   /* Amiri's tall name line already leaves the room */
   .hb-res { margin: 16px 0 0; padding: 10px 0; padding-inline-start: 14px; border-inline-start: 1px solid var(--gold); font-size: 13.5px; line-height: 1.6; color: var(--dim); max-width: 48ch; }
   .hb-res b { display: block; font: 500 9.5px var(--mono); letter-spacing: .16em; text-transform: uppercase; color: var(--gold); margin-bottom: 3px; }
   .hb-stack { margin: 14px 0 0; font: 11px/1.6 var(--mono); color: #6f9f6fcc; }
