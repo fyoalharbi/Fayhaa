@@ -27,7 +27,9 @@ const T = AR ? {
     'أشياء أتعلمها بالطريق.', 'أسرع طريقة توصل لي هي الإيميل.'],
   preview: 'معاينة', hide: 'إخفاء', fig: 'شكل', shot: 'لقطة من',
   why: 'ليش فراشات؟ القصة كاملة ←', project: 'مشروع', result: 'النتيجة', case: 'دراسة الحالة ←', live: 'العرض المباشر ↗', liveS: 'مباشر ↗', code: 'الكود ↗',
-  more: 'مشاريع أخرى', moreN: (n: number) => `· ${n} إضافية`,
+  feat: 'عيّنات مختارة', featN: (n: number, all: number) => `· ${n} من ${all}`, explore: 'تصفّح المجموعة كاملة ←',
+  coll: 'المجموعة كاملة', collN: (n: number) => (n === 1 ? '· عيّنة واحدة' : `· ${n} عيّنات`), cols: ['رقم', 'العيّنة', 'الفصيلة · التاريخ', 'روابط'],
+  featW: 'كتابات مختارة', exploreW: 'تصفّح كل الكتابات ←', arch: 'أرشيف الكتابات', archN: (n: number) => (n === 1 ? '· تدوينة واحدة' : `· ${n} تدوينات`),
   types: { Pipelines: 'خطوط بيانات', Dashboards: 'لوحات بيانات', Web: 'ويب', Analysis: 'تحليل' } as Record<string, string>,
   lgWork: 'استخدمتها في وظيفة', lgTrain: 'استخدمتها في معسكر SDA', lgN: 'عدد المشاريع',
   atWork: 'في الشغل', trainingRow: 'التدريب', projects: 'المشاريع',
@@ -45,7 +47,9 @@ const T = AR ? {
     'Things I learn along the way.', 'Email is the fastest way to reach me.'],
   preview: 'Preview', hide: 'Hide preview', fig: 'fig.', shot: 'Screenshot of',
   why: 'Why butterflies? The full story →', project: 'Project', result: 'Result', case: 'Case study →', live: 'Live demo ↗', liveS: 'Live ↗', code: 'Code ↗',
-  more: 'More projects', moreN: (n: number) => `· ${n} more`,
+  feat: 'Featured specimens', featN: (n: number, all: number) => `· ${n} of ${all}`, explore: 'Explore the complete collection →',
+  coll: 'Complete Collection', collN: (n: number) => `· ${n} specimen${n === 1 ? '' : 's'}`, cols: ['No.', 'Specimen', 'Family · collected', 'Links'],
+  featW: 'Featured writings', exploreW: 'Explore all writings →', arch: 'Writing Archive', archN: (n: number) => `· ${n} ${n === 1 ? 'entry' : 'entries'}`,
   types: { Pipelines: 'Pipelines', Dashboards: 'Dashboards', Web: 'Web', Analysis: 'Analysis' } as Record<string, string>,
   lgWork: 'used at a job', lgTrain: 'used in the SDA bootcamp', lgN: 'projects',
   atWork: 'At work', trainingRow: 'Training', projects: 'Projects',
@@ -79,7 +83,22 @@ const groups = STAGES.map((g) => ({ ...g, tools: g.keys.map(live).filter(Boolean
 const roles = D.experience.filter((e) => e.skills.length);
 const camps = D.education.filter((e) => e.skills.length);
 const fam = (p: (typeof D.projects)[number]) => T.types[p.skills.some((s) => s.key === 'airflow' || s.key === 'dbt') ? 'Pipelines' : p.skills.some((s) => s.key === 'power-bi') ? 'Dashboards' : p.skills.some((s) => s.key === 'typescript') ? 'Web' : 'Analysis'];
-const featured = D.projects.filter((p) => p.featured), drawer = D.projects.filter((p) => !p.featured);
+// Curated for this page: three specimens that each show a different strength (a team data-engineering
+// pipeline, a solo scrape-validate-report dashboard, a merged open-source product contribution).
+// Everything else goes to the collection, newest first; nothing appears twice.
+const PICKS = ['invasight', 'ewc-2024-dashboard', 'qafiyah-feelings'];
+const byTime = <X extends { time: number }>(a: X, b: X) => b.time - a.time;
+const picked = PICKS.map((s) => D.projects.find((p) => p.slug === s)).filter((p): p is (typeof D.projects)[number] => !!p);
+const featured = [...picked, ...D.projects.filter((p) => p.featured && !picked.includes(p))].slice(0, 3);
+const collection = D.projects.filter((p) => !featured.includes(p)).sort(byTime);
+// Writing: the personal reflection first, then the practical how-to; the archive takes the rest
+const POST_PICKS = ['adapting-to-ai', 'gsd-claude-code'];
+const featPosts = [...POST_PICKS.map((s) => D.posts.find((p) => p.slug === s)), ...[...D.posts].sort(byTime)]
+  .filter((p, i, a): p is (typeof D.posts)[number] => !!p && a.indexOf(p) === i).slice(0, 3);
+const archive = D.posts.filter((p) => !featPosts.includes(p)).sort(byTime);
+const noteNo = (p: (typeof D.posts)[number]) => pad([...D.posts].sort(byTime).reverse().indexOf(p) + 1);
+const PT: Record<string, [string, string]> = { red: ['#ff8a8a', '#b35a5a'], white: ['#f4f4f4', '#9a9a9a'], violet: ['#c49aff', '#6f5a99'], blush: ['#ffc0d0', '#a07080'], orange: ['#ffb070', '#a06a3a'], gold: ['#e6c34a', '#8a7428'] };
+const petal = (slug: string) => { const t = PT[projectArt(slug).tone] ?? PT.red; return `--pt:${t[0]};--pt2:${t[1]}`; };
 const stack = (p: (typeof D.projects)[number], n = 4) => p.skills.slice(0, n).map((s) => s.label).join(' · ') + (p.skills.length > n ? ` · +${p.skills.length - n}` : '');
 const lead = featured[0] ?? D.projects[0], camp = camps[0], post = D.posts[0];
 ---
@@ -148,6 +167,7 @@ const lead = featured[0] ?? D.projects[0], camp = camps[0], post = D.posts[0];
     <!-- ── 02 Projects ── -->
     <section id="work" class="hb-sec">
       <header class="hb-head"><p class="hb-num">02</p><h2 data-decode data-perch>{T.secs[1]}</h2><p class="hb-lead">{T.leads[1]}</p></header>
+      <p class="hb-shelf" id="featured">{T.feat} <span>{T.featN(featured.length, D.projects.length)}</span></p>
       <div class="hb-feats">
         {featured.map((p, i) => (
           <article class={`hb-feat ${i % 2 ? 'is-flip' : ''}`}>
@@ -175,27 +195,33 @@ const lead = featured[0] ?? D.projects[0], camp = camps[0], post = D.posts[0];
           </article>
         ))}
       </div>
-      <p class="hb-sub-h">{T.more} <span>{T.moreN(drawer.length)}</span></p>
-      <div class="hb-drawer">
-        {drawer.map((p, i) => (
-          <article class="hb-sheet">
-            <a class="hb-img" href={p.href} aria-label={p.title}>
-              <pre class="hb-art" aria-hidden="true" set:html={plate(p.slug).html}></pre>
-              {p.thumb && <img class="hb-shot" src={p.thumb} alt={`${T.shot} ${p.title}`} loading="lazy" />}
-              <i class="c tl"></i><i class="c tr"></i><i class="c bl"></i><i class="c br"></i>
-            </a>
-            <p class="hb-fig"><span><b>{T.fig} {pad(featured.length + i + 1)}</b> {plate(p.slug).cap}</span>{p.thumb && <button type="button" class="hb-prev" aria-pressed="false" data-on={T.hide} data-off={T.preview}>{T.preview}</button>}</p>
-            <p class="hb-tag">{pad(featured.length + i + 1)} · {fam(p)} · {p.date}</p>
-            <h3><a href={p.href}>{p.title}</a></h3>
-            <p class="hb-sum">{p.summary}</p>
-            <p class="hb-links">
-              <a href={p.href}>{T.case}</a>
-              {p.live && <a href={p.live}>{T.liveS}</a>}
-              {p.code && <a href={p.code}>{T.code}</a>}
-            </p>
-          </article>
-        ))}
-      </div>
+      {collection.length > 0 && <p class="hb-explore"><a href="#collection">{T.explore}</a></p>}
+      {collection.length > 0 && (
+        <div class="hb-coll" id="collection">
+          <h3 class="hb-sub-h" data-perch>{T.coll} <span>{T.collN(collection.length)}</span></h3>
+          <p class="hb-reg-h" aria-hidden="true"><span>{T.cols[0]}</span><span></span><span>{T.cols[1]}</span><span>{T.cols[2]}</span><span>{T.cols[3]}</span></p>
+          <ol class="hb-reg">
+            {collection.map((p, i) => (
+              <li class="hb-row" style={petal(p.slug)}>
+                <p class="hb-row-n">{pad(featured.length + i + 1)}</p>
+                <pre class="hb-row-art" aria-hidden="true" set:html={flowerHTML({ R: 4, petals: 5 + (i % 4), seed: p.slug, stem: 4 })}></pre>
+                <div class="hb-row-main">
+                  <h4><a href={p.href}>{p.title}</a></h4>
+                  {p.sub && <p class="hb-sub">{p.sub}</p>}
+                  <p class="hb-row-sum">{p.summary}</p>
+                  <p class="hb-stack">{stack(p, 5)}</p>
+                </div>
+                <p class="hb-row-meta"><span>{fam(p)}</span><span>{p.date}</span></p>
+                <p class="hb-row-links">
+                  <a href={p.href}>{T.case}</a>
+                  {p.live && <a href={p.live}>{T.liveS}</a>}
+                  {p.code && <a href={p.code}>{T.code}</a>}
+                </p>
+              </li>
+            ))}
+          </ol>
+        </div>
+      )}
     </section>
 
     <!-- ── 03 Tools: stages on top, where they were used underneath ── -->
@@ -220,11 +246,12 @@ const lead = featured[0] ?? D.projects[0], camp = camps[0], post = D.posts[0];
     <!-- ── 04 Notes ── -->
     <section id="notes" class="hb-sec">
       <header class="hb-head"><p class="hb-num">04</p><h2 data-decode data-perch>{T.secs[3]}</h2><p class="hb-lead">{T.leads[3]}</p></header>
-      <div class="hb-journal">
-        {D.posts.map((p, i) => (
+      <p class="hb-shelf">{T.featW} <span>{T.featN(featPosts.length, D.posts.length)}</span></p>
+      <div class={`hb-journal n-${featPosts.length}`} style={`--n:${featPosts.length}`}>
+        {featPosts.map((p, i) => (
           <article class="hb-entry">
-            <p class="hb-entry-k"><span>{T.noteK} {pad(D.posts.length - i)}</span><span>{p.date} · {p.minutes} {T.min}</span></p>
-            <p class="hb-date" aria-hidden="true"><b>{pad(D.posts.length - i)}</b></p>
+            <p class="hb-entry-k"><span>{T.noteK} {noteNo(p)}</span><span>{p.date} · {p.minutes} {T.min}</span></p>
+            <p class="hb-date" aria-hidden="true"><b>{noteNo(p)}</b></p>
             <pre class="hb-sprig" aria-hidden="true" set:html={flowerHTML({ R: 3, petals: 5 + i, seed: 40 + i, stem: 4 })}></pre>
             <h3><a href={p.href}>{p.title}</a></h3>
             <p class="hb-excerpt">{p.summary}</p>
@@ -232,6 +259,20 @@ const lead = featured[0] ?? D.projects[0], camp = camps[0], post = D.posts[0];
           </article>
         ))}
       </div>
+      {archive.length > 0 && <p class="hb-explore"><a href="#archive">{T.exploreW}</a></p>}
+      {archive.length > 0 && (
+        <div class="hb-coll" id="archive">
+          <h3 class="hb-sub-h" data-perch>{T.arch} <span>{T.archN(archive.length)}</span></h3>
+          <ol class="hb-toc">
+            {archive.map((p) => (
+              <li>
+                <a href={p.href}><span class="tt">{p.title}</span><span class="ld" aria-hidden="true"></span><span class="dt">{p.date}</span></a>
+                <p>{p.tags.map((t) => `#${t}`).join('  ')}</p>
+              </li>
+            ))}
+          </ol>
+        </div>
+      )}
     </section>
 
     <!-- ── 05 Contact ── -->
@@ -249,6 +290,7 @@ const lead = featured[0] ?? D.projects[0], camp = camps[0], post = D.posts[0];
 
 <style is:global>
   html { scroll-behavior: smooth; overflow-x: clip; }
+  @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
   body { background: radial-gradient(1200px 600px at 85% -10%, #1a1f1a 0%, transparent 60%), var(--night); }
   html[lang='ar'] { --mono: 'JetBrains Mono', 'IBM Plex Sans Arabic', ui-monospace, monospace; }
   html[lang='ar'] .hb, html[lang='ar'] .hb-rail { letter-spacing: 0; }
@@ -331,7 +373,7 @@ const lead = featured[0] ?? D.projects[0], camp = camps[0], post = D.posts[0];
   .hb-img { position: relative; display: block; aspect-ratio: 16/10; background: #0e100f; outline: 1px solid #ffffff12; outline-offset: 7px; }
   /* the plate: a 64×20 drawing scaled to the frame's width, in a quiet monochrome */
   .hb-img { container-type: inline-size; display: grid; place-items: center; overflow: visible; }
-  .hb-feat > *, .hb-sheet, .hb-drawer > *, .hb-now > * { min-width: 0; }   /* grid items never grow past their column */
+  .hb-feat > *, .hb-row > *, .hb-now > * { min-width: 0; }   /* grid items never grow past their column */
   .hb-art { margin: 0; direction: ltr; white-space: pre; max-width: 100%; overflow: hidden; font: 400 var(--art-fs, 7px)/1.25 'JetBrains Mono', monospace; color: #4d4d57; transition: opacity .5s; user-select: none; }
   .hb-img { text-decoration: none; } .hb-art i { font-style: normal !important; }
   .hb-art { transform: translateZ(0); }   /* own layer → grayscale antialiasing, no coloured fringes on thin glyphs */
@@ -370,9 +412,9 @@ const lead = featured[0] ?? D.projects[0], camp = camps[0], post = D.posts[0];
   .hb-slip b { color: var(--red); font-weight: 500; letter-spacing: .1em; text-transform: uppercase; } .hb-slip span:nth-child(2) { color: var(--ink); font: italic 13px/1.3 var(--serif); }
   .hb-feat.is-flip .hb-slip { inset-inline-end: auto; inset-inline-start: -10px; transform: rotate(1.5deg); }
   .hb-n { margin: 0 0 -10px; font: italic 400 110px/1 var(--serif); color: transparent; -webkit-text-stroke: 1px #ffffff26; letter-spacing: -.04em; }
-  .hb-label h3, .hb-sheet h3 { margin: 0; font: 400 46px/1.04 var(--serif); font-style: italic; letter-spacing: -.01em; }
-  html[lang='ar'] .hb-label h3, html[lang='ar'] .hb-sheet h3 { font-weight: 500; line-height: 1.3; font-size: 38px; }
-  .hb-label h3 a, .hb-sheet h3 a { text-decoration: none; transition: color .2s; } .hb-label h3 a:hover, .hb-sheet h3 a:hover { color: var(--red); }
+  .hb-label h3 { margin: 0; font: 400 46px/1.04 var(--serif); font-style: italic; letter-spacing: -.01em; }
+  html[lang='ar'] .hb-label h3 { font-weight: 500; line-height: 1.3; font-size: 38px; }
+  .hb-label h3 a { text-decoration: none; transition: color .2s; } .hb-label h3 a:hover { color: var(--red); }
   .hb-sub { margin: 10px 0 0; font-size: 14px; color: var(--leaf); }
   .hb-sum { margin: 14px 0 0; font-size: 14.5px; line-height: 1.65; color: var(--ink-2); max-width: 48ch; }
   html[lang='ar'] .hb-sum, html[lang='ar'] .hb-res, html[lang='ar'] .hb-intro { line-height: 1.9; }
@@ -384,12 +426,49 @@ const lead = featured[0] ?? D.projects[0], camp = camps[0], post = D.posts[0];
   .hb-links a:hover { color: var(--red); border-color: var(--red); }
   .hb-sub-h { margin: 150px 0 34px; font: 400 30px/1 var(--serif); font-style: italic; color: var(--ink); padding-bottom: 14px; border-bottom: 1px dashed #ffffff22; }
   .hb-sub-h span { font: 500 10.5px var(--mono); font-style: normal; letter-spacing: .14em; text-transform: uppercase; color: var(--dim); }
-  .hb-drawer { display: grid; grid-template-columns: repeat(3, 1fr); gap: 72px 40px; align-items: start; }
-  .hb-sheet { display: grid; align-content: start; }
-  .hb-sheet .hb-img { aspect-ratio: 16/10; }
-  .hb-sheet .hb-fig { margin-bottom: 18px; min-height: 3em; }   /* two lines always, so every card in the row lines up */
-  .hb-sheet h3 { font-size: 25px; margin-top: 6px; } html[lang='ar'] .hb-sheet h3 { font-size: 23px; }
-  .hb-sheet .hb-sum { font-size: 13.5px; color: var(--dim); display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+  /* Shelf labels: a quiet mono line that names what sits below */
+  .hb-shelf { margin: 0 0 40px; font: 500 10.5px var(--mono); letter-spacing: .16em; text-transform: uppercase; color: var(--red); }
+  .hb-shelf span { color: var(--dim); letter-spacing: .1em; }
+  .hb-explore { margin: 96px 0 0; display: flex; justify-content: flex-end; }
+  .hb-explore a { font: 500 11.5px var(--mono); letter-spacing: .06em; color: var(--ink); text-decoration: none; padding-bottom: 3px; border-bottom: 1px solid #ff8a8a66; transition: color .2s, border-color .2s, padding .3s; }
+  .hb-explore a:hover { color: var(--red); border-color: var(--red); padding-inline-end: 8px; }
+  .hb-coll { scroll-margin-top: 40px; }
+  .hb-coll .hb-sub-h { margin-top: 70px; }
+  /* Complete collection: a specimen register, one ruled line per accession */
+  .hb-reg-h, .hb-row { display: grid; grid-template-columns: 44px 64px minmax(0, 1fr) 150px 150px; gap: 0 24px; align-items: start; }
+  .hb-reg-h { margin: -18px 0 0; padding: 0 10px 10px; font: 500 9.5px var(--mono); letter-spacing: .14em; text-transform: uppercase; color: #ffffff4d; }
+  .hb-reg { list-style: none; margin: 0; padding: 0; border-top: 1px solid #ffffff1a; }
+  .hb-row { position: relative; padding: 26px 10px 28px; border-bottom: 1px dashed #ffffff1c; transition: background .3s; }
+  .hb-row:hover, .hb-row:focus-within { background: linear-gradient(90deg, #ffffff06, #ffffff02); }
+  .hb-row::before { content: ''; position: absolute; inset-inline-start: 0; top: 26px; bottom: 28px; width: 1px; background: var(--pt); opacity: 0; transition: opacity .3s; }
+  .hb-row:hover::before, .hb-row:focus-within::before { opacity: .7; }
+  .hb-row-n { margin: 4px 0 0; font: 500 11px var(--mono); letter-spacing: .1em; color: var(--dim); transition: color .3s; }
+  .hb-row:hover .hb-row-n, .hb-row:focus-within .hb-row-n { color: var(--red); }
+  .hb-row-art { margin: 0; font: 10.5px/1.05 var(--mono); direction: ltr; opacity: .55; transform-origin: 50% 60%; transition: opacity .4s, transform .6s cubic-bezier(.2, .8, .2, 1); }
+  .hb-row-art .t-p { color: var(--pt); } .hb-row-art .t-r { color: var(--pt2); } .hb-row-art .t-s { color: #5f8f5f; } .hb-row-art .t-l { color: var(--leaf); }
+  .hb-row:hover .hb-row-art, .hb-row:focus-within .hb-row-art { opacity: 1; transform: scale(1.12) rotate(-4deg); }
+  .hb-row-main h4 { margin: 0; font: 400 25px/1.15 var(--serif); font-style: italic; letter-spacing: -.01em; text-wrap: balance; }
+  html[lang='ar'] .hb-row-main h4 { font-weight: 500; font-size: 21px; line-height: 1.5; }
+  .hb-row-main h4 a { text-decoration: none; transition: color .2s; } .hb-row-main h4 a:hover { color: var(--red); }
+  .hb-row-main .hb-sub { margin-top: 4px; font-size: 13px; }
+  .hb-row-sum { margin: 10px 0 0; max-width: 62ch; font-size: 13.5px; line-height: 1.65; color: var(--dim); text-wrap: pretty; }
+  .hb-row-main .hb-stack { margin-top: 10px; font-size: 10.5px; }
+  .hb-row-meta { display: grid; gap: 4px; margin: 6px 0 0; font: 500 10px/1.4 var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--dim); }
+  .hb-row-meta span:first-child { color: var(--leaf); }
+  .hb-row-links { display: grid; justify-items: start; gap: 9px; margin: 5px 0 0; font: 500 11px var(--mono); }
+  .hb-row-links a { color: var(--ink); text-decoration: none; border-bottom: 1px solid #ff8a8a55; padding-bottom: 2px; transition: color .2s, border-color .2s; }
+  .hb-row-links a:hover { color: var(--red); border-color: var(--red); }
+  /* Writing archive: a journal's table of contents */
+  .hb-toc { list-style: none; margin: 0; padding: 0; max-width: 820px; }
+  .hb-toc li { padding: 18px 0 16px; border-bottom: 1px solid #ffffff10; }
+  .hb-toc a { display: flex; align-items: baseline; gap: 14px; text-decoration: none; color: var(--ink); }
+  .hb-toc .tt { font: 400 21px/1.35 var(--serif); font-style: italic; transition: color .2s; text-wrap: pretty; }
+  html[lang='ar'] .hb-toc .tt { font-weight: 500; font-size: 18px; line-height: 1.6; }
+  .hb-toc .ld { flex: 1; min-width: 24px; border-bottom: 1px dotted #ffffff2e; transform: translateY(-5px); }
+  .hb-toc .dt { flex: none; font: 500 10.5px var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--dim); }
+  .hb-toc a:hover .tt { color: var(--red); } .hb-toc a:hover .dt { color: var(--ink); }
+  .hb-toc p { margin: 6px 0 0; font: 10.5px var(--mono); color: #6f9f6fcc; }
+  .hb a:focus-visible, .hb button:focus-visible { outline: 1px solid var(--red); outline-offset: 4px; }
   .hb-tag { margin: 0; font: 500 9.5px var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--dim); }
 
   /* ── tools: compact stage grid + where-used rows ── */
@@ -410,10 +489,9 @@ const lead = featured[0] ?? D.projects[0], camp = camps[0], post = D.posts[0];
   .hb-tool .mk { display: inline-flex; gap: 5px; align-items: center; } .hb-tool .mk b { font-weight: 400; color: var(--dim); min-width: 1.2ch; text-align: end; }
 
   /* ── notes ── */
-  .hb-journal { display: grid; grid-template-columns: 1fr 1fr; position: relative; }
-  .hb-journal::before { content: ''; position: absolute; left: 50%; top: 0; bottom: 0; border-left: 1px solid #ffffff14; }
-  .hb-entry { position: relative; display: grid; grid-template-columns: 90px 1fr; gap: 0 22px; padding: 6px 0 20px; padding-inline-end: 48px; }
-  .hb-entry + .hb-entry { padding-inline: 48px 0; }
+  .hb-journal { display: grid; grid-template-columns: repeat(var(--n, 2), minmax(0, 1fr)); position: relative; }
+    .hb-entry { position: relative; display: grid; grid-template-columns: 90px 1fr; gap: 0 22px; padding: 6px 0 20px; padding-inline-end: 48px; }
+  .hb-entry + .hb-entry { padding-inline-start: 48px; border-inline-start: 1px solid #ffffff14; } .hb-entry:last-child { padding-inline-end: 0; }
   .hb-entry-k { grid-column: 1 / -1; display: flex; justify-content: space-between; gap: 12px; margin: 0 0 26px; font: 500 10px var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--dim); padding-bottom: 10px; border-bottom: 1px dashed #ffffff1c; }
   .hb-entry-k span:first-child { color: var(--red); }
   .hb-date { grid-row: 2 / span 3; margin: 0; }
@@ -443,9 +521,9 @@ const lead = featured[0] ?? D.projects[0], camp = camps[0], post = D.posts[0];
   .hb-fly:hover .hb-fly-tip, .hb-fly:focus-visible .hb-fly-tip, .hb-fly.is-tip .hb-fly-tip { opacity: 1; transform: translateX(-50%); }
 
   /* reveal */
-  .hb-sec > *:not(.hb-feats):not(.hb-drawer), .hb-feat, .hb-sheet, .hb-entry { opacity: 0; transform: translateY(26px); transition: opacity 1s ease, transform 1s cubic-bezier(.2, .8, .2, 1); }
+  .hb-sec > *:not(.hb-feats):not(.hb-coll), .hb-feat, .hb-coll > :not(ol), .hb-row, .hb-toc li, .hb-entry { opacity: 0; transform: translateY(26px); transition: opacity 1s ease, transform 1s cubic-bezier(.2, .8, .2, 1); }
   .hb .is-in { opacity: 1 !important; transform: none !important; }
-  .hb-sheet:nth-child(3n + 2) { transition-delay: .12s; } .hb-sheet:nth-child(3n) { transition-delay: .24s; } .hb-entry + .hb-entry { transition-delay: .15s; }
+  .hb-row, .hb-toc li { transition-duration: .8s; } .hb-entry + .hb-entry { transition-delay: .15s; } .hb-entry + .hb-entry + .hb-entry { transition-delay: .3s; }
   .hb-hero-in > *, .hb-now > * { animation: hb-up .9s cubic-bezier(.2, .8, .2, 1) both; }
   .hb-hero-in > :nth-child(2) { animation-delay: .1s; } .hb-hero-in > :nth-child(3) { animation-delay: .35s; } .hb-hero-in > :nth-child(4) { animation-delay: .5s; } .hb-hero-in > :nth-child(5) { animation-delay: .65s; } .hb-hero-in > :nth-child(6) { animation-delay: 1.2s; }
   .hb-now > :nth-child(1) { animation-delay: .7s; } .hb-now > :nth-child(2) { animation-delay: 1s; }
@@ -453,6 +531,10 @@ const lead = featured[0] ?? D.projects[0], camp = camps[0], post = D.posts[0];
   @keyframes hb-up { from { opacity: 0; transform: translateY(16px); } }
 
   @media (max-width: 1100px) {
+    .hb-reg-h { grid-template-columns: 44px 64px minmax(0, 1fr); } .hb-reg-h span:nth-child(n + 4) { display: none; }
+    .hb-row { grid-template-columns: 44px 64px minmax(0, 1fr); }
+    .hb-row-meta, .hb-row-links { grid-column: 3; display: flex; flex-wrap: wrap; gap: 4px 16px; margin-top: 12px; }
+    .hb-journal.n-3 { --n: 1 !important; gap: 60px; } .hb-journal.n-3 .hb-entry { padding-inline: 0; border: 0; }   /* three notes stack; two still sit side by side */
     .hb-slip { display: none; }   /* it would sit on the drawing; the title and date are right below anyway */
     .hb-hero { grid-template-columns: 1fr; gap: 50px; padding-top: 90px; }
     .hb-now { grid-template-columns: 1fr 1fr; gap: 30px; align-items: start; }
@@ -476,12 +558,19 @@ const lead = featured[0] ?? D.projects[0], camp = camps[0], post = D.posts[0];
     .hb-feat.is-flip .hb-img { order: 0; }
     .hb-slip, .hb-feat.is-flip .hb-slip { inset-inline-end: -4px; inset-inline-start: auto; bottom: -40px; width: 170px; }
     .hb-feats { gap: 90px; } .hb-n { font-size: 72px; } .hb-label h3 { font-size: 36px; }
-    .hb-drawer { grid-template-columns: 1fr; gap: 56px; }
+    .hb-reg-h { display: none; } .hb-reg { border-top: 0; }
+    .hb-row { grid-template-columns: 40px minmax(0, 1fr); gap: 0 14px; padding: 24px 0 26px; }
+    .hb-row-art { display: none; }
+    .hb-row-main, .hb-row-meta, .hb-row-links { grid-column: 2; }
+    .hb-row-meta { display: flex; flex-wrap: wrap; gap: 4px 14px; margin-top: 14px; }
+    .hb-row-links { display: flex; flex-wrap: wrap; gap: 16px; margin-top: 12px; }
+    .hb-explore { justify-content: flex-start; margin-top: 64px; }
+    .hb-toc a { flex-wrap: wrap; gap: 4px 14px; } .hb-toc .ld { display: none; } .hb-toc .dt { order: -1; flex-basis: 100%; }
     .hb-quote { position: static; }
     .hb-legend { margin-top: -14px; }
     .hb-stages { grid-template-columns: 1fr; gap: 26px; }
           .hb-journal { grid-template-columns: 1fr; gap: 60px; } .hb-journal::before { display: none; }
-    .hb-entry, .hb-entry + .hb-entry { padding: 0; grid-template-columns: 64px 1fr; gap: 0 16px; }
+    .hb-entry, .hb-entry + .hb-entry { padding: 0; border: 0; grid-template-columns: 64px 1fr; gap: 0 16px; }
     .hb-date b { font-size: 56px; }
     .hb-sprig, .hb-entry + .hb-entry .hb-sprig { inset-inline-end: 0; }
     .hb-entry h3 { font-size: 28px; }

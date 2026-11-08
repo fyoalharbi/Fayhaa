@@ -38,6 +38,7 @@ export async function expData(lang: Lang = 'en') {
       summary: p.data.summary,
       date: formatDate(p.data.date, lang),
       year: p.data.date.getFullYear(),
+      time: p.data.date.getTime(),
       featured: p.data.featured,
       skills: p.data.skills.map((k) => ({ key: k, label: skillLabel(k, lang) })),
       tldr: p.data.tldr,
@@ -49,7 +50,7 @@ export async function expData(lang: Lang = 'en') {
   });
   const posts = (await getPosts(lang)).map((p) => ({
     title: p.data.title, summary: p.data.summary, date: formatDate(p.data.date, lang),
-    tags: p.data.tags, href: langUrl(lang, `blog/${postSlug(p)}/`),
+    tags: p.data.tags, slug: postSlug(p), href: langUrl(lang, `blog/${postSlug(p)}/`), time: p.data.date.getTime(),
     month: p.data.date.getMonth() + 1, year: p.data.date.getFullYear(),
     minutes: Math.max(1, Math.round((p.body ?? '').split(/\s+/).length / 220)),
   }));

@@ -92,7 +92,7 @@ function redBloom(p: Plate) {
   p.head(33, 6, { R: 12, petals: 5, tone: 'red', rot: 0.3, seed: 11 });
   p.ground(20, 44);
   p.air([[16, 3], [49, 2], [52, 9, '*'], [12, 11]]);
-  return { en: 'a single red bloom, wide open', ar: 'زهرة حمراء واحدة متفتحة' };
+  return { tone: 'red', en: 'a single red bloom, wide open', ar: 'زهرة حمراء واحدة متفتحة' };
 }
 
 // 2 · white daisies: one big many-petalled head, a smaller one leaning beside it
@@ -103,7 +103,7 @@ function daisies(p: Plate) {
   p.head(25, 6, { R: 10, petals: 8, tone: 'white', rot: 0.2, seed: 21 });
   p.ground(17, 50);
   p.air([[50, 3], [11, 9], [54, 6, '*']]);
-  return { en: 'white daisies, a big one and a small one leaning in', ar: 'أقحوان أبيض، واحدة كبيرة وصغيرة تميل لها' };
+  return { tone: 'white', en: 'white daisies, a big one and a small one leaning in', ar: 'أقحوان أبيض، واحدة كبيرة وصغيرة تميل لها' };
 }
 
 // 3 · a heavy orange head with a wide seeded eye, on a stout double stem
@@ -113,7 +113,7 @@ function bigHead(p: Plate) {
   p.head(32, 6, { R: 5, petals: 13, tone: 'orange', seed: 9 }, (dx, dy, ch, tn) => tn === 'c' || tn === 'd' || tn === 'p' ? [tn === 'p' ? ':.'[hash(dx * 9 + dy) % 2] : ch, tn === 'c' ? 'gold' : 'gold2'] : null);
   p.bush(14, 5, 3, 'gold'); p.bush(51, 4, 2, 'orange');
   p.ground(8, 56);
-  return { en: 'a heavy orange head, its eye full of seed', ar: 'رأس برتقالي ثقيل، عينه ممتلئة بالبذور' };
+  return { tone: 'orange', en: 'a heavy orange head, its eye full of seed', ar: 'رأس برتقالي ثقيل، عينه ممتلئة بالبذور' };
 }
 
 // 4 · blush roses: one half open, one still a bud
@@ -124,7 +124,7 @@ function blushBud(p: Plate) {
   p.head(41, 8, { R: 6, petals: 4, tone: 'blush', open: 0.3, rot: 0.4, seed: 8 });
   p.ground(18, 47);
   p.air([[47, 3], [13, 3, '*'], [52, 11]]);
-  return { en: 'blush roses, one half open, one still a bud', ar: 'ورد وردي، واحدة نصف متفتحة وأخرى برعم' };
+  return { tone: 'blush', en: 'blush roses, one half open, one still a bud', ar: 'ورد وردي، واحدة نصف متفتحة وأخرى برعم' };
 }
 
 // 5 · three violet heads branching from one stem
@@ -136,7 +136,7 @@ function violets(p: Plate) {
   p.head(32, 4, { R: 8, petals: 5, tone: 'violet', rot: 0.5, seed: 6 });
   p.ground(20, 44);
   p.air([[9, 4], [55, 2, '*'], [56, 12]]);
-  return { en: 'three violet heads on one branching stem', ar: 'ثلاث زهرات بنفسجية على ساق متفرعة' };
+  return { tone: 'violet', en: 'three violet heads on one branching stem', ar: 'ثلاث زهرات بنفسجية على ساق متفرعة' };
 }
 
 // 6 · a white head gone to seed, a few seeds already drifting off
@@ -147,7 +147,7 @@ function seedHead(p: Plate) {
   p.air([[43, 4, '*'], [47, 2, '·'], [50, 5, '*'], [54, 1, '·'], [57, 3, '*'], [45, 8, '·'], [52, 9, '·']]);
   for (const [x, y] of [[43, 4], [50, 5], [57, 3]]) p.put(x, y, '*', 'white');
   p.ground(18, 42);
-  return { en: 'gone to seed, a few already drifting', ar: 'صارت بذوراً، وبعضها طار' };
+  return { tone: 'white', en: 'gone to seed, a few already drifting', ar: 'صارت بذوراً، وبعضها طار' };
 }
 
 // 7 · lavender: three spikes of small violet whorls from one root
@@ -160,7 +160,7 @@ function spikes(p: Plate) {
   p.put(32, GY - 1, ')', 'leaf'); p.put(30, GY - 1, '(', 'leaf');
   p.ground(18, 46);
   p.air([[12, 6], [51, 4, '*'], [53, 10]]);
-  return { en: 'three lavender spikes from one root', ar: 'ثلاث سنابل خزامى من جذر واحد' };
+  return { tone: 'violet', en: 'three lavender spikes from one root', ar: 'ثلاث سنابل خزامى من جذر واحد' };
 }
 
 // 8 · a meadow corner: a red head and a gold one between flowering bushes
@@ -171,16 +171,16 @@ function meadow(p: Plate) {
   p.head(25, 6, { R: 10, petals: 6, tone: 'red', rot: 0.2, seed: 19 });
   p.ground(5, 59);
   p.air([[9, 6, '*'], [55, 7], [33, 1]]);
-  return { en: 'a meadow corner between flowering bushes', ar: 'ركن من مرج بين شجيرات مزهرة' };
+  return { tone: 'red', en: 'a meadow corner between flowering bushes', ar: 'ركن من مرج بين شجيرات مزهرة' };
 }
 
-const DRAW: Record<string, (p: Plate) => { en: string; ar: string }> = {
+const DRAW: Record<string, (p: Plate) => { tone: string; en: string; ar: string }> = {
   invasight: redBloom, 'finance-analyzer': daisies, 'ewc-2024-dashboard': bigHead, 'qafiyah-feelings': blushBud,
   'bellabeat-case-study': violets, 'x-api-report': seedHead, 'saudi-sectors-dashboard': spikes, 'coworking-spaces-dashboard': meadow,
 };
 const ORDER = Object.values(DRAW);
 
-/** The flower plate for a project: { html, en, ar }. Unknown slugs get a flower by position. */
+/** The flower plate for a project: { html, tone, en, ar } (tone: the petal colour's KIT.PAL name). Unknown slugs get a flower by position. */
 export function projectArt(slug: string, i = 0) {
   const p = new Plate();
   const note = (DRAW[slug] ?? ORDER[i % ORDER.length])(p);

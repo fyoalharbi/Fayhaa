@@ -20,7 +20,7 @@ export function flowerCells({ R = 5, petals = 6, rot = 0, open = 1, seed = 1 as 
   return out;
 }
 
-export function flowerHTML({ R = 5, petals = 6, rot = 0, open = 1, seed = 1, squash = 0.5, stem = 0 } = {}) {
+export function flowerHTML({ R = 5, petals = 6, rot = 0, open = 1, seed = 1 as string | number, squash = 0.5, stem = 0 } = {}) {
   const Rv = Math.max(1, Math.round(R * squash));
   const W = R * 2 + 1, H = Rv * 2 + 1 + stem;
   const g: ([string, string] | null)[][] = Array.from({ length: H }, () => Array(W).fill(null));
