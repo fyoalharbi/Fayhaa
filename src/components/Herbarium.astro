@@ -27,7 +27,7 @@ const T = AR ? {
     'كل أداة أستخدمها مرتبة حسب مرحلتها، ووين استخدمتها: في الشغل، وفي معسكر SDA، وفي مشاريعي.',
     'أشياء أتعلمها بالطريق.', 'أسرع طريقة توصل لي هي الإيميل.'],
   preview: 'معاينة', hide: 'إخفاء', fig: 'شكل', shot: 'لقطة من',
-  why: 'ليش فراشات؟ القصة كاملة ←', project: 'مشروع', result: 'النتيجة', case: 'دراسة الحالة ←', live: 'العرض المباشر ↗', liveS: 'مباشر ↗', code: 'الكود ↗',
+  connect: 'أشتغل بأفضل شكل لما تلتقي المجالات. أربط الأفكار بين البيانات والتصميم والكود، وأتعلم أدوات جديدة لما تحتاجها المشكلة.', project: 'مشروع', result: 'النتيجة', case: 'دراسة الحالة ←', live: 'العرض المباشر ↗', liveS: 'مباشر ↗', code: 'الكود ↗',
   feat: 'عيّنات مختارة', featN: (n: number, all: number) => `· ${n} من ${all}`, explore: 'تصفّح المجموعة كاملة', exploreX: 'إغلاق المجموعة', moreN: (n: number) => `+${n}`,
   coll: 'المجموعة كاملة', collN: (n: number) => (n === 1 ? '· عيّنة واحدة' : `· ${n} عيّنات`), cols: ['رقم', 'العيّنة', 'الفصيلة · التاريخ', 'روابط'],
   featW: 'كتابات مختارة', exploreW: 'تصفّح كل الكتابات', exploreWX: 'إغلاق الأرشيف', arch: 'أرشيف الكتابات', archN: (n: number) => (n === 1 ? '· تدوينة واحدة' : `· ${n} تدوينات`),
@@ -48,7 +48,7 @@ const T = AR ? {
     'Every tool I use, grouped by stage, and where I used it: at work, in the SDA bootcamp, and in my projects.',
     'Things I learn along the way.', 'Email is the fastest way to reach me.'],
   preview: 'Preview', hide: 'Hide preview', fig: 'fig.', shot: 'Screenshot of',
-  why: 'Why butterflies? The full story →', project: 'Project', result: 'Result', case: 'Case study →', live: 'Live demo ↗', liveS: 'Live ↗', code: 'Code ↗',
+  connect: 'I work best where fields meet. I connect ideas across data, design and code, and I pick up new tools whenever a problem needs them.', project: 'Project', result: 'Result', case: 'Case study →', live: 'Live demo ↗', liveS: 'Live ↗', code: 'Code ↗',
   feat: 'Featured specimens', featN: (n: number, all: number) => `· ${n} of ${all}`, explore: 'Explore the complete collection', exploreX: 'Close the collection', moreN: (n: number) => `+${n}`,
   coll: 'Complete Collection', collN: (n: number) => `· ${n} specimen${n === 1 ? '' : 's'}`, cols: ['No.', 'Specimen', 'Family · collected', 'Links'],
   featW: 'Featured writings', exploreW: 'Explore all writings', exploreWX: 'Close the archive', arch: 'Writing Archive', archN: (n: number) => `· ${n} ${n === 1 ? 'entry' : 'entries'}`,
@@ -132,10 +132,8 @@ const lead = featured[0] ?? D.projects[0], camp = camps[0], post = D.posts[0];
         <article class="hb-now-p">
           <a class="hb-img" href={lead.href} aria-label={lead.title}>
             <pre class="hb-art" aria-hidden="true" set:html={plate(lead.slug).html}></pre>
-            {lead.thumb && <img class="hb-shot" src={lead.thumb} alt={`${T.shot} ${lead.title}`} loading="lazy" />}
             <i class="c tl"></i><i class="c tr"></i><i class="c bl"></i><i class="c br"></i>
           </a>
-          <p class="hb-fig"><span><b>{T.fig} 01</b> {plate(lead.slug).cap}</span>{lead.thumb && <button type="button" class="hb-prev" aria-pressed="false" data-on={T.hide} data-off={T.preview}>{T.preview}</button>}</p>
           <p class="hb-tag">{T.now} · {lead.date}</p>
           <h3><a href={lead.href}>{lead.title}</a></h3>
           {lead.sub && <p class="hb-sub">{lead.sub}</p>}
@@ -152,8 +150,7 @@ const lead = featured[0] ?? D.projects[0], camp = camps[0], post = D.posts[0];
       <header class="hb-head"><p class="hb-num">01</p><h2 data-decode data-perch>{T.secs[0]}</h2><p class="hb-lead">{T.leads[0]}</p></header>
       <div class="hb-about">
         <blockquote class="hb-quote">
-          <p>{D.philosophy.paragraphs[1]}</p>
-          <a href={D.papillon}>{T.why}</a>
+          <p>{T.connect}</p>
         </blockquote>
         <ol class="hb-time">
           {D.experience.map((e) => <li><small>{e.period}</small><b>{e.title}</b><span>{e.org}</span><p>{e.points[0]}</p>
@@ -344,8 +341,8 @@ const lead = featured[0] ?? D.projects[0], camp = camps[0], post = D.posts[0];
   .hb-cta a { font: 500 11.5px/1 var(--mono); letter-spacing: .06em; padding: 11px 14px; text-decoration: none; color: var(--ink); border: 1px solid #ffffff2a; background: #0b0c0e99; transition: all .2s; }
   .hb-cta a:first-child { border-color: #ff8a8a88; background: #ff8a8a12; }
   .hb-cta a:hover { border-color: var(--red); color: var(--red); box-shadow: 0 0 14px #ff8a8a33; }
-  .hb-museum { margin: 44px 0 0; display: inline-grid; grid-template-columns: repeat(4, auto); gap: 0 12px; padding-top: 9px; font: 10px/1.5 var(--mono); border-top: 1px solid #ffffff1a; }
-  .hb-museum dt { color: var(--dim); text-transform: uppercase; letter-spacing: .14em; } .hb-museum dd { margin: 0; margin-inline-end: 14px; color: var(--ink-2); white-space: nowrap; }
+  .hb-museum { margin: 40px 0 0; display: inline-grid; grid-template-columns: repeat(4, auto); gap: 0 10px; padding-top: 8px; font: 9.5px/1.5 var(--mono); border-top: 1px solid #ffffff10; }
+  .hb-museum dt { color: #ffffff3d; text-transform: uppercase; letter-spacing: .14em; } .hb-museum dd { margin: 0; margin-inline-end: 14px; color: var(--dim); white-space: nowrap; }
 
   .hb-now { display: grid; gap: 26px; align-self: center; }
   .hb-now-p .hb-img { aspect-ratio: 16/10; margin-bottom: 18px; }
