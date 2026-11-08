@@ -21,12 +21,27 @@
     if (!e.isIntersecting) return;
     io.unobserve(e.target); e.target.classList.add('is-in');
   }), { threshold: 0.18, rootMargin: '0px 0px -8% 0px' });
-  $$('.hb-sec > *:not(.hb-feats):not(.hb-coll), .hb-feat, .hb-coll > :not(ol), .hb-row, .hb-toc li, .hb-entry').forEach((el) => io.observe(el));
+  $$('.hb-sec > *:not(.hb-feats):not(.hb-coll), .hb-feat, .hb-fold-in > :not(ol), .hb-row, .hb-toc li, .hb-entry').forEach((el) => io.observe(el));
 
   // ── Plate size: each drawing is 64 columns, scaled to its frame's real width ──
   const fit = (img) => { const pre = img.querySelector('.hb-art'); if (pre) pre.style.setProperty('--art-fs', (img.clientWidth / 64 / 0.6 * 0.9).toFixed(2) + 'px'); };
   const ro = new ResizeObserver((es) => es.forEach((e) => fit(e.target)));
   $$('.hb-img').forEach((img) => { fit(img); ro.observe(img); });
+
+  // ── Folds: "Explore the complete collection" / "Explore all writings" open the rest in place ──
+  $$('.hb-more').forEach((btn) => {
+    const fold = document.getElementById(btn.getAttribute('aria-controls')), label = btn.querySelector('span');
+    const set = (on, jump) => {
+      fold.classList.toggle('is-open', on); fold.inert = !on;
+      btn.setAttribute('aria-expanded', String(on)); label.textContent = on ? btn.dataset.close : btn.dataset.open;
+      if (on && jump) setTimeout(() => fold.scrollIntoView({ block: 'start' }), 60);
+      // closing from inside the list: bring the button back into view rather than leaving the reader mid-page
+      if (!on && btn.getBoundingClientRect().top < 0) btn.scrollIntoView({ block: 'center' });
+    };
+    set(location.hash === '#' + fold.id);
+    btn.addEventListener('click', () => set(btn.getAttribute('aria-expanded') !== 'true', true));
+    addEventListener('hashchange', () => { if (location.hash === '#' + fold.id) set(true); });
+  });
 
   // ── Project plates: the ASCII drawing first; "Preview" reveals the real screenshot ──
   $$('.hb-prev').forEach((btn) => btn.addEventListener('click', () => {

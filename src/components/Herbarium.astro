@@ -27,9 +27,9 @@ const T = AR ? {
     'أشياء أتعلمها بالطريق.', 'أسرع طريقة توصل لي هي الإيميل.'],
   preview: 'معاينة', hide: 'إخفاء', fig: 'شكل', shot: 'لقطة من',
   why: 'ليش فراشات؟ القصة كاملة ←', project: 'مشروع', result: 'النتيجة', case: 'دراسة الحالة ←', live: 'العرض المباشر ↗', liveS: 'مباشر ↗', code: 'الكود ↗',
-  feat: 'عيّنات مختارة', featN: (n: number, all: number) => `· ${n} من ${all}`, explore: 'تصفّح المجموعة كاملة ←',
+  feat: 'عيّنات مختارة', featN: (n: number, all: number) => `· ${n} من ${all}`, explore: 'تصفّح المجموعة كاملة', exploreX: 'إغلاق المجموعة', moreN: (n: number) => `+${n}`,
   coll: 'المجموعة كاملة', collN: (n: number) => (n === 1 ? '· عيّنة واحدة' : `· ${n} عيّنات`), cols: ['رقم', 'العيّنة', 'الفصيلة · التاريخ', 'روابط'],
-  featW: 'كتابات مختارة', exploreW: 'تصفّح كل الكتابات ←', arch: 'أرشيف الكتابات', archN: (n: number) => (n === 1 ? '· تدوينة واحدة' : `· ${n} تدوينات`),
+  featW: 'كتابات مختارة', exploreW: 'تصفّح كل الكتابات', exploreWX: 'إغلاق الأرشيف', arch: 'أرشيف الكتابات', archN: (n: number) => (n === 1 ? '· تدوينة واحدة' : `· ${n} تدوينات`),
   types: { Pipelines: 'خطوط بيانات', Dashboards: 'لوحات بيانات', Web: 'ويب', Analysis: 'تحليل' } as Record<string, string>,
   lgWork: 'استخدمتها في وظيفة', lgTrain: 'استخدمتها في معسكر SDA', lgN: 'عدد المشاريع',
   atWork: 'في الشغل', trainingRow: 'التدريب', projects: 'المشاريع',
@@ -47,9 +47,9 @@ const T = AR ? {
     'Things I learn along the way.', 'Email is the fastest way to reach me.'],
   preview: 'Preview', hide: 'Hide preview', fig: 'fig.', shot: 'Screenshot of',
   why: 'Why butterflies? The full story →', project: 'Project', result: 'Result', case: 'Case study →', live: 'Live demo ↗', liveS: 'Live ↗', code: 'Code ↗',
-  feat: 'Featured specimens', featN: (n: number, all: number) => `· ${n} of ${all}`, explore: 'Explore the complete collection →',
+  feat: 'Featured specimens', featN: (n: number, all: number) => `· ${n} of ${all}`, explore: 'Explore the complete collection', exploreX: 'Close the collection', moreN: (n: number) => `+${n}`,
   coll: 'Complete Collection', collN: (n: number) => `· ${n} specimen${n === 1 ? '' : 's'}`, cols: ['No.', 'Specimen', 'Family · collected', 'Links'],
-  featW: 'Featured writings', exploreW: 'Explore all writings →', arch: 'Writing Archive', archN: (n: number) => `· ${n} ${n === 1 ? 'entry' : 'entries'}`,
+  featW: 'Featured writings', exploreW: 'Explore all writings', exploreWX: 'Close the archive', arch: 'Writing Archive', archN: (n: number) => `· ${n} ${n === 1 ? 'entry' : 'entries'}`,
   types: { Pipelines: 'Pipelines', Dashboards: 'Dashboards', Web: 'Web', Analysis: 'Analysis' } as Record<string, string>,
   lgWork: 'used at a job', lgTrain: 'used in the SDA bootcamp', lgN: 'projects',
   atWork: 'At work', trainingRow: 'Training', projects: 'Projects',
@@ -91,10 +91,10 @@ const byTime = <X extends { time: number }>(a: X, b: X) => b.time - a.time;
 const picked = PICKS.map((s) => D.projects.find((p) => p.slug === s)).filter((p): p is (typeof D.projects)[number] => !!p);
 const featured = [...picked, ...D.projects.filter((p) => p.featured && !picked.includes(p))].slice(0, 3);
 const collection = D.projects.filter((p) => !featured.includes(p)).sort(byTime);
-// Writing: the personal reflection first, then the practical how-to; the archive takes the rest
+// Writing: the personal reflection first, then the practical how-to; the archive (behind its fold) takes the rest
 const POST_PICKS = ['adapting-to-ai', 'gsd-claude-code'];
 const featPosts = [...POST_PICKS.map((s) => D.posts.find((p) => p.slug === s)), ...[...D.posts].sort(byTime)]
-  .filter((p, i, a): p is (typeof D.posts)[number] => !!p && a.indexOf(p) === i).slice(0, 3);
+  .filter((p, i, a): p is (typeof D.posts)[number] => !!p && a.indexOf(p) === i).slice(0, Math.max(1, Math.min(3, D.posts.length - 1)));   // up to three, but always leave something to unfold
 const archive = D.posts.filter((p) => !featPosts.includes(p)).sort(byTime);
 const noteNo = (p: (typeof D.posts)[number]) => pad([...D.posts].sort(byTime).reverse().indexOf(p) + 1);
 const PT: Record<string, [string, string]> = { red: ['#ff8a8a', '#b35a5a'], white: ['#f4f4f4', '#9a9a9a'], violet: ['#c49aff', '#6f5a99'], blush: ['#ffc0d0', '#a07080'], orange: ['#ffb070', '#a06a3a'], gold: ['#e6c34a', '#8a7428'] };
@@ -103,7 +103,7 @@ const stack = (p: (typeof D.projects)[number], n = 4) => p.skills.slice(0, n).ma
 const lead = featured[0] ?? D.projects[0], camp = camps[0], post = D.posts[0];
 ---
 <ExpShell title="Herbarium" n="03" lang={lang} scripts={['js/flyer.js', 'experiments/kit.js', 'experiments/herbarium.js']}>
-  <script is:inline define:vars={{ t: T.js }} slot="head">window.HB_T = t;</script>
+  <script is:inline define:vars={{ t: T.js }} slot="head">window.HB_T = t; document.documentElement.classList.add('hb-js');</script>
   {AR && <link slot="head" rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&display=swap" />}
   <a class="hb-lang" href={other.href} lang={other.lang} hreflang={other.lang} data-keep-hash>{other.label}</a>
   <nav class="hb-rail" id="hb-rail" aria-label="Sections">
@@ -195,9 +195,9 @@ const lead = featured[0] ?? D.projects[0], camp = camps[0], post = D.posts[0];
           </article>
         ))}
       </div>
-      {collection.length > 0 && <p class="hb-explore"><a href="#collection">{T.explore}</a></p>}
+      {collection.length > 0 && <p class="hb-explore"><button type="button" class="hb-more" aria-expanded="false" aria-controls="collection" data-open={T.explore} data-close={T.exploreX}><span>{T.explore}</span><b>{T.moreN(collection.length)}</b><i aria-hidden="true"></i></button></p>}
       {collection.length > 0 && (
-        <div class="hb-coll" id="collection">
+        <div class="hb-coll hb-fold" id="collection"><div class="hb-fold-in">
           <h3 class="hb-sub-h" data-perch>{T.coll} <span>{T.collN(collection.length)}</span></h3>
           <p class="hb-reg-h" aria-hidden="true"><span>{T.cols[0]}</span><span></span><span>{T.cols[1]}</span><span>{T.cols[2]}</span><span>{T.cols[3]}</span></p>
           <ol class="hb-reg">
@@ -220,7 +220,7 @@ const lead = featured[0] ?? D.projects[0], camp = camps[0], post = D.posts[0];
               </li>
             ))}
           </ol>
-        </div>
+        </div></div>
       )}
     </section>
 
@@ -259,9 +259,9 @@ const lead = featured[0] ?? D.projects[0], camp = camps[0], post = D.posts[0];
           </article>
         ))}
       </div>
-      {archive.length > 0 && <p class="hb-explore"><a href="#archive">{T.exploreW}</a></p>}
+      {archive.length > 0 && <p class="hb-explore"><button type="button" class="hb-more" aria-expanded="false" aria-controls="archive" data-open={T.exploreW} data-close={T.exploreWX}><span>{T.exploreW}</span><b>{T.moreN(archive.length)}</b><i aria-hidden="true"></i></button></p>}
       {archive.length > 0 && (
-        <div class="hb-coll" id="archive">
+        <div class="hb-coll hb-fold" id="archive"><div class="hb-fold-in">
           <h3 class="hb-sub-h" data-perch>{T.arch} <span>{T.archN(archive.length)}</span></h3>
           <ol class="hb-toc">
             {archive.map((p) => (
@@ -271,7 +271,7 @@ const lead = featured[0] ?? D.projects[0], camp = camps[0], post = D.posts[0];
               </li>
             ))}
           </ol>
-        </div>
+        </div></div>
       )}
     </section>
 
@@ -290,7 +290,7 @@ const lead = featured[0] ?? D.projects[0], camp = camps[0], post = D.posts[0];
 
 <style is:global>
   html { scroll-behavior: smooth; overflow-x: clip; }
-  @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+  @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } .hb-js .hb-fold { transition: none; } }
   body { background: radial-gradient(1200px 600px at 85% -10%, #1a1f1a 0%, transparent 60%), var(--night); }
   /* Arabic is set in Amiri throughout: bold for the name and headings, regular for reading */
   html[lang='ar'] { --sans: 'Amiri', 'IBM Plex Sans Arabic', serif; --serif: 'Amiri', 'IBM Plex Serif', serif; --mono: 'JetBrains Mono', 'Amiri', ui-monospace, monospace; }
@@ -434,8 +434,20 @@ const lead = featured[0] ?? D.projects[0], camp = camps[0], post = D.posts[0];
   .hb-shelf { margin: 0 0 40px; font: 500 10.5px var(--mono); letter-spacing: .16em; text-transform: uppercase; color: var(--red); }
   .hb-shelf span { color: var(--dim); letter-spacing: .1em; }
   .hb-explore { margin: 96px 0 0; display: flex; justify-content: flex-end; }
-  .hb-explore a { font: 500 11.5px var(--mono); letter-spacing: .06em; color: var(--ink); text-decoration: none; padding-bottom: 3px; border-bottom: 1px solid #ff8a8a66; transition: color .2s, border-color .2s, padding .3s; }
-  .hb-explore a:hover { color: var(--red); border-color: var(--red); padding-inline-end: 8px; }
+  .hb-more { all: unset; cursor: pointer; display: inline-flex; align-items: center; gap: 12px; padding: 12px 16px; font: 500 11.5px var(--mono); letter-spacing: .06em; color: var(--ink); border: 1px solid #ffffff22; background: #0b0c0e99; transition: color .2s, border-color .2s, box-shadow .2s; }
+  .hb-more b { font-weight: 500; color: var(--red); }
+  .hb-more i { position: relative; width: 11px; height: 11px; flex: none; }
+  .hb-more i::before, .hb-more i::after { content: ''; position: absolute; left: 0; right: 0; top: 5px; height: 1px; background: currentColor; transition: transform .45s cubic-bezier(.2, .8, .2, 1); }
+  .hb-more i::after { transform: rotate(90deg); }
+  .hb-more[aria-expanded='true'] i::after { transform: rotate(0); }
+  .hb-more[aria-expanded='true'] b { display: none; }
+  .hb-more:hover { color: var(--red); border-color: var(--red); box-shadow: 0 0 14px #ff8a8a33; }
+  .hb-more:focus-visible { outline: 1px solid var(--red); outline-offset: 4px; }
+  /* A fold: closed until its button opens it (only when the script is there to open it) */
+  .hb-js .hb-fold { display: grid; grid-template-rows: 0fr; transition: grid-template-rows .8s cubic-bezier(.2, .8, .2, 1), opacity .5s; opacity: 0; }
+  .hb-js .hb-fold.is-open { grid-template-rows: 1fr; opacity: 1; }
+  .hb-fold-in { min-height: 0; overflow: hidden; }
+  .hb-fold.is-open .hb-fold-in { overflow: visible; }
   .hb-coll { scroll-margin-top: 40px; }
   .hb-coll .hb-sub-h { margin-top: 70px; }
   /* Complete collection: a specimen register, one ruled line per accession */
@@ -493,6 +505,9 @@ const lead = featured[0] ?? D.projects[0], camp = camps[0], post = D.posts[0];
   .hb-tool .mk { display: inline-flex; gap: 5px; align-items: center; } .hb-tool .mk b { font-weight: 400; color: var(--dim); min-width: 1.2ch; text-align: end; }
 
   /* ── notes ── */
+  .hb-journal.n-1 { max-width: 780px; }   /* a single featured note reads at a comfortable measure */
+  .hb-journal.n-1 .hb-entry { padding-inline-end: 70px; } .hb-journal.n-1 .hb-sprig { inset-inline-end: 4px; }
+  .hb-journal.n-1 + .hb-explore { max-width: 780px; margin-top: 56px; }
   .hb-journal { display: grid; grid-template-columns: repeat(var(--n, 2), minmax(0, 1fr)); position: relative; }
     .hb-entry { position: relative; display: grid; grid-template-columns: 90px 1fr; gap: 0 22px; padding: 6px 0 20px; padding-inline-end: 48px; }
   .hb-entry + .hb-entry { padding-inline-start: 48px; border-inline-start: 1px solid #ffffff14; } .hb-entry:last-child { padding-inline-end: 0; }
@@ -525,7 +540,7 @@ const lead = featured[0] ?? D.projects[0], camp = camps[0], post = D.posts[0];
   .hb-fly:hover .hb-fly-tip, .hb-fly:focus-visible .hb-fly-tip, .hb-fly.is-tip .hb-fly-tip { opacity: 1; transform: translateX(-50%); }
 
   /* reveal */
-  .hb-sec > *:not(.hb-feats):not(.hb-coll), .hb-feat, .hb-coll > :not(ol), .hb-row, .hb-toc li, .hb-entry { opacity: 0; transform: translateY(26px); transition: opacity 1s ease, transform 1s cubic-bezier(.2, .8, .2, 1); }
+  .hb-sec > *:not(.hb-feats):not(.hb-coll), .hb-feat, .hb-fold-in > :not(ol), .hb-row, .hb-toc li, .hb-entry { opacity: 0; transform: translateY(26px); transition: opacity 1s ease, transform 1s cubic-bezier(.2, .8, .2, 1); }
   .hb .is-in { opacity: 1 !important; transform: none !important; }
   .hb-row, .hb-toc li { transition-duration: .8s; } .hb-entry + .hb-entry { transition-delay: .15s; } .hb-entry + .hb-entry + .hb-entry { transition-delay: .3s; }
   .hb-hero-in > *, .hb-now > * { animation: hb-up .9s cubic-bezier(.2, .8, .2, 1) both; }
@@ -568,7 +583,7 @@ const lead = featured[0] ?? D.projects[0], camp = camps[0], post = D.posts[0];
     .hb-row-main, .hb-row-meta, .hb-row-links { grid-column: 2; }
     .hb-row-meta { display: flex; flex-wrap: wrap; gap: 4px 14px; margin-top: 14px; }
     .hb-row-links { display: flex; flex-wrap: wrap; gap: 16px; margin-top: 12px; }
-    .hb-explore { justify-content: flex-start; margin-top: 64px; }
+    .hb-explore { justify-content: flex-start; margin-top: 64px; } .hb-more { padding: 11px 13px; }
     .hb-toc a { flex-wrap: wrap; gap: 4px 14px; } .hb-toc .ld { display: none; } .hb-toc .dt { order: -1; flex-basis: 100%; }
     .hb-quote { position: static; }
     .hb-legend { margin-top: -14px; }
