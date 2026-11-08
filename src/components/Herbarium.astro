@@ -142,13 +142,16 @@ const lead = featured[0] ?? D.projects[0], camp = camps[0], post = D.posts[0];
       <div class="hb-feats">
         {featured.map((p, i) => (
           <article class={`hb-feat ${i % 2 ? 'is-flip' : ''}`}>
-            <a class="hb-img" href={p.href} aria-label={p.title}>
-              <pre class="hb-art" aria-hidden="true" set:html={plate(p.slug).html}></pre>
-              {p.thumb && <img class="hb-shot" src={p.thumb} alt={`${T.shot} ${p.title}`} loading="lazy" />}
-              <i class="c tl"></i><i class="c tr"></i><i class="c bl"></i><i class="c br"></i>
-              <span class="hb-tape t1"></span><span class="hb-tape t2"></span>
+            <div class="hb-plate">
+              <a class="hb-img" href={p.href} aria-label={p.title}>
+                <pre class="hb-art" aria-hidden="true" set:html={plate(p.slug).html}></pre>
+                {p.thumb && <img class="hb-shot" src={p.thumb} alt={`${T.shot} ${p.title}`} loading="lazy" />}
+                <i class="c tl"></i><i class="c tr"></i><i class="c bl"></i><i class="c br"></i>
+                <span class="hb-tape t1"></span><span class="hb-tape t2"></span>
+              </a>
+              <p class="hb-fig"><span><b>{T.fig} {pad(i + 1)}</b> {plate(p.slug).cap}</span>{p.thumb && <button type="button" class="hb-prev" aria-pressed="false" data-on={T.hide} data-off={T.preview}>{T.preview}</button>}</p>
               <span class="hb-slip" aria-hidden="true"><b>{T.project} {pad(i + 1)}</b><span>{p.title}</span><span>{fam(p)} · {p.date}</span></span>
-            </a>
+            </div>
             <div class="hb-label">
               <p class="hb-n" aria-hidden="true">{pad(i + 1)}</p>
               <h3><a href={p.href}>{p.title}</a></h3>
@@ -161,7 +164,6 @@ const lead = featured[0] ?? D.projects[0], camp = camps[0], post = D.posts[0];
                 {p.live && <a href={p.live}>{T.live}</a>}
                 {p.code && <a href={p.code}>{T.code}</a>}
               </p>
-              <p class="hb-fig"><span><b>{T.fig} {pad(i + 1)}</b> {plate(p.slug).cap}</span>{p.thumb && <button type="button" class="hb-prev" aria-pressed="false" data-on={T.hide} data-off={T.preview}>{T.preview}</button>}</p>
             </div>
           </article>
         ))}
@@ -357,7 +359,7 @@ const lead = featured[0] ?? D.projects[0], camp = camps[0], post = D.posts[0];
   .hb-img { position: relative; display: block; aspect-ratio: 16/10; background: #0e100f; outline: 1px solid #ffffff12; outline-offset: 7px; }
   /* the plate: a 64×20 drawing scaled to the frame's width, in a quiet monochrome */
   .hb-img { container-type: inline-size; display: grid; place-items: center; overflow: visible; }
-  .hb-feat > *, .hb-row > *, .hb-now > * { min-width: 0; }   /* grid items never grow past their column */
+  .hb-feat > *, .hb-row > *, .hb-now > *, .hb-plate > * { min-width: 0; }   /* grid items never grow past their column */
   .hb-art { margin: 0; direction: ltr; white-space: pre; max-width: 100%; overflow: hidden; font: 400 var(--art-fs, 7px)/1.25 'JetBrains Mono', monospace; color: #4d4d57; transition: opacity .5s; user-select: none; }
   .hb-img { text-decoration: none; } .hb-art i { font-style: normal !important; }
   .hb-art { transform: translateZ(0); }   /* own layer → grayscale antialiasing, no coloured fringes on thin glyphs */
@@ -376,7 +378,7 @@ const lead = featured[0] ?? D.projects[0], camp = camps[0], post = D.posts[0];
   .hb-fig b { font-weight: 500; color: #8d8d96; margin-inline-end: 6px; }
   .hb-prev { all: unset; cursor: pointer; flex: none; font: 500 11px/1 var(--mono); letter-spacing: .08em; text-transform: uppercase; color: #8d8d96; padding: 5px 8px; border: 1px solid #ffffff1c; transition: color .2s, border-color .2s; }
   .hb-prev:hover, .hb-prev[aria-pressed='true'] { color: var(--ink); border-color: #7f95b0; }
-  .hb-label .hb-fig { margin-top: 22px; padding-top: 12px; border-top: 1px dashed #ffffff14; }
+  .hb-plate { position: relative; }   /* the drawing, its caption + Preview right under it, and the slip below that */
   .hb-img::after { content: ''; position: absolute; left: -6px; right: -6px; top: 0; height: 1px; background: var(--red); box-shadow: 0 0 10px 1px #ff8a8a; opacity: 0; pointer-events: none; z-index: 2; }
   .is-prev .hb-img::after { animation: hb-scan 1.2s cubic-bezier(.6, 0, .2, 1) both; }
   @keyframes hb-scan { 0% { top: 0; opacity: 1; } 92% { opacity: 1; } 100% { top: 100%; opacity: 0; } }
@@ -391,7 +393,7 @@ const lead = featured[0] ?? D.projects[0], camp = camps[0], post = D.posts[0];
 
   .hb-feats { display: grid; gap: 130px; }
   .hb-feat { position: relative; display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr); gap: 64px; align-items: center; }
-  .hb-feat.is-flip .hb-img { order: 2; } .hb-feat.is-flip .hb-label { order: 1; }
+  .hb-feat.is-flip .hb-plate { order: 2; } .hb-feat.is-flip .hb-label { order: 1; }
   .hb-slip { position: absolute; z-index: 4; inset-inline-end: -10px; top: calc(100% + 16px); display: grid; gap: 1px; width: 200px; padding: 9px 11px; font: 11px/1.5 var(--mono); color: var(--dim); background: #101311; border: 1px solid #ffffff22; box-shadow: 0 10px 30px #0008; transform: rotate(-1.5deg); }
   .hb-slip b { color: var(--red); font-weight: 500; letter-spacing: .1em; text-transform: uppercase; } .hb-slip span:nth-child(2) { color: var(--ink); font: italic 15px/1.3 var(--serif); }
   .hb-feat.is-flip .hb-slip { inset-inline-end: auto; inset-inline-start: -10px; transform: rotate(1.5deg); }
@@ -552,7 +554,7 @@ const lead = featured[0] ?? D.projects[0], camp = camps[0], post = D.posts[0];
     .hb-sec { padding-top: 96px; }
     .hb-head { grid-template-columns: 1fr; margin-bottom: 40px; } .hb-lead { justify-self: start; margin-top: 14px; }
     .hb-feat, .hb-feat.is-flip { grid-template-columns: 1fr; gap: 40px; }
-    .hb-feat.is-flip .hb-img { order: 0; }
+    .hb-feat.is-flip .hb-plate { order: 0; }
     .hb-slip, .hb-feat.is-flip .hb-slip { inset-inline-end: -4px; inset-inline-start: auto; bottom: -40px; width: 170px; }
     .hb-feats { gap: 90px; } .hb-n { font-size: 72px; } .hb-label h3 { font-size: 36px; }
     .hb-reg-h { display: none; } .hb-reg { border-top: 0; }
