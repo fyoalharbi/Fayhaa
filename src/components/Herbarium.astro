@@ -278,7 +278,8 @@ const lead = featured[0] ?? D.projects[0], camp = camps[0], post = D.posts[0];
   html[lang='ar'] .hb, html[lang='ar'] .hb-rail { letter-spacing: 0; }
   /* mono labels fall back to Amiri for Arabic letters; size them to the mono's x-height so they stay readable */
   html[lang='ar'] .hb *, html[lang='ar'] .hb-rail * { font-size-adjust: from-font; }
-  html[lang='ar'] .hb-rail a { line-height: 1.6; gap: 0; }
+  html[lang='ar'] .hb-rail a { line-height: 1.5; gap: 4px; font-size: 13px; }
+  html[lang='ar'] .hb-lead { font-size: 17.5px; line-height: 1.75; }
   html[lang='ar'] .hb *, html[lang='ar'] .hb-rail * { font-style: normal !important; letter-spacing: 0 !important; }
   .hb { --col: min(1120px, calc(100vw - 230px)); margin-inline-start: 180px; }
   .hb-sec { width: var(--col); margin: 0 auto; padding: 150px 0 40px; position: relative; }
@@ -288,7 +289,7 @@ const lead = featured[0] ?? D.projects[0], camp = camps[0], post = D.posts[0];
   .hb-num { grid-column: 1 / -1; margin: 0; font: 500 11px var(--mono); letter-spacing: .2em; color: var(--red); }
   .hb h2 { margin: 8px 0 0; font: 400 clamp(48px, 6.4vw, 96px)/0.95 var(--serif); font-style: italic; letter-spacing: -.025em; color: var(--ink); }
   html[lang='ar'] .hb h2 { font-weight: 700; line-height: 1.15; }
-  .hb-lead { max-width: 46ch; margin: 0 0 6px; justify-self: end; color: var(--dim); font-size: 14.5px; line-height: 1.6; }
+  .hb-lead { max-width: 46ch; margin: 0 0 6px; justify-self: end; color: var(--dim); font-size: 16px; line-height: 1.6; }
 
   /* language switch, beside the lab chip */
   .hb-lang { position: fixed; z-index: 90; top: max(10px, env(safe-area-inset-top)); inset-inline-end: 98px; padding: 5px 9px; text-decoration: none;
@@ -299,8 +300,8 @@ const lead = featured[0] ?? D.projects[0], camp = camps[0], post = D.posts[0];
   .hb-rail { position: fixed; z-index: 20; inset-inline-start: 34px; top: 50%; transform: translateY(-50%); display: grid; gap: 22px; padding-inline-start: 18px; transition: opacity .6s; }
   .hb-stem { position: absolute; inset-inline-start: 0; top: 4px; bottom: 4px; width: 1px; background: #ffffff1a; }
   .hb-stem i { position: absolute; inset-inline-start: 0; top: 0; width: 1px; height: 0; background: var(--leaf); box-shadow: 0 0 6px #6f9f6f; }
-  .hb-rail a { position: relative; display: grid; gap: 3px; text-decoration: none; color: var(--dim); font: 500 10.5px/1.1 var(--mono); letter-spacing: .12em; text-transform: uppercase; transition: color .3s; }
-  .hb-rail a b { font: 500 10px/1 var(--mono); color: #ffffff55; transition: color .3s; }
+  .hb-rail a { position: relative; display: grid; gap: 3px; text-decoration: none; color: #a3a3b0; font: 500 12px/1.15 var(--mono); letter-spacing: .1em; text-transform: uppercase; transition: color .3s; }
+  .hb-rail a b { font: 500 11px/1 var(--mono); color: #ffffff66; transition: color .3s; }
   .hb-rail a::before { content: ''; position: absolute; inset-inline-start: -21px; top: 2px; width: 7px; height: 7px; border-radius: 50%; background: var(--night); border: 1px solid #ffffff33; transition: all .3s; }
   .hb-rail a.is-on { color: var(--ink); } .hb-rail a.is-on b { color: var(--red); }
   .hb-rail a.is-on::before { background: var(--red); border-color: var(--red); box-shadow: 0 0 8px var(--red); }
@@ -464,18 +465,19 @@ const lead = featured[0] ?? D.projects[0], camp = camps[0], post = D.posts[0];
 
   /* ── tools: four capability groups, names first, quiet where-used dots ── */
   .hb-tools { position: relative; }
-  .hb-legend { display: flex; flex-wrap: wrap; gap: 8px 22px; margin: -26px 0 34px; font: 10.5px var(--mono); color: var(--dim); }
+  .hb-legend { display: flex; flex-wrap: wrap; gap: 8px 22px; margin: -26px 0 34px; font: 12px var(--mono); color: var(--dim); }
   .hb-legend span { display: inline-flex; gap: 7px; align-items: center; }
   .d { display: inline-block; width: 5px; height: 5px; border-radius: 50%; flex: none; }
   .d.w { background: var(--gold); opacity: .85; } .d.t { background: #7fbf7f; opacity: .85; }
   .hb-caps { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 48px 72px; }
-  .hb-cap { padding-top: 16px; border-top: 1px solid #ffffff1a; }
-  .hb-cap h3 { margin: 0; font: 400 30px/1.15 var(--serif); font-style: italic; letter-spacing: -.01em; color: var(--ink); }
-  html[lang='ar'] .hb-cap h3 { font-weight: 700; font-size: 27px; line-height: 1.4; }
-  .hb-cap-d { margin: 6px 0 0; font-size: 13.5px; line-height: 1.5; color: var(--dim); }
-  .hb-cap ul { list-style: none; margin: 18px 0 0; padding: 0; display: flex; flex-wrap: wrap; gap: 8px 22px; }
-  .hb-cap li { display: inline-flex; align-items: center; gap: 7px; font: 13px/1.5 var(--mono); color: var(--ink-2); }
-  .hb-cap .mk { display: inline-flex; gap: 3px; transform: translateY(-4px); }
+  .hb-cap { padding-top: 18px; border-top: 1px solid #ffffff1a; }
+  .hb-cap h3 { margin: 0; font: 400 34px/1.15 var(--serif); font-style: italic; letter-spacing: -.01em; color: var(--ink); }
+  html[lang='ar'] .hb-cap h3 { font-weight: 700; font-size: 31px; line-height: 1.4; }
+  .hb-cap-d { margin: 8px 0 0; max-width: 46ch; font-size: 15.5px; line-height: 1.55; color: #a9a9b4; }
+  html[lang='ar'] .hb-cap-d { font-size: 17.5px; line-height: 1.7; }
+  .hb-cap ul { list-style: none; margin: 20px 0 0; padding: 0; display: flex; flex-wrap: wrap; gap: 10px 26px; }
+  .hb-cap li { display: inline-flex; align-items: center; gap: 8px; font: 15px/1.5 var(--mono); color: var(--ink-2); }
+  .hb-cap .mk { display: inline-flex; gap: 3px; transform: translateY(-5px); }
 
   /* ── notes ── */
   .hb-journal.n-1 { max-width: 780px; }   /* a single featured note reads at a comfortable measure */
@@ -558,7 +560,8 @@ const lead = featured[0] ?? D.projects[0], camp = camps[0], post = D.posts[0];
     .hb-toc a { flex-wrap: wrap; gap: 4px 14px; } .hb-toc .ld { display: none; } .hb-toc .dt { order: -1; flex-basis: 100%; }
 
     .hb-legend { margin-top: -14px; }
-    .hb-caps { grid-template-columns: 1fr; gap: 36px; } .hb-cap h3 { font-size: 26px; }
+    .hb-caps { grid-template-columns: 1fr; gap: 40px; } .hb-cap h3 { font-size: 29px; } html[lang='ar'] .hb-cap h3 { font-size: 27px; }
+    .hb-cap-d { font-size: 15px; } .hb-cap li { font-size: 14.5px; } .hb-cap ul { gap: 9px 20px; } .hb-lead { font-size: 15.5px; }
           .hb-journal { grid-template-columns: 1fr; gap: 60px; } .hb-journal::before { display: none; }
     .hb-entry, .hb-entry + .hb-entry { padding: 0; border: 0; grid-template-columns: 64px 1fr; gap: 0 16px; }
     .hb-date b { font-size: 56px; }
