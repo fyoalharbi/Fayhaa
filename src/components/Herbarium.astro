@@ -20,7 +20,6 @@ const pad = (n: number) => String(n).padStart(2, '0');
 const T = AR ? {
   kicker: 'معرض أعمال · 2022 — 2026', see: 'شوف المشاريع ↓', email: 'راسلني',
   intro: 'فضولية بطبعي، أستكشف التقاطع بين البيانات والبرمجيات والتقنية من خلال المشاريع والتجارب.',
-  facts: ['السنوات', 'الأعمال'], works: `مشاريع: ${D.projects.length} · تدوينات: ${D.posts.length}`,
   now: 'آخر مشروع', training: 'آخر تدريب', note: 'آخر تدوينة',
   secs: ['عني', 'المشاريع', 'الأدوات', 'المدونة', 'تواصل'],
   leads: ['خبراتي وتعليمي وطريقتي في الشغل.', 'الأعمال المميزة أول، وبعدها الباقي.',
@@ -41,7 +40,6 @@ const T = AR ? {
 } : {
   kicker: 'Portfolio · 2022 — 2026', see: 'See the projects ↓', email: 'Email me',
   intro: 'Curious by nature, I explore the intersection of data, software, and technology through projects and experiments.',
-  facts: ['Years', 'Work'], works: `${D.projects.length} projects · ${D.posts.length} notes`,
   now: 'Latest project', training: 'Latest training', note: 'Latest note',
   secs: ['About', 'Projects', 'Tools', 'Notes', 'Contact'],
   leads: ['Experience, education, and how I like to work.', 'Featured work first, then everything else.',
@@ -123,10 +121,6 @@ const lead = featured[0] ?? D.projects[0], camp = camps[0], post = D.posts[0];
         <h1 class="hb-name" data-perch><span data-decode>{D.name}</span></h1>
         <p class="hb-intro">{T.intro}</p>
         <p class="hb-cta"><a href="#work">{T.see}</a><a href={`mailto:${D.email}`}>{T.email}</a></p>
-        <dl class="hb-museum">
-          <dt>{T.facts[0]}</dt><dd>2022 — 2026</dd>
-          <dt>{T.facts[1]}</dt><dd>{T.works}</dd>
-        </dl>
       </div>
       <aside class="hb-now">
         <article class="hb-now-p">
@@ -341,8 +335,6 @@ const lead = featured[0] ?? D.projects[0], camp = camps[0], post = D.posts[0];
   .hb-cta a { font: 500 11.5px/1 var(--mono); letter-spacing: .06em; padding: 11px 14px; text-decoration: none; color: var(--ink); border: 1px solid #ffffff2a; background: #0b0c0e99; transition: all .2s; }
   .hb-cta a:first-child { border-color: #ff8a8a88; background: #ff8a8a12; }
   .hb-cta a:hover { border-color: var(--red); color: var(--red); box-shadow: 0 0 14px #ff8a8a33; }
-  .hb-museum { margin: 40px 0 0; display: inline-grid; grid-template-columns: repeat(4, auto); gap: 0 10px; padding-top: 8px; font: 9.5px/1.5 var(--mono); border-top: 1px solid #ffffff10; }
-  .hb-museum dt { color: #ffffff3d; text-transform: uppercase; letter-spacing: .14em; } .hb-museum dd { margin: 0; margin-inline-end: 14px; color: var(--dim); white-space: nowrap; }
 
   .hb-now { display: grid; gap: 26px; align-self: center; }
   .hb-now-p .hb-img { aspect-ratio: 16/10; margin-bottom: 18px; }
@@ -555,7 +547,6 @@ const lead = featured[0] ?? D.projects[0], camp = camps[0], post = D.posts[0];
     .hb-slip { display: none; }   /* it would sit on the drawing; the title and date are right below anyway */
     .hb-hero { grid-template-columns: 1fr; gap: 50px; padding-top: 90px; }
     .hb-now { grid-template-columns: 1fr 1fr; gap: 30px; align-items: start; }
-    .hb-museum { grid-template-columns: auto auto; gap: 2px 12px; }
     .hb-stages { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   }
   @media (max-width: 860px) {
