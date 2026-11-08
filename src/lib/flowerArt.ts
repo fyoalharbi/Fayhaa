@@ -6,20 +6,25 @@ const seeded = (s: string | number) => {
 };
 const esc = (s: string) => s.replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]!));
 
-export function flowerHTML({ R = 5, petals = 6, rot = 0, open = 1, seed = 1, squash = 0.5, stem = 0 } = {}) {
-  const rnd = seeded(seed), Rv = Math.max(1, Math.round(R * squash));
-  const W = R * 2 + 1, H = Rv * 2 + 1 + stem;
-  const g: ([string, string] | null)[][] = Array.from({ length: H }, () => Array(W).fill(null));
+/** KIT.flowerCells: the head as [dx, dy, ch, tone] cells; tones c centre, d seed, p petal, r rim. */
+export function flowerCells({ R = 5, petals = 6, rot = 0, open = 1, seed = 1 as string | number, squash = 0.5 } = {}) {
+  const rnd = seeded(seed), Rv = Math.max(1, Math.round(R * squash)), out: [number, number, string, string][] = [];
   for (let dy = -Rv; dy <= Rv; dy++) for (let dx = -R; dx <= R; dx++) {
     const nx = dx / R, ny = dy / (R * squash), r = Math.hypot(nx, ny), a = Math.atan2(ny, nx);
     const edge = (0.55 + 0.45 * Math.abs(Math.cos((petals * a) / 2 + rot))) * (0.35 + 0.65 * open);
-    let c: [string, string] | null = null;
-    if (r < 0.26 * (0.6 + 0.4 * open)) c = [rnd() < 0.3 ? '8' : '@', 'c'];
-    else if (r < 0.36 && open > 0.3) c = [rnd() < 0.5 ? 'o' : '.', 'd'];
-    else if (r < edge - 0.14) c = [rnd() < 0.5 ? '0' : '1', 'p'];
-    else if (r < edge) c = [rnd() < 0.5 ? "'" : '.', 'r'];
-    if (c) g[dy + Rv][dx + R] = c;
+    if (r < 0.26 * (0.6 + 0.4 * open)) out.push([dx, dy, rnd() < 0.3 ? '8' : '@', 'c']);
+    else if (r < 0.36 && open > 0.3) out.push([dx, dy, rnd() < 0.5 ? 'o' : '.', 'd']);
+    else if (r < edge - 0.14) out.push([dx, dy, rnd() < 0.5 ? '0' : '1', 'p']);
+    else if (r < edge) out.push([dx, dy, rnd() < 0.5 ? "'" : '.', 'r']);
   }
+  return out;
+}
+
+export function flowerHTML({ R = 5, petals = 6, rot = 0, open = 1, seed = 1, squash = 0.5, stem = 0 } = {}) {
+  const Rv = Math.max(1, Math.round(R * squash));
+  const W = R * 2 + 1, H = Rv * 2 + 1 + stem;
+  const g: ([string, string] | null)[][] = Array.from({ length: H }, () => Array(W).fill(null));
+  for (const [dx, dy, ch, tn] of flowerCells({ R, petals, rot, open, seed, squash })) g[dy + Rv][dx + R] = [ch, tn];
   for (let y = Rv * 2 + 1; y < H; y++) {
     const k = y - Rv * 2 - 1;
     g[y][R] = ['|', 's'];

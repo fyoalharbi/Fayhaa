@@ -85,6 +85,7 @@ const lead = featured[0] ?? D.projects[0], camp = camps[0], post = D.posts[0];
 ---
 <ExpShell title="Herbarium" n="03" lang={lang} scripts={['js/flyer.js', 'experiments/kit.js', 'experiments/herbarium.js']}>
   <script is:inline define:vars={{ t: T.js }} slot="head">window.HB_T = t;</script>
+  {AR && <link slot="head" rel="stylesheet" href={`https://fonts.googleapis.com/css2?family=Aref+Ruqaa:wght@700&display=swap&text=${encodeURIComponent(D.name + '01')}`} />}
   <a class="hb-lang" href={other.href} lang={other.lang} hreflang={other.lang} data-keep-hash>{other.label}</a>
   <nav class="hb-rail" id="hb-rail" aria-label="Sections">
     <span class="hb-stem"><i id="hb-grow"></i></span>
@@ -286,7 +287,9 @@ const lead = featured[0] ?? D.projects[0], camp = camps[0], post = D.posts[0];
   #hb-garden { width: 100%; height: 100%; display: block; }
   .hb-k { font: 500 10.5px var(--mono); letter-spacing: .2em; text-transform: uppercase; color: var(--red); margin: 0 0 22px; }
   .hb-name { margin: 0; font: 400 clamp(88px, 12.5vw, 196px)/.82 var(--serif); font-style: italic; letter-spacing: -.045em; }
-  html[lang='ar'] .hb-name { font-weight: 600; line-height: 1.05; font-size: clamp(80px, 11vw, 170px); }
+  /* Arabic: the name in Ruqʿa, the hand counterpart of the English italic; its right edge sits flush with the kicker and the role */
+  html[lang='ar'] .hb-name { font: 700 clamp(84px, 11.5vw, 176px)/1 'Aref Ruqaa', var(--serif); letter-spacing: 0; }
+  html[lang='ar'] .hb-name span { padding: .1em 0 .32em .06em; margin: -.1em 0 -.5em; }
   .hb-name span { display: inline-block; background: linear-gradient(100deg, var(--ink) 40%, #ffd7c8 50%, var(--ink) 60%) 0 0 / 300% 100%; -webkit-background-clip: text; background-clip: text; color: transparent; animation: hb-sheen 9s ease-in-out 2.5s infinite; padding: 0 .06em .32em 0; margin-bottom: -.32em; }
   @keyframes hb-sheen { 0%, 70% { background-position: 100% 0; } 100% { background-position: 0 0; } }
   .hb-role { margin: clamp(26px, 3.6vw, 52px) 0 0; font: 400 clamp(20px, 2.1vw, 27px)/1.3 var(--serif); color: var(--ink-2); }
@@ -332,8 +335,13 @@ const lead = featured[0] ?? D.projects[0], camp = camps[0], post = D.posts[0];
   .hb-art { margin: 0; direction: ltr; white-space: pre; max-width: 100%; overflow: hidden; font: 400 var(--art-fs, 7px)/1.25 'JetBrains Mono', monospace; color: #4d4d57; transition: opacity .5s; user-select: none; }
   .hb-img { text-decoration: none; } .hb-art i { font-style: normal !important; }
   .hb-art { transform: translateZ(0); }   /* own layer → grayscale antialiasing, no coloured fringes on thin glyphs */
-  .hb-art .a-w { color: #e8e4d0; } .hb-art .a-g { color: #8d8d96; } .hb-art .a-d { color: #4d4d57; transition: color .4s; } .hb-art .a-u { color: #7f95b0; } .hb-art .a-q { color: #8d8d96; }
-  article:hover .hb-art .a-d { color: #63636e; }
+  /* the garden's palette (KIT.PAL): petals, their darker rims, gold eyes, green stems and grass */
+  .hb-art .a-red { color: #ff8a8a; } .hb-art .a-red2 { color: #b35a5a; } .hb-art .a-white { color: #f4f4f4; } .hb-art .a-white2 { color: #9a9a9a; }
+  .hb-art .a-violet { color: #c49aff; } .hb-art .a-violet2 { color: #6f5a99; } .hb-art .a-blush { color: #ffc0d0; } .hb-art .a-blush2 { color: #a07080; }
+  .hb-art .a-orange { color: #ffb070; } .hb-art .a-orange2 { color: #a06a3a; } .hb-art .a-gold { color: #e6c34a; } .hb-art .a-gold2 { color: #8a7428; }
+  .hb-art .a-stem { color: #5f8f5f; } .hb-art .a-leaf { color: #4f8a4f; } .hb-art .a-g0 { color: #1f3524; } .hb-art .a-g1 { color: #2f5a3a; } .hb-art .a-g2 { color: #3f6b3f; }
+  .hb-art .a-pollen { color: #e6d27a; } .hb-art .a-fly { color: #d4ff7a; text-shadow: 0 0 6px #d4ff7a88; }
+  .hb-art .a-p { transition: opacity .4s; opacity: .88; } article:hover .hb-art .a-p { opacity: 1; }
   /* the real screenshot waits behind the plate until asked for */
   .hb-shot { position: absolute; inset: 0; width: 100%; height: 100%; display: block; object-fit: cover; object-position: top; clip-path: inset(0 0 100% 0); transition: clip-path 1.2s cubic-bezier(.6, 0, .2, 1); }
   .is-prev .hb-shot { clip-path: inset(0 0 0 0); }
@@ -424,7 +432,7 @@ const lead = featured[0] ?? D.projects[0], camp = camps[0], post = D.posts[0];
 
   /* ── contact ── */
   .hb-end { min-height: 80vh; padding-bottom: 120px; }
-  .hb-mail { display: inline-block; font: 400 clamp(28px, 5.2vw, 72px)/1.1 var(--serif); font-style: italic; color: var(--ink); text-decoration: none; background: linear-gradient(var(--red), var(--red)) 0 100% / 100% 1px no-repeat; padding-bottom: 8px; transition: background-size .4s, color .2s; font-family: 'IBM Plex Serif', serif; }
+  .hb-mail { display: inline-block; max-width: 100%; font: 400 min(clamp(28px, 5.2vw, 72px), calc((100vw - 32px) / 13.5))/1.1 var(--serif); font-style: italic; color: var(--ink); text-decoration: none; background: linear-gradient(var(--red), var(--red)) 0 100% / 100% 1px no-repeat; padding-bottom: 8px; transition: background-size .4s, color .2s; font-family: 'IBM Plex Serif', serif; }
   .hb-mail:hover { color: var(--red); background-size: 0 1px; background-position: 100% 100%; }
   .hb-colophon { margin: 110px 0 0; max-width: 60ch; font: 10.5px/1.7 var(--mono); color: #ffffff4d; }
 
@@ -453,14 +461,14 @@ const lead = featured[0] ?? D.projects[0], camp = camps[0], post = D.posts[0];
   }
   @media (max-width: 860px) {
     .hb { margin-inline-start: 0; --col: calc(100vw - 32px); }
-    .hb-rail { inset-inline: 0; top: 0; transform: none; padding: 12px 16px 0; padding-inline-end: 170px; grid-auto-flow: column; justify-content: start; gap: 18px; height: 40px; background: linear-gradient(#0b0c0e, #0b0c0ee0 70%, transparent); }
+    .hb-rail { inset-inline: 0; top: 0; transform: none; padding: 12px 16px 0; padding-inline-end: 170px; grid-auto-flow: column; justify-content: start; gap: clamp(8px, calc((100vw - 300px) / 5), 18px); box-sizing: border-box; overflow: hidden; height: 46px; background: linear-gradient(#0b0c0e 78%, #0b0c0e00); }
     .hb-rail.is-hero { opacity: 1; pointer-events: auto; }
     .hb-rail a span { display: none; } .hb-rail a::before { display: none; } .hb-rail a b { font-size: 12px; }
     .hb-stem { inset-inline: 16px 170px; top: auto; bottom: 0; width: auto; height: 1px; } .hb-stem i { height: 1px; width: 0; }
     .hb-hero { padding: 76px 0 24svh; min-height: auto; }
     .hb-ruler { top: 50px; }
     .hb-gwrap { height: 22svh; }
-    .hb-name { font-size: 96px; } html[lang='ar'] .hb-name { font-size: 84px; }
+    .hb-name { font-size: 96px; } html[lang='ar'] .hb-name { font-size: 88px; }
     .hb-now { grid-template-columns: 1fr; }
     .hb-sec { padding-top: 96px; }
     .hb-head { grid-template-columns: 1fr; margin-bottom: 40px; } .hb-lead { justify-self: start; margin-top: 14px; }

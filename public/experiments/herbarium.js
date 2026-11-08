@@ -38,11 +38,11 @@
   // the few live bits in each drawing flip now and then, only while it's on screen
   const live = new Set();
   const lio = new IntersectionObserver((es) => es.forEach((e) => (e.isIntersecting ? live.add(e.target) : live.delete(e.target))));
-  $$('.hb-art').forEach((pre) => { if (pre.querySelector('.a-q')) lio.observe(pre); });
+  $$('.hb-art').forEach((pre) => { if (pre.querySelector('.a-p')) lio.observe(pre); });
   if (!REDUCED) setInterval(() => {
     for (const pre of live) {
       if (Math.random() < 0.5) continue;
-      const qs = pre.querySelectorAll('.a-q'), q = qs[(Math.random() * qs.length) | 0], t = [...q.textContent];
+      const qs = pre.querySelectorAll('.a-p'), q = qs[(Math.random() * qs.length) | 0], t = [...q.textContent];
       const i = (Math.random() * t.length) | 0;
       if (t[i] === '0' || t[i] === '1') { t[i] = t[i] === '0' ? '1' : '0'; q.textContent = t.join(''); }
     }
