@@ -1,7 +1,7 @@
 ---
 title: InvaSight — an investment portfolio data pipeline
 date: 2026-09
-summary: An ELT pipeline that turns a firm's transaction ledger and daily market prices into a SAR-valued star schema and a Power BI dashboard, orchestrated with Airflow.
+summary: Built an end-to-end investment data pipeline that combines financial transactions and daily market prices into a unified SAR-valued analytical model, with automated orchestration and Power BI reporting.
 tldr:
   problem: A small investment firm needed one reliable view of its portfolio, combining an internal transaction ledger with daily FX, precious-metal and equity prices, all valued in Saudi riyals.
   role: "SDA Data Engineering bootcamp capstone, team of 4. My part: orchestration and integration — the Airflow DAGs, landing and loading logic, Snowflake loading, CI/CD and the dashboard wiring."
