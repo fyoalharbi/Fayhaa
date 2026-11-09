@@ -106,7 +106,6 @@ export const ui = {
       still: 'keep still…',
       landed: 'it landed. move away to let it go',
     },
-    footer: 'Built with Astro & p5.js',
   },
   ar: {
     nav: { projects: 'المشاريع', skills: 'المهارات', about: 'عني', contact: 'تواصل', blog: 'المدونة' },
@@ -151,6 +150,5 @@ export const ui = {
       still: 'اثبت…',
       landed: 'نزلت. ابعد المؤشر عشان تطير',
     },
-    footer: 'مبني بـ Astro و p5.js',
   },
 } as const;
