@@ -9,18 +9,15 @@ interface Props {
   description?: string;
   /** Path of this page relative to the language root, used for the EN/AR switch. */
   path?: string;
-  /** Only the home pages honour a saved "terminal" preference. */
-  homeRedirect?: boolean;
   /** Keep unlisted pages (e.g. the shareable CV) out of search results. */
   noindex?: boolean;
 }
 
-const { lang, title, description = profile.intro[lang], path = '', homeRedirect = false, noindex = false } = Astro.props;
+const { lang, title, description = profile.intro[lang], path = '', noindex = false } = Astro.props;
 const t = ui[lang];
 const other: Lang = lang === 'en' ? 'ar' : 'en';
 const fullTitle = title ? `${title} · ${profile.name[lang]}` : `${profile.name[lang]} · ${profile.role[lang]}`;
 const canonical = new URL(Astro.url.pathname, Astro.site);
-const terminalHref = url('terminal/') + (lang === 'ar' ? '?lang=ar' : '');
 ---
 <!doctype html>
 <html lang={lang} dir={lang === 'ar' ? 'rtl' : 'ltr'}>
@@ -48,23 +45,6 @@ const terminalHref = url('terminal/') + (lang === 'ar' ? '?lang=ar' : '');
 
   <slot name="head" />
 
-  {homeRedirect && (
-    <script is:inline define:vars={{ terminalHref }}>
-      // Respect a visitor's earlier choice of the terminal view, but only when
-      // they arrive from outside the site, once per session, and never with
-      // ?view=… — so Home links and the back button always work.
-      try {
-        const fromInside = document.referrer && new URL(document.referrer).origin === location.origin;
-        if (localStorage.getItem('fayhaa:view') === 'terminal' &&
-            !fromInside &&
-            !sessionStorage.getItem('fayhaa:redirected') &&
-            !new URLSearchParams(location.search).has('view')) {
-          sessionStorage.setItem('fayhaa:redirected', '1');
-          location.replace(terminalHref);
-        }
-      } catch (e) {}
-    </script>
-  )}
 </head>
 <body>
   <a class="skip" href="#main">Skip to content</a>
@@ -83,9 +63,6 @@ const terminalHref = url('terminal/') + (lang === 'ar' ? '?lang=ar' : '');
       </nav>
       <div class="header-tools">
         <a class="lang-link" href={langUrl(other, path)} hreflang={other} lang={other}>{t.otherLang}</a>
-        <a class="term-toggle" href={terminalHref} data-view="terminal">
-          <span aria-hidden="true">&gt;_</span> {t.terminal}
-        </a>
       </div>
     </div>
   </header>
@@ -137,12 +114,6 @@ const terminalHref = url('terminal/') + (lang === 'ar' ? '?lang=ar' : '');
       }
     } catch (e) {}
 
-    // Remember which view the visitor picked.
-    document.addEventListener('click', (e) => {
-      const a = e.target.closest && e.target.closest('[data-view]');
-      if (!a) return;
-      try { localStorage.setItem('fayhaa:view', a.dataset.view); } catch (err) {}
-    });
   </script>
 </body>
 </html>

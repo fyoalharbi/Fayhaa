@@ -69,7 +69,7 @@ export async function expData(lang: Lang = 'en') {
     certifications: certifications.map((c) => ({ title: c.title[lang], org: c.org[lang], period: c.period })),
     philosophy: { title: philosophy.title[lang], lines: philosophy.lines[lang], paragraphs: philosophy.paragraphs[lang] },
     projects, posts,
-    home: langUrl(lang), papillon: langUrl(lang, 'papillon/'), terminal: url('terminal/'),
+    home: langUrl(lang), papillon: langUrl(lang, 'papillon/'),
     exp: url('experiments/'),
   };
 }

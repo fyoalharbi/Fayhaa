@@ -1,6 +1,6 @@
 // ─────────────────────────────────────────────
 //  PROFILE — single source of truth for both views
-//  (normal pages + terminal read from here)
+//  (every page reads from here)
 // ─────────────────────────────────────────────
 
 export type Lang = 'en' | 'ar';

@@ -11,7 +11,7 @@ const projects = defineCollection({
   schema: z.object({
     title: z.string(),
     date: z.coerce.date(),
-    summary: z.string(),              // one-liner for cards + terminal `ls`
+    summary: z.string(),              // one-liner for the project lists
     tldr: z.object({
       problem: z.string(),
       role: z.string(),

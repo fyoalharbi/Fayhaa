@@ -265,7 +265,7 @@ html[lang='ar'] .hb-excerpt { line-height: 1.95; }
 }
 
 
-/* ════ The top bar: on the home page just the language switch and the terminal view; on every other
+/* ════ The top bar: on the home page just the language switch; on every other
    page the name (home), Projects and Writing as well, over a veil that fades into the night ════ */
 .hb-top { position: fixed; z-index: 90; inset-inline: 0; top: 0; display: flex; align-items: center; gap: 30px; padding: max(10px, env(safe-area-inset-top)) 12px 10px 34px; pointer-events: none; }
 html[dir='rtl'] .hb-top { padding-inline: 34px 12px; }
@@ -280,10 +280,9 @@ html[lang='ar'] .hb-nav a { font-size: 15.5px; line-height: 1.3; }
 .hb-nav a:hover, .hb-nav a[aria-current] { color: var(--ink); }
 .hb-nav a[aria-current]::after { content: ''; position: absolute; inset-inline: 0; bottom: 0; height: 1px; background: var(--red); box-shadow: 0 0 8px var(--red); }
 .hb-chips { display: flex; gap: 8px; margin-inline-start: auto; }
-.hb-lang, .hb-term { padding: 5px 9px; text-decoration: none; font: 500 11px/1 'IBM Plex Sans Arabic', var(--mono); color: var(--ink-2); background: rgba(11, 12, 14, .6); border: 1px solid #ffffff1f; backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); transition: color .2s, border-color .2s; }
-.hb-lang[lang='en'], .hb-term { font-family: var(--mono); letter-spacing: .06em; }
-.hb-term { color: var(--dim); }
-.hb-lang:hover, .hb-term:hover { color: var(--ink); border-color: #ff8a8a88; }
+.hb-lang { padding: 5px 9px; text-decoration: none; font: 500 11px/1 'IBM Plex Sans Arabic', var(--mono); color: var(--ink-2); background: rgba(11, 12, 14, .6); border: 1px solid #ffffff1f; backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); transition: color .2s, border-color .2s; }
+.hb-lang[lang='en'] { font-family: var(--mono); letter-spacing: .06em; }
+.hb-lang:hover { color: var(--ink); border-color: #ff8a8a88; }
 .hb-top a:focus-visible { outline: 1px solid var(--red); outline-offset: 4px; }
 
 /* ════ Inner pages: projects, writing, case studies and posts ════ */
@@ -419,6 +418,5 @@ html[lang='ar'] .hb-next span { font-weight: 700; line-height: 1.5; }
   .hb-foot { margin-top: 120px !important; padding-bottom: 70px; }
 }
 @media (max-width: 560px) {
-  .is-page .hb-term { display: none; }   /* the terminal view is for keyboards; on a phone the bar keeps to the essentials */
   .hb-top { gap: 14px; } .hb-nav { gap: 14px; }
 }

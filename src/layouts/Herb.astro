@@ -1,6 +1,6 @@
 ---
 // The site's layout in the Herbarium theme: page meta, fonts, the shared stylesheet, a quiet top bar
-// (name, Projects, Writing, the language switch and the terminal view), and the white butterfly that
+// (name, Projects, Writing and the language switch), and the white butterfly that
 // wanders every page and opens the garden when caught. Inner pages get their <main> and a contact foot
 // from here; the home page brings its own. Behaviour lives in public/js/herb.js; a page
 // can add its own scripts after it.
@@ -27,10 +27,9 @@ const AR = lang === 'ar';
 const other: Lang = AR ? 'en' : 'ar';
 const fullTitle = title ? `${title} · ${profile.name[lang]}` : `${profile.name[lang]} · ${profile.role[lang]}`;
 const canonical = new URL(Astro.url.pathname, Astro.site);
-const terminalHref = url('terminal/') + (AR ? '?lang=ar' : '');
 const T = AR
-  ? { projects: 'المشاريع', writing: 'المدونة', other: 'English', terminal: 'واجهة الطرفية', skip: 'تخطَّ إلى المحتوى', tip: 'ليش فراشات؟ افتح الحديقة ←' }
-  : { projects: 'Projects', writing: 'Writing', other: 'العربية', terminal: 'Terminal view', skip: 'Skip to content', tip: 'Why butterflies? Open the garden →' };
+  ? { projects: 'المشاريع', writing: 'المدونة', other: 'English', skip: 'تخطَّ إلى المحتوى', tip: 'ليش فراشات؟ افتح الحديقة ←' }
+  : { projects: 'Projects', writing: 'Writing', other: 'العربية', skip: 'Skip to content', tip: 'Why butterflies? Open the garden →' };
 const here = Astro.url.pathname;
 const on = (p: string) => here.startsWith(langUrl(lang, p));
 ---
@@ -57,20 +56,6 @@ const on = (p: string) => here.startsWith(langUrl(lang, p));
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Serif:ital,wght@0,400;0,500;1,400&family=IBM+Plex+Sans+Arabic:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet" />
   {AR && <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&display=swap" />}
   <script is:inline>document.documentElement.classList.add('hb-js');</script>
-  {home && (
-    <script is:inline define:vars={{ terminalHref }}>
-      // Respect a visitor's earlier choice of the terminal view, but only when they arrive from outside
-      // the site, once per session, and never with ?view=…, so Home links and the back button always work.
-      try {
-        const fromInside = document.referrer && new URL(document.referrer).origin === location.origin;
-        if (localStorage.getItem('fayhaa:view') === 'terminal' && !fromInside &&
-            !sessionStorage.getItem('fayhaa:redirected') && !new URLSearchParams(location.search).has('view')) {
-          sessionStorage.setItem('fayhaa:redirected', '1');
-          location.replace(terminalHref);
-        }
-      } catch (e) {}
-    </script>
-  )}
   <slot name="head" />
 </head>
 <body class={home ? 'is-home' : bare ? 'is-page is-bare' : 'is-page'}>
@@ -85,7 +70,6 @@ const on = (p: string) => here.startsWith(langUrl(lang, p));
     )}
     <span class="hb-chips">
       <a class="hb-lang" href={langUrl(other, path)} lang={other} hreflang={other} data-keep-hash>{T.other}</a>
-      <a class="hb-term" dir="ltr" href={terminalHref} data-view="terminal" aria-label={T.terminal} title={T.terminal}>&gt;_</a>
     </span>
   </header>
 
@@ -102,13 +86,6 @@ const on = (p: string) => here.startsWith(langUrl(lang, p));
   <!-- The white butterfly: wanders the page, perches on things, and opens the garden when caught -->
   {!bare && <a class="hb-fly" id="hb-fly" href={langUrl(lang, 'papillon/')} aria-label={T.tip}><canvas></canvas><span class="hb-fly-tip">{T.tip}</span></a>}
 
-  <script is:inline>
-    // Remember which view the visitor picked
-    document.addEventListener('click', (e) => {
-      const a = e.target.closest && e.target.closest('[data-view]');
-      if (a) try { localStorage.setItem('fayhaa:view', a.dataset.view); } catch (err) {}
-    });
-  </script>
   {['js/flyer.js', 'experiments/kit.js', 'js/herb.js', ...scripts].map((s) => <script is:inline src={url(s)}></script>)}
 </body>
 </html>

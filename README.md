@@ -4,14 +4,9 @@ this is just a humble portfolio with multiple easter eggs!
 
 ---
 
-## Two views, one source
+## Where the content lives
 
-| View | URL | For |
-|---|---|---|
-| **Normal** | `/` and `/ar/` | Recruiters: projects, skills, contact, case studies |
-| **Terminal** | `/terminal/` | The original spec sheet, now with a real command line (`help`) |
-
-Both views read from the same files:
+The site is at `/` (English) and `/ar/` (Arabic). Every page reads from the same files:
 
 - `src/data/profile.ts`: name, role, links, skills, experience, philosophy
 - `src/content/projects/{en,ar}/*.md`: one Markdown file per project (a case study)
@@ -31,7 +26,7 @@ Both views read from the same files:
 3. Optional: add the Arabic version at `src/content/projects/ar/<slug>.md`
 4. Keep `draft: true` while writing. Drafts show in `npm run dev` but get no page in production.
 
-It shows up automatically on the home page, `/projects/`, every skill page it's tagged with, and in the terminal (`ls projects`, `cat <slug>`).
+It shows up automatically on `/projects/`, with its own case-study page.
 
 Skills used in `skills: [...]` must exist in `src/data/profile.ts`.
 
@@ -60,7 +55,6 @@ The CV lives on an unlisted page (`src/pages/cv/<random>/`), linked from nowhere
 
 ## Optional files in `public/`
 
-- `resume.pdf`: enables the résumé buttons and the terminal `resume` command
 - `og.png` (1200×630): link preview image for LinkedIn and other sites
 
 ## Run locally

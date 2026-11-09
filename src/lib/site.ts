@@ -72,7 +72,6 @@ export const ui = {
     backToBlog: '← All posts',
     translatedNote: 'Translated from the original Arabic post.',
     originalOn: 'Originally posted on LinkedIn ↗',
-    terminal: 'Terminal view',
     otherLang: 'العربية',
     viewProjects: 'View projects',
     resume: 'Download résumé',
@@ -100,7 +99,6 @@ export const ui = {
     tldr: { problem: 'Problem', role: 'My role', tools: 'Tools', result: 'Result' },
     links: { live: 'Live', github: 'Code', linkedin: 'LinkedIn post' },
     back: '← All projects',
-    openInTerminal: 'Open in terminal',
     skillsUsed: 'Skills in this project',
     draftBanner: 'Draft: only visible in dev mode. Set `draft: false` once the TODOs are filled in.',
     butterflyHints: {
@@ -119,7 +117,6 @@ export const ui = {
     backToBlog: '→ كل التدوينات',
     translatedNote: 'مترجمة من التدوينة الأصلية.',
     originalOn: 'نُشرت أصلاً على LinkedIn ↗',
-    terminal: 'واجهة الطرفية',
     otherLang: 'English',
     viewProjects: 'شوف المشاريع',
     resume: 'تحميل السيرة الذاتية',
@@ -147,7 +144,6 @@ export const ui = {
     tldr: { problem: 'المشكلة', role: 'دوري', tools: 'الأدوات', result: 'النتيجة' },
     links: { live: 'مباشر', github: 'الكود', linkedin: 'منشور LinkedIn' },
     back: '→ كل المشاريع',
-    openInTerminal: 'افتح في الطرفية',
     skillsUsed: 'المهارات في هذا المشروع',
     draftBanner: 'مسودة: تظهر في وضع التطوير فقط.',
     butterflyHints: {
