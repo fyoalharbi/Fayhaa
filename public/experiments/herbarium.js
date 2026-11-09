@@ -21,7 +21,7 @@
     if (!e.isIntersecting) return;
     io.unobserve(e.target); e.target.classList.add('is-in');
   }), { threshold: 0.18, rootMargin: '0px 0px -8% 0px' });
-  $$('.hb-sec > *:not(.hb-feats):not(.hb-coll), .hb-feat, .hb-fold-in > :not(ol), .hb-row, .hb-toc li, .hb-entry').forEach((el) => io.observe(el));
+  $$('.hb-sec > *:not(.hb-feats):not(.hb-coll), .hb-feat, .hb-fold-in > :not(ol), .hb-toc li, .hb-entry').forEach((el) => io.observe(el));
 
   // ── Plate size: each drawing is 64 columns, scaled to its frame's real width ──
   const fit = (img) => { const pre = img.querySelector('.hb-art'); if (pre) pre.style.setProperty('--art-fs', (img.clientWidth / 64 / 0.6 * 0.9).toFixed(2) + 'px'); };
