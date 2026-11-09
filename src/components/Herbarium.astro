@@ -414,6 +414,8 @@ const lead = featured[0] ?? D.projects[0], camp = camps[0], post = D.posts[0];
   /* Wide screens: after the last featured project the button gets a stop of its own, centred on screen */
   @media (min-width: 861px) and (min-height: 620px) {
     .hb-explore.is-coll { box-sizing: border-box; min-height: 70vh; min-height: 70svh; margin: 0; align-items: center; }
+    #work { padding-top: 50vh; padding-top: 50svh; }
+    #work > .hb-shelf { margin-bottom: 50vh; margin-bottom: 50svh; }   /* the Projects title screen: the first project starts just below it */
   }
   .hb-more { all: unset; cursor: pointer; display: inline-flex; align-items: center; gap: 12px; padding: 13px 17px; font: 500 13px var(--mono); letter-spacing: .06em; color: var(--ink); border: 1px solid #ffffff22; background: #0b0c0e99; transition: color .2s, border-color .2s, box-shadow .2s; }
   .hb-more b { font-weight: 500; color: var(--red); }
