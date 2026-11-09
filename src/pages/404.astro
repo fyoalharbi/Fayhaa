@@ -1,14 +1,33 @@
 ---
-import Base from '../layouts/Base.astro';
-import { langUrl, url } from '../lib/site';
+// Not found: a flower that has lost most of its petals, and the ways back into the site.
+import Herb from '../layouts/Herb.astro';
+import { flowerHTML } from '../lib/flowerArt';
+import { langUrl } from '../lib/site';
 ---
-<Base lang="en" title="Not found">
-  <section class="section wrap">
-    <p class="kicker mono">ERR_404 // SIGNAL_LOST</p>
-    <h1>This page flew away.</h1>
-    <div class="actions">
-      <a class="btn btn-primary" href={langUrl('en')}>Home</a>
-      <a class="btn" href={url('terminal/')}>&gt;_ Terminal</a>
+<Herb lang="en" title="Not found" noindex>
+  <section class="hb-lost">
+    <pre class="hb-lost-art" aria-hidden="true" set:html={flowerHTML({ R: 7, petals: 6, open: 0.6, seed: 404, stem: 6 })}></pre>
+    <div>
+      <p class="hb-tag">404</p>
+      <h1 class="hb-title" data-decode data-perch>This page flew away.</h1>
+      <p class="hb-lead">The link may be old, or the page has moved.</p>
+      <p class="hb-cta">
+        <a href={langUrl('en')}>Home</a>
+        <a href={langUrl('en', 'projects/')}>Projects</a>
+        <a href={langUrl('en', 'blog/')}>Writing</a>
+      </p>
     </div>
   </section>
-</Base>
+</Herb>
+
+<style is:global>
+  .hb-lost { display: grid; grid-template-columns: auto 1fr; align-items: center; gap: 80px; min-height: 60svh; animation: hb-up .9s cubic-bezier(.2, .8, .2, 1) both; }
+  .hb-lost-art { margin: 0; font: 15px/1.05 var(--mono); direction: ltr; opacity: .9; }
+  .hb-lost .hb-tag { color: var(--red); letter-spacing: .2em; }
+  .hb-lost .hb-title { margin-top: 16px; font-size: clamp(52px, 7vw, 104px); }
+  .hb-lost .hb-lead { margin-top: 22px; justify-self: start; }
+  @media (max-width: 860px) {
+    .hb-lost { grid-template-columns: 1fr; gap: 40px; min-height: auto; }
+    .hb-lost-art { font-size: 12px; }
+  }
+</style>

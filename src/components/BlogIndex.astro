@@ -1,32 +1,30 @@
 ---
-import Base from '../layouts/Base.astro';
+// The writing page: every note, newest first, each with its own small garden flower.
+import Herb from '../layouts/Herb.astro';
+import { expData } from '../lib/expData';
+import { flowerHTML } from '../lib/flowerArt';
 import { type Lang } from '../data/profile';
-import { ui, langUrl, getPosts, postSlug, formatDate } from '../lib/site';
+import { ui } from '../lib/site';
 
 interface Props { lang: Lang }
 const { lang } = Astro.props;
 const t = ui[lang];
-const posts = await getPosts(lang);
+const AR = lang === 'ar';
+const posts = [...(await expData(lang)).posts].sort((a, b) => b.time - a.time);
+const T = AR ? { title: 'المدونة', min: 'دقيقة قراءة', read: 'اقرأ ←' } : { title: 'Writing', min: 'min read', read: 'Read →' };
 ---
-<Base lang={lang} title={t.blogTitle} path="blog/">
-  <section class="section wrap blog-index">
-    <div class="section-head">
-      <h1>{t.blogTitle}</h1>
-      <p class="muted">{t.blogLead}</p>
-    </div>
-
-    {posts.length === 0 && <p class="muted">{t.noPosts}</p>}
-    <ol class="post-list">
-      {posts.map((p) => (
-        <li>
-          <a href={langUrl(lang, `blog/${postSlug(p)}/`)}>
-            <time class="mono muted" datetime={p.data.date.toISOString()}>{formatDate(p.data.date, lang)}</time>
-            <h2>{p.data.title}</h2>
-            <p>{p.data.summary}</p>
-            {p.data.tags.length > 0 && <span class="post-tags mono">{p.data.tags.map((tag) => `#${tag}`).join('  ')}</span>}
-          </a>
-        </li>
-      ))}
-    </ol>
-  </section>
-</Base>
+<Herb lang={lang} title={T.title} description={t.blogLead} path="blog/">
+  <header class="hb-head"><h1 class="hb-title" data-decode data-perch>{T.title}</h1><p class="hb-lead">{t.blogLead}</p></header>
+  {posts.length === 0 && <p class="hb-lead">{t.noPosts}</p>}
+  <div class="hb-notes">
+    {posts.map((p, i) => (
+      <article class="hb-entry">
+        <p class="hb-entry-k">{p.date} · {p.minutes} {T.min}</p>
+        <pre class="hb-sprig" aria-hidden="true" set:html={flowerHTML({ R: 3, petals: 5 + (i % 3), seed: 40 + i, stem: 4 })}></pre>
+        <h2><a href={p.href}>{p.title}</a></h2>
+        <p class="hb-excerpt">{p.summary}</p>
+        <p class="hb-entry-f"><a href={p.href}>{T.read}</a></p>
+      </article>
+    ))}
+  </div>
+</Herb>

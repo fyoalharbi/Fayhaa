@@ -1,5 +1,6 @@
 ---
-// Experiment 03 · Herbarium (Arabic, RTL)
-import Herbarium from '../../../components/Herbarium.astro';
+// Experiment 03 · Herbarium (Arabic) became the Arabic home page; this address forwards there.
+import { langUrl } from '../../../lib/site';
+const to = langUrl('ar');
 ---
-<Herbarium lang="ar" />
+<meta http-equiv="refresh" content={`0;url=${to}`} /><link rel="canonical" href={to} /><meta name="robots" content="noindex" />

@@ -1,6 +1,6 @@
 ---
-// Experiment 03 · Herbarium (English). Arabic: /ar/experiments/herbarium/.
-// Earlier versions stay at /experiments/herbarium-v1/.
-import Herbarium from '../../components/Herbarium.astro';
+// Experiment 03 · Herbarium became the home page; this address forwards there.
+import { langUrl } from '../../lib/site';
+const to = langUrl('en');
 ---
-<Herbarium lang="en" />
+<meta http-equiv="refresh" content={`0;url=${to}`} /><link rel="canonical" href={to} /><meta name="robots" content="noindex" />

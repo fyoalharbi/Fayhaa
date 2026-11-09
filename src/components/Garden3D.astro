@@ -5,9 +5,9 @@
 // moves to each line's subject (the white butterfly, the bee, the hive, a far
 // flower, the whole garden). It runs as one experience: an intro screen asks to
 // start the journey; the garden appears and the story plays with the site header
-// tucked away; at the end the header returns and retro callout lines pin my
+// tucked away; at the end the top bar returns and retro callout lines pin my
 // projects to flowers in the garden.
-import Base from '../layouts/Base.astro';
+import Herb from '../layouts/Herb.astro';
 import { philosophy, type Lang } from '../data/profile';
 import { url, langUrl, getProjects, projectHref } from '../lib/site';
 
@@ -65,7 +65,8 @@ const steps = lines.map((line, i) => ({ line, shot: SHOTS[i] || 'wide', fact: FA
 // Projects pinned to flowers at the end of the journey
 const projects = (await getProjects(lang)).slice(0, 6).map((p) => ({ title: p.data.title, summary: p.data.summary, ...projectHref(p) }));
 ---
-<Base lang={lang} title={t.title} path="papillon/" noindex>
+<Herb lang={lang} title={t.title} path="papillon/" noindex bare>
+  <main id="main">
   <div class="g3" id="g3" data-phase="intro" dir={ar ? 'rtl' : 'ltr'}>
     <canvas id="g3-canvas" aria-label={t.title}></canvas>
 
@@ -117,6 +118,8 @@ const projects = (await getProjects(lang)).slice(0, 6).map((p) => ({ title: p.da
       <a class="btn" href={langUrl(lang)}>{t.back}</a>
     </div>
   </div>
+
+  </main>
 
   <script is:inline define:vars={{ src: url('js/garden3d.js'), steps, t, INFO, nPins: projects.length }}>
     (function () {
@@ -394,11 +397,12 @@ const projects = (await getProjects(lang)).slice(0, 6).map((p) => ({ title: p.da
       document.body.appendChild(s);
     })();
   </script>
-</Base>
+</Herb>
 
 <style>
   .g3 {
-    position: relative; height: calc(100svh - var(--header-h)); overflow: hidden; color: var(--paper);
+    position: relative; height: 100svh; overflow: hidden; color: var(--paper);
+    --paper: #f4f4f4; --font-mono: var(--mono); --font-ar: 'IBM Plex Sans Arabic', system-ui, sans-serif;
     /* The sky warms as the story goes on (--stage 0 → 1) */
     --stage: 0;
     background:
@@ -408,7 +412,9 @@ const projects = (await getProjects(lang)).slice(0, 6).map((p) => ({ title: p.da
   }
   .g3 canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; cursor: grab; touch-action: none; }
   .g3 canvas:active { cursor: grabbing; }
-  .g3-ui { position: absolute; top: 16px; inset-inline-start: 20px; pointer-events: none; }
+  .g3 .mono { font-family: var(--font-mono); font-size: .78rem; letter-spacing: .04em; }
+  .g3[dir='rtl'] .mono { font-family: var(--font-ar); letter-spacing: 0; font-size: .85rem; }
+  .g3-ui { position: absolute; top: 80px; inset-inline-start: 20px; pointer-events: none; }
   .g3-title { margin: 0; font: 600 1rem/1.3 var(--font-mono); color: #cfcfcf; letter-spacing: .02em; }
   .g3-sub { margin: 2px 0 8px; font: .74rem/1.4 var(--font-mono); color: #ff8a8a; opacity: .85; }
   .g3-sub::before { content: '— '; }
@@ -416,20 +422,12 @@ const projects = (await getProjects(lang)).slice(0, 6).map((p) => ({ title: p.da
   .g3[dir='rtl'] .g3-title, .g3[dir='rtl'] .g3-sub { font-family: var(--font-ar); letter-spacing: 0; }
   .g3[dir='rtl'] .g3-title { font-size: 1.1rem; }
 
-  /* The site header, re-dressed for the night garden: a dark veil, quiet mono links */
+  /* The site's top bar steps aside for the intro and the journey, and slides back in at the end */
   :global(body:has(.g3)) { background: #0d0d0f; }
-  :global(body:has(.g3) .site-header) {
-    background: rgba(10, 11, 12, .72); border-bottom: 1px solid #ffffff14; color: #cfcfcf;
-  }
-  :global(body:has(.g3) .site-header .brand) { color: #cfcfcf; }
-  :global(body:has(.g3) .site-header .brand-mark) { color: #ff8a8a; }
-  :global(body:has(.g3) .site-nav a), :global(body:has(.g3) .lang-link) { color: #77777f; font-family: var(--font-mono); font-size: .74rem; letter-spacing: .04em; }
-  :global(body:has(.g3) .site-nav a:hover), :global(body:has(.g3) .lang-link:hover) { color: var(--paper); }
-  :global(body:has(.g3) .term-toggle) { background: none; border-color: #ffffff2a; color: #a3a3a3; }
-  :global(body:has(.g3) .term-toggle:hover) { border-color: #ff8a8a; color: var(--paper); background: none; }
-  :global(body:has(.g3) .site-header .secret-tab) { color: #ff8a8a !important; }
-  :global(html[dir='rtl'] body:has(.g3) .site-nav a), :global(html[dir='rtl'] body:has(.g3) .lang-link) { font-family: var(--font-ar); letter-spacing: 0; font-size: .85rem; }
-  .g3-actions { position: absolute; top: 16px; inset-inline-end: 20px; display: flex; flex-wrap: wrap; gap: 8px; justify-content: flex-end; }
+  :global(body:has(.g3) .hb-top) { background: linear-gradient(#0d0d0fcc, #0d0d0f00); }
+  :global(body:has(.g3:not([data-phase='end'])) .hb-top) { opacity: 0; pointer-events: none; }
+  :global(body:has(.g3[data-phase='end']) .hb-top) { animation: g3-head .7s cubic-bezier(.2, .8, .2, 1) both; }
+  .g3-actions { position: absolute; top: 80px; inset-inline-end: 20px; display: flex; flex-wrap: wrap; gap: 8px; justify-content: flex-end; }
   .g3-actions { gap: 14px; }
 
   /* ── Phases ── intro and journey take the whole screen (the header steps aside) */
@@ -437,7 +435,6 @@ const projects = (await getProjects(lang)).slice(0, 6).map((p) => ({ title: p.da
   .g3 canvas, .g3-ui, .g3-actions { transition: opacity 1.2s ease; }
   .g3[data-phase='intro'] canvas, .g3[data-phase='intro'] .g3-ui, .g3[data-phase='intro'] .g3-actions,
   .g3[data-phase='journey'] .g3-actions, .g3[data-phase='journey'] .g3-hint { opacity: 0; pointer-events: none; }
-  :global(body:has(.g3[data-phase='end']) .site-header) { animation: g3-head .7s cubic-bezier(.2, .8, .2, 1) both; }
   @keyframes g3-head { from { transform: translateY(-100%); opacity: 0; } to { transform: none; opacity: 1; } }
 
   .g3-intro {
@@ -542,7 +539,7 @@ const projects = (await getProjects(lang)).slice(0, 6).map((p) => ({ title: p.da
   .g3-btns { display: flex; gap: 14px; }
   /* Buttons read as small mono links, like the hint text */
   .g3 .btn {
-    padding: 0; border: 0; border-radius: 0; background: none; color: #a3a3a3;
+    padding: 0; border: 0; border-radius: 0; background: none; color: #a3a3a3; text-decoration: none;
     font: .74rem/1.4 var(--font-mono); letter-spacing: .04em; cursor: pointer;
   }
   .g3 .btn::before { content: '['; color: #55555c; margin-inline-end: 3px; }

@@ -1,0 +1,114 @@
+---
+// The site's layout in the Herbarium theme: page meta, fonts, the shared stylesheet, a quiet top bar
+// (name, Projects, Writing, the language switch and the terminal view), and the white butterfly that
+// wanders every page and opens the garden when caught. Inner pages get their <main> and a contact foot
+// from here; the home page brings its own. Behaviour lives in public/js/herb.js; a page
+// can add its own scripts after it.
+import '../styles/herbarium.css';
+import { profile, type Lang } from '../data/profile';
+import { url, langUrl, hasOgImage } from '../lib/site';
+
+interface Props {
+  lang: Lang;
+  title?: string;
+  description?: string;
+  /** Path of this page relative to the language root, used for the EN/AR switch. */
+  path?: string;
+  /** The home page: no name or section links in the bar (the page itself carries them). */
+  home?: boolean;
+  /** Extra scripts (paths under public/) to run after the shared ones. */
+  scripts?: string[];
+  noindex?: boolean;
+  /** A full-screen page that brings its own <main> (the garden): no contact foot, no butterfly. */
+  bare?: boolean;
+}
+const { lang, title, description = profile.intro[lang], path = '', home = false, scripts = [], noindex = false, bare = false } = Astro.props;
+const AR = lang === 'ar';
+const other: Lang = AR ? 'en' : 'ar';
+const fullTitle = title ? `${title} · ${profile.name[lang]}` : `${profile.name[lang]} · ${profile.role[lang]}`;
+const canonical = new URL(Astro.url.pathname, Astro.site);
+const terminalHref = url('terminal/') + (AR ? '?lang=ar' : '');
+const T = AR
+  ? { projects: 'المشاريع', writing: 'المدونة', other: 'English', terminal: 'واجهة الطرفية', skip: 'تخطَّ إلى المحتوى', tip: 'ليش فراشات؟ افتح الحديقة ←' }
+  : { projects: 'Projects', writing: 'Writing', other: 'العربية', terminal: 'Terminal view', skip: 'Skip to content', tip: 'Why butterflies? Open the garden →' };
+const here = Astro.url.pathname;
+const on = (p: string) => here.startsWith(langUrl(lang, p));
+---
+<!doctype html>
+<html lang={lang} dir={AR ? 'rtl' : 'ltr'}>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>{fullTitle}</title>
+  <meta name="description" content={description} />
+  <link rel="canonical" href={canonical} />
+  {noindex && <meta name="robots" content="noindex, nofollow" />}
+  <link rel="alternate" hreflang="en" href={new URL(langUrl('en', path), Astro.site)} />
+  <link rel="alternate" hreflang="ar" href={new URL(langUrl('ar', path), Astro.site)} />
+  <link rel="icon" href={url('favicon.svg')} type="image/svg+xml" />
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content={fullTitle} />
+  <meta property="og:description" content={description} />
+  <meta property="og:url" content={canonical} />
+  {hasOgImage && <meta property="og:image" content={new URL(url('og.png'), Astro.site)} />}
+  <meta name="twitter:card" content={hasOgImage ? 'summary_large_image' : 'summary'} />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Serif:ital,wght@0,400;0,500;1,400&family=IBM+Plex+Sans+Arabic:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet" />
+  {AR && <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&display=swap" />}
+  <script is:inline>document.documentElement.classList.add('hb-js');</script>
+  {home && (
+    <script is:inline define:vars={{ terminalHref }}>
+      // Respect a visitor's earlier choice of the terminal view, but only when they arrive from outside
+      // the site, once per session, and never with ?view=…, so Home links and the back button always work.
+      try {
+        const fromInside = document.referrer && new URL(document.referrer).origin === location.origin;
+        if (localStorage.getItem('fayhaa:view') === 'terminal' && !fromInside &&
+            !sessionStorage.getItem('fayhaa:redirected') && !new URLSearchParams(location.search).has('view')) {
+          sessionStorage.setItem('fayhaa:redirected', '1');
+          location.replace(terminalHref);
+        }
+      } catch (e) {}
+    </script>
+  )}
+  <slot name="head" />
+</head>
+<body class={home ? 'is-home' : bare ? 'is-page is-bare' : 'is-page'}>
+  <a class="hb-skip" href="#main">{T.skip}</a>
+  <header class="hb-top">
+    {!home && <a class="hb-brand" href={langUrl(lang)} data-perch>{profile.name[lang]}</a>}
+    {!home && (
+      <nav class="hb-nav" aria-label="Main">
+        <a href={langUrl(lang, 'projects/')} aria-current={on('projects/') ? 'page' : undefined}>{T.projects}</a>
+        <a href={langUrl(lang, 'blog/')} aria-current={on('blog/') ? 'page' : undefined}>{T.writing}</a>
+      </nav>
+    )}
+    <span class="hb-chips">
+      <a class="hb-lang" href={langUrl(other, path)} lang={other} hreflang={other} data-keep-hash>{T.other}</a>
+      <a class="hb-term" dir="ltr" href={terminalHref} data-view="terminal" aria-label={T.terminal} title={T.terminal}>&gt;_</a>
+    </span>
+  </header>
+
+  {home || bare ? <slot /> : (
+    <main class="hb hb-page" id="main">
+      <slot />
+      <footer class="hb-foot">
+        <a class="hb-mail" href={`mailto:${profile.email}`} dir="ltr" data-perch>{profile.email}</a>
+        <p class="hb-cta"><a href={profile.links.linkedin}>LinkedIn ↗</a><a href={profile.links.github}>GitHub ↗</a></p>
+      </footer>
+    </main>
+  )}
+
+  <!-- The white butterfly: wanders the page, perches on things, and opens the garden when caught -->
+  {!bare && <a class="hb-fly" id="hb-fly" href={langUrl(lang, 'papillon/')} aria-label={T.tip}><canvas></canvas><span class="hb-fly-tip">{T.tip}</span></a>}
+
+  <script is:inline>
+    // Remember which view the visitor picked
+    document.addEventListener('click', (e) => {
+      const a = e.target.closest && e.target.closest('[data-view]');
+      if (a) try { localStorage.setItem('fayhaa:view', a.dataset.view); } catch (err) {}
+    });
+  </script>
+  {['js/flyer.js', 'experiments/kit.js', 'js/herb.js', ...scripts].map((s) => <script is:inline src={url(s)}></script>)}
+</body>
+</html>

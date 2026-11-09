@@ -1,61 +1,75 @@
 ---
+// A case study: the title and summary, the project's plate running wide (with "Preview" for the real
+// screenshot), its specimen label (problem, role, tools, result), then the write-up in a reading column.
+// It ends with a garden flower and the way to the next project.
 import { render } from 'astro:content';
-import Base from '../layouts/Base.astro';
+import Herb from '../layouts/Herb.astro';
+import { expData } from '../lib/expData';
+import { projectArt } from '../lib/projectArt';
+import { flowerHTML } from '../lib/flowerArt';
 import { type Lang } from '../data/profile';
-import { ui, url, langUrl, projectSlug, skillLabel, formatDate, getProjects, hasPage, type Project } from '../lib/site';
+import { ui, langUrl, projectSlug, formatDate, getProjects, hasPage, type Project } from '../lib/site';
 
 interface Props { project: Project; lang: Lang }
 const { project, lang } = Astro.props;
 const t = ui[lang];
+const AR = lang === 'ar';
 const d = project.data;
 const slug = projectSlug(project);
 const { Content } = await render(project);
-// The EN/AR switch points at this post's translation, or the project list if there isn't one
-const other: Lang = lang === 'en' ? 'ar' : 'en';
+const P = (await expData(lang)).projects.find((p) => p.slug === slug)!;
+// The EN/AR switch points at this project's translation, or the project list if there isn't one
+const other: Lang = AR ? 'en' : 'ar';
 const translated = (await getProjects(other)).some((p) => projectSlug(p) === slug && hasPage(p));
-const linkEntries = (Object.entries(d.links) as [keyof typeof t.links, string | undefined][])
-  .filter(([, v]) => v);
+const linkEntries = (Object.entries(d.links) as [keyof typeof t.links, string | undefined][]).filter(([, v]) => v);
+// The next project with a page of its own, newest to oldest, wrapping round
+const ordered = (await getProjects(lang)).filter(hasPage).sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf());
+const at = ordered.findIndex((p) => projectSlug(p) === slug);
+const next = ordered.length > 1 ? ordered[(at + 1) % ordered.length] : null;
+const T = AR
+  ? { preview: 'معاينة', hide: 'إخفاء', shot: 'لقطة من', next: 'المشروع التالي' }
+  : { preview: 'Preview', hide: 'Hide preview', shot: 'Screenshot of', next: 'Next project' };
 ---
-<Base lang={lang} title={d.title} description={d.summary} path={translated ? `projects/${slug}/` : 'projects/'}>
-  <article class="post wrap">
-    <a class="back mono" href={langUrl(lang, 'projects/')}>{t.back}</a>
-
-    {d.draft && <p class="draft-banner mono">{t.draftBanner}</p>}
-
-    <header class="post-header">
-      <p class="mono muted"><time datetime={d.date.toISOString()}>{formatDate(d.date, lang)}</time></p>
-      <h1>{d.title}</h1>
-      <p class="lead">{d.summary}</p>
+<Herb lang={lang} title={d.title} description={d.summary} path={translated ? `projects/${slug}/` : 'projects/'}>
+  <article class="hb-doc">
+    <header class="hb-doc-head hb-measure">
+      <a class="hb-back" href={langUrl(lang, 'projects/')}>{t.back}</a>
+      {d.draft && <p class="hb-draft">{t.draftBanner}</p>}
+      <p class="hb-tag"><time datetime={d.date.toISOString()}>{formatDate(d.date, lang)}</time></p>
+      <h1 class="hb-doc-t" data-perch>{P.title}</h1>
+      {P.sub && <p class="hb-doc-sub">{P.sub}</p>}
+      <p class="hb-doc-lead">{d.summary}</p>
+      {linkEntries.length > 0 && (
+        <p class="hb-links">{linkEntries.map(([k, v]) => <a href={v} target="_blank" rel="noopener">{t.links[k]} ↗</a>)}</p>
+      )}
     </header>
 
-    <dl class="tldr">
+    <div class="hb-doc-plate">
+      <article>
+        <div class="hb-img">
+          <pre class="hb-art" aria-hidden="true" set:html={projectArt(slug).html}></pre>
+          {P.thumb && <img class="hb-shot" src={P.thumb} alt={`${T.shot} ${P.title}`} />}
+        </div>
+        {P.thumb && <p class="hb-fig is-bare"><button type="button" class="hb-prev" aria-pressed="false" data-on={T.hide} data-off={T.preview}>{T.preview}</button></p>}
+      </article>
+    </div>
+
+    <dl class="hb-spec-label">
       {(['problem', 'role', 'tools', 'result'] as const).map((k) => (
-        <div><dt class="mono">{t.tldr[k]}</dt><dd>{d.tldr[k]}</dd></div>
+        <div><dt>{t.tldr[k]}</dt><dd>{d.tldr[k]}</dd></div>
       ))}
     </dl>
 
-    <div class="actions">
-      {linkEntries.map(([k, v]) => <a class="btn" href={v} target="_blank" rel="noopener">{t.links[k]} ↗</a>)}
-      <a class="btn" href={`${url('terminal/')}?cmd=${encodeURIComponent(`cat ${slug}`)}${lang === 'ar' ? '&lang=ar' : ''}`}>
-        <span aria-hidden="true">&gt;_</span> {t.openInTerminal}
-      </a>
-    </div>
+    {d.embed && <div class="hb-embed"><iframe src={d.embed} title={d.title} loading="lazy" allowfullscreen></iframe></div>}
 
-    {d.embed && (
-      <div class="embed">
-        <iframe src={d.embed} title={d.title} loading="lazy" allowfullscreen></iframe>
-      </div>
-    )}
+    <div class="hb-prose hb-measure"><Content /></div>
 
-    <div class="prose">
-      <Content />
-    </div>
-
-    <footer class="post-footer">
-      <h2 class="mono">{t.skillsUsed}</h2>
-      <ul class="tags">
-        {d.skills.map((s) => <li><a href={langUrl(lang, `skills/${s}/`)}>{skillLabel(s, lang)}</a></li>)}
-      </ul>
+    <footer class="hb-doc-end hb-measure">
+      <pre class="hb-fleuron" aria-hidden="true" set:html={flowerHTML({ R: 4, petals: 6, seed: slug, stem: 4 })}></pre>
+      <nav class="hb-next">
+        <a href={langUrl(lang, 'projects/')}><span>{t.back}</span></a>
+        {next && <a class="is-to" href={langUrl(lang, `projects/${projectSlug(next)}/`)}><small>{T.next}</small><span>{next.data.title.split(/ — | – /)[0]}</span></a>}
+      </nav>
     </footer>
   </article>
-</Base>
+</Herb>

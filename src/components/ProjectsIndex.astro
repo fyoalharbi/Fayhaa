@@ -1,19 +1,46 @@
 ---
-import Base from '../layouts/Base.astro';
-import ProjectCard from './ProjectCard.astro';
+// The projects page: the whole collection, newest first, each project as its ASCII plate (with
+// "Preview" for the real screenshot) and a short label. Same theme as the home page.
+import Herb from '../layouts/Herb.astro';
+import { expData } from '../lib/expData';
+import { projectArt } from '../lib/projectArt';
 import { type Lang } from '../data/profile';
-import { ui, getProjects } from '../lib/site';
 
 interface Props { lang: Lang }
 const { lang } = Astro.props;
-const t = ui[lang];
-const projects = await getProjects(lang);
+const AR = lang === 'ar';
+const D = await expData(lang);
+const projects = [...D.projects].sort((a, b) => b.time - a.time);
+const T = AR
+  ? { title: 'المشاريع', lead: 'كل المشاريع، الأحدث أولاً.', case: 'دراسة الحالة ←', view: 'شوف المشروع ↗', live: 'مباشر ↗', code: 'الكود ↗', preview: 'معاينة', hide: 'إخفاء', shot: 'لقطة من' }
+  : { title: 'Projects', lead: 'Everything I have built, newest first.', case: 'Case study →', view: 'View project ↗', live: 'Live ↗', code: 'Code ↗', preview: 'Preview', hide: 'Hide preview', shot: 'Screenshot of' };
 ---
-<Base lang={lang} title={t.allProjects} path="projects/">
-  <section class="section wrap">
-    <div class="section-head"><h1>{t.allProjects}</h1></div>
-    <div class="cards">
-      {projects.map((p, i) => <ProjectCard project={p} lang={lang} index={i} full />)}
-    </div>
-  </section>
-</Base>
+<Herb lang={lang} title={T.title} path="projects/">
+  <header class="hb-head"><h1 class="hb-title" data-decode data-perch>{T.title}</h1><p class="hb-lead">{T.lead}</p></header>
+  <div class="hb-grid">
+    {projects.map((p) => {
+      const out = /^https?:/.test(p.href);
+      return (
+        <article class="hb-spec hb-rv">
+          <a class="hb-img" href={p.href} aria-label={p.title}>
+            <pre class="hb-art" aria-hidden="true" set:html={projectArt(p.slug).html}></pre>
+            {p.thumb && <img class="hb-shot" src={p.thumb} alt={`${T.shot} ${p.title}`} loading="lazy" />}
+            <i class="c tl"></i><i class="c tr"></i><i class="c bl"></i><i class="c br"></i>
+          </a>
+          <p class="hb-spec-k">
+            <span class="hb-tag">{p.date}</span>
+            {p.thumb && <button type="button" class="hb-prev" aria-pressed="false" data-on={T.hide} data-off={T.preview}>{T.preview}</button>}
+          </p>
+          <h2><a href={p.href}>{p.title}</a></h2>
+          {p.sub && <p class="hb-sub">{p.sub}</p>}
+          <p class="hb-sum">{p.summary}</p>
+          <p class="hb-links">
+            <a href={p.href}>{out ? T.view : T.case}</a>
+            {p.live && p.live !== p.href && <a href={p.live}>{T.live}</a>}
+            {p.code && p.code !== p.href && <a href={p.code}>{T.code}</a>}
+          </p>
+        </article>
+      );
+    })}
+  </div>
+</Herb>

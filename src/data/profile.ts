@@ -27,9 +27,9 @@ export const profile = {
 
 // ── SKILLS ───────────────────────────────────
 // `key` is what project frontmatter references in `skills: [...]`.
-// Each skill gets its own page at /skills/<key>/ listing the projects that use it.
+// The home page groups them under Tools and marks where each one was used.
 // `core: true` = headline skills (LinkedIn headline + top skills: Python, SQL,
-// Airflow, dbt, Power BI); they're marked and listed first on the home page.
+// Airflow, dbt, Power BI).
 export const skills = [
   { key: 'sql',              group: 'eng',      core: true,  label: { en: 'SQL',                ar: 'SQL' } },
   { key: 'python',           group: 'eng',      core: true,  label: { en: 'Python',             ar: 'Python' } },
