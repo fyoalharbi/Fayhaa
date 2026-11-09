@@ -489,6 +489,7 @@
 
     // ── Natural flight: wander + steer + glides + perching (same rules as the 2D page) ──
     stepFlyer(b, dt, t) {
+      if (b.held) { b.flap = 1.25 + 0.22 * Math.sin(t * 1.4 + b.phase); return; }   // someone is reading its card: hover in place
       const h = this.heads[b.target];
       const seat = [h.x, h.y + 0.05, h.z];
       const d = [seat[0] - b.p[0], seat[1] - b.p[1], seat[2] - b.p[2]], dl = Math.hypot(d[0], d[1], d[2]);
@@ -531,6 +532,7 @@
 
     stepBee(dt, t) {
       const e = this.bee;
+      if (e.held) return;                         // held still while its card is read
       if (!this.near) {                          // flowers closest to the hive: the bee's patch
         this.near = this.heads.map((h, i) => [Math.hypot(h.x - this.hive.x, h.z - this.hive.z), i]).sort((a, b) => a[0] - b[0]).slice(0, 5).map((x) => x[1]);
       }

@@ -98,7 +98,7 @@ const projects = (await getProjects(lang)).slice(0, 6).map((p) => ({ title: p.da
       <div class="g3-secret" id="g3-secret" hidden>
         <figure>
           <button class="g3-secret-x" id="g3-secret-x" type="button" aria-label={t.close}>×</button>
-          <blockquote>{secretFlower.lines.map((l, i) => <p dir="auto" style={"--i:" + i}>{l}</p>)}</blockquote>
+          <blockquote>{secretFlower.lines.map((l, i) => <p dir="auto" style={"--i:" + i}>{l}</p>)}</blockquote>
         </figure>
       </div>
     )}
@@ -427,16 +427,23 @@ const projects = (await getProjects(lang)).slice(0, 6).map((p) => ({ title: p.da
           if (root.classList.contains('is-following') !== g.follow) { root.classList.toggle('is-following', g.follow); if (!g.follow) btn.textContent = btn.dataset.off; }   // the tour can switch following off
           const hit = mx >= 0 && !down && !root.classList.contains('is-pointing') ? g.pick(mx, my) : null;   // project labels win over the info card
           const plant = hit && /daisy|tulip|cosmos|bush/.test(hit.kind);         // no cards for flowers and bushes
+          // a butterfly or the bee under the pointer holds still so its card can be read
+          const held = hit && (hit.kind === 'me' || hit.kind === 'butterfly') ? g.flyers.find((f) => f.p === hit.p) : null;
+          for (const f of g.flyers) f.held = f === held;
+          g.bee.held = !!hit && hit.kind === 'bee';
+          if (held || g.bee.held) g.idle = 0;                                   // and the camera stops drifting round it
           if (!hit || plant || !INFO[hit.kind]) { if (shown) { tip.hidden = true; shown = null; cv.style.cursor = ''; } return; }
           if (shown !== hit.kind) {
             const [a, b, c] = INFO[hit.kind];
             tT.textContent = a; tS.textContent = b; tN.textContent = c; shown = hit.kind;
             const rgb = (hit.col || '').match(/\d+/g), grey = !rgb || Math.max(...rgb) - Math.min(...rgb) < 60;   // pale blooms get neon cyan
             tip.style.setProperty('--neon', hit.kind === 'bee' || hit.kind === 'hive' ? '#ffd24a' : grey ? '#ff8a8a' : hit.col);
-            tip.hidden = false; tip.classList.remove('is-in'); void tip.offsetWidth; tip.classList.add('is-in');
+            tip.hidden = false; tip.classList.remove('is-up'); void tip.offsetWidth; tip.classList.add('is-up');
             cv.style.cursor = 'help';
           }
-          const W = cv.clientWidth, x = Math.min(W - tip.offsetWidth - 8, Math.max(8, hit.x + 18)), y = Math.max(8, hit.y - tip.offsetHeight - 14);
+          // centred just above the subject; below it when there is no room above
+          const W = cv.clientWidth, tw = tip.offsetWidth, th = tip.offsetHeight;
+          const x = Math.min(W - tw - 8, Math.max(8, hit.x - tw / 2)), above = hit.y - th - 28, y = above > 64 ? above : hit.y + 28;
           tip.style.transform = `translate(${x}px, ${y}px)`;
         })();
         // Dragging the garden mid-tour hands the camera back for that line
@@ -540,7 +547,7 @@ const projects = (await getProjects(lang)).slice(0, 6).map((p) => ({ title: p.da
   .g3[data-phase='intro'] .g3-tools { opacity: 0; pointer-events: none; }
   .g3-tools .btn[aria-pressed='true'] { color: #ff8a8a; }
   /* The secret flower's lines: a soft veil, the garden still moving behind it */
-  .g3-secret { position: absolute; inset: 0; z-index: 9; display: grid; place-items: center; padding: 24px;
+  .g3-secret { position: absolute; inset: 0; z-index: 14; display: grid; place-items: center; padding: 24px;
     background: radial-gradient(ellipse at 50% 50%, rgba(8, 9, 11, .72) 0%, rgba(8, 9, 11, .38) 55%, rgba(8, 9, 11, .1) 100%);
     opacity: 0; transition: opacity 1.4s ease; }
   .g3-secret[hidden] { display: none; }   /* its own display: grid would otherwise keep it over the page */
@@ -569,7 +576,7 @@ const projects = (await getProjects(lang)).slice(0, 6).map((p) => ({ title: p.da
   /* Old-game hover card: neon double border, pixel corners, scanlines */
   .g3-tip {
     --neon: #ff8a8a;
-    position: absolute; top: 0; left: 0; z-index: 5; pointer-events: none; max-width: 240px;
+    position: absolute; top: 0; left: 0; z-index: 12; pointer-events: none; max-width: 240px;   /* above the cards, buttons and story box */
     padding: 8px 11px 9px; background-color: rgba(6, 8, 12, .82);
     border: 1px solid var(--neon); outline: 1px solid color-mix(in srgb, var(--neon) 35%, transparent); outline-offset: 2px;
     box-shadow: 0 0 10px color-mix(in srgb, var(--neon) 55%, transparent), inset 0 0 8px color-mix(in srgb, var(--neon) 25%, transparent);
@@ -581,7 +588,7 @@ const projects = (await getProjects(lang)).slice(0, 6).map((p) => ({ title: p.da
   .g3-tip::after { bottom: -3px; right: -3px; }
   .g3-tip b { display: block; color: var(--neon); font-weight: 700; letter-spacing: .06em; text-transform: uppercase; text-shadow: 0 0 6px var(--neon); }
   .g3-tip em { display: block; font-style: normal; color: #8a8a92; font-size: .64rem; letter-spacing: .08em; margin: 1px 0 4px; }
-  .g3-tip.is-in { animation: g3-tip-in .22s steps(4) both; }
+  .g3-tip.is-up { animation: g3-tip-in .22s steps(4) both; }
   @keyframes g3-tip-in { from { clip-path: inset(0 100% 0 0); } to { clip-path: inset(0 0 0 0); } }
   .g3[dir='rtl'] .g3-tip { font-family: var(--font-ar); font-size: .8rem; }
   .g3[dir='rtl'] .g3-tip b, .g3[dir='rtl'] .g3-tip em { letter-spacing: 0; }
