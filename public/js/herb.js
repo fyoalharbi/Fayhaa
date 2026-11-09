@@ -56,7 +56,15 @@
       mail.addEventListener('pointerenter', () => { mailHot = true; S.to = mail; S.perched = false; });
       mail.addEventListener('pointerleave', () => { mailHot = false; });
     }
-    const spot = (el) => { const r = el.getBoundingClientRect(); return el === mail ? [r.left + r.width * 0.82, r.top + 4] : [RTL ? r.left + 26 : r.right - 26, r.top + 2]; };
+    // the words themselves, not the block they sit in: a heading's box runs the whole line, its text is shorter
+    const ink = (el) => { const rg = document.createRange(); rg.selectNodeContents(el); const r = rg.getBoundingClientRect(); return r.width ? r : el.getBoundingClientRect(); };
+    // data-perch="start" lands on the first letter (the name), anything else on the last; never above the element's own top
+    const spot = (el) => {
+      const r = ink(el), top = Math.max(r.top, el.getBoundingClientRect().top), inset = Math.min(26, r.width * 0.2);
+      if (el === mail) return [r.left + r.width * 0.82, r.top + 4];
+      const atStart = el.dataset.perch === 'start';
+      return [RTL !== atStart ? r.left + inset : r.right - inset, top + 2 + (atStart ? r.height * 0.06 : 0)];   // a big display line: settle onto the letters, not the line box
+    };
     const visible = (el) => { const r = el.getBoundingClientRect(); return r.bottom > 80 && r.top < innerHeight - 40 && r.width > 0; };
     function choose() {
       const opts = $$('[data-perch]').filter((el) => el !== S.to && visible(el));
@@ -82,7 +90,7 @@
         S.v[0] += (ax - S.v[0]) * Math.min(1, dt * 2); S.v[1] += (ay - S.v[1]) * Math.min(1, dt * 2);
         if (REDUCED) { S.p = goal.slice(); S.v = [0, 0]; } else { S.p[0] += S.v[0] * dt; S.p[1] += S.v[1] * dt; }
         if (Math.abs(S.v[0]) > 10) S.facing = S.v[0] > 0 ? 1 : -1;
-        if (d < 12) { if (S.to) { S.perched = true; S.stay = rand(3.5, 7); } else choose(); }
+        if (d < 12) { if (S.to) { S.perched = true; S.stay = rand(3.5, 7); const r = ink(S.to); S.facing = (r.left + r.right) / 2 > S.p[0] ? 1 : -1; } else choose(); }   // perched, it faces into the words
       }
       S.p[0] = clamp(S.p[0], 10, innerWidth - 10); S.p[1] = clamp(S.p[1], 10, innerHeight - 10);
       bf.frame(dt, { perched: S.perched || S.hover, facing: S.facing, glide: !S.perched && S.v[1] > 40 });
