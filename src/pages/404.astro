@@ -1,20 +1,39 @@
 ---
-// Not found: a flower that has lost most of its petals, and the ways back into the site.
+// Not found: a flower that has lost most of its petals, and the ways back into the site. GitHub Pages
+// serves this one page for every missing address, so a missing /ar/ address switches it to Arabic
+// (the [data-ar] texts and links) before it is shown.
 import Herb from '../layouts/Herb.astro';
 import { flowerHTML } from '../lib/flowerArt';
-import { langUrl } from '../lib/site';
+import { url, langUrl } from '../lib/site';
+const arPrefix = url('ar/');
 ---
 <Herb lang="en" title="Not found" noindex>
+  <script is:inline slot="head" define:vars={{ arPrefix }}>
+    if (location.pathname.startsWith(arPrefix)) {
+      document.documentElement.lang = 'ar'; document.documentElement.dir = 'rtl';
+      const f = document.createElement('link'); f.rel = 'stylesheet';
+      f.href = 'https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&display=swap';
+      document.head.appendChild(f);
+      addEventListener('DOMContentLoaded', () => {
+        document.querySelectorAll('[data-ar]').forEach((el) => { el.textContent = el.dataset.ar; });
+        document.querySelectorAll('[data-ar-href]').forEach((el) => { el.href = el.dataset.arHref; });
+        // the shared top bar: name, Projects, Writing and the language switch
+        const bar = { '.hb-brand': ['فيحاء', ''], '.hb-nav a:nth-child(1)': ['مشاريعي', 'projects/'], '.hb-nav a:nth-child(2)': ['كتاباتي', 'blog/'] };
+        for (const [sel, [t, p]] of Object.entries(bar)) { const a = document.querySelector(sel); if (a) { a.textContent = t; a.href = arPrefix + p; } }
+        const lang = document.querySelector('.hb-lang'); if (lang) { lang.textContent = 'English'; lang.lang = 'en'; lang.href = arPrefix.replace(/ar\/$/, ''); }
+      });
+    }
+  </script>
   <section class="hb-lost">
     <pre class="hb-lost-art" aria-hidden="true" set:html={flowerHTML({ R: 7, petals: 6, open: 0.6, seed: 404, stem: 6 })}></pre>
     <div>
       <p class="hb-tag">404</p>
-      <h1 class="hb-title" data-decode data-perch>This page flew away.</h1>
-      <p class="hb-lead">The link may be old, or the page has moved.</p>
+      <h1 class="hb-title" data-perch data-ar="شكلك مضيّع الطريق">This page flew away.</h1>
+      <p class="hb-lead" data-ar="يمكن حذفت هالصفحة... الله أعلم">The link may be old, or the page has moved.</p>
       <p class="hb-cta">
-        <a href={langUrl('en')}>Home</a>
-        <a href={langUrl('en', 'projects/')}>Projects</a>
-        <a href={langUrl('en', 'blog/')}>Writing</a>
+        <a href={langUrl('en')} data-ar="الصفحة الرئيسية" data-ar-href={langUrl('ar')}>Home</a>
+        <a href={langUrl('en', 'projects/')} data-ar="مشاريعي" data-ar-href={langUrl('ar', 'projects/')}>Projects</a>
+        <a href={langUrl('en', 'blog/')} data-ar="كتاباتي" data-ar-href={langUrl('ar', 'blog/')}>Writing</a>
       </p>
     </div>
   </section>
@@ -25,6 +44,7 @@ import { langUrl } from '../lib/site';
   .hb-lost-art { margin: 0; font: 15px/1.05 var(--mono); direction: ltr; opacity: .9; }
   .hb-lost .hb-tag { color: var(--red); letter-spacing: .2em; }
   .hb-lost .hb-title { margin-top: 16px; font-size: clamp(52px, 7vw, 104px); }
+  html[lang='ar'] .hb-lost .hb-title { font-weight: 700; line-height: 1.3; }
   .hb-lost .hb-lead { margin-top: 22px; justify-self: start; }
   @media (max-width: 860px) {
     .hb-lost { grid-template-columns: 1fr; gap: 40px; min-height: auto; }

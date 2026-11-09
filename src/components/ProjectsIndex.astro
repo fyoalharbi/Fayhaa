@@ -12,7 +12,7 @@ const AR = lang === 'ar';
 const D = await expData(lang);
 const projects = [...D.projects].sort((a, b) => b.time - a.time);
 const T = AR
-  ? { title: 'المشاريع', lead: 'كل المشاريع، الأحدث أولاً.', case: 'دراسة الحالة ←', view: 'شوف المشروع ↗', live: 'مباشر ↗', code: 'الكود ↗', preview: 'معاينة', hide: 'إخفاء', shot: 'لقطة من' }
+  ? { title: 'مشاريعي', lead: 'كل مشاريعي', case: 'دراسة الحالة ←', view: 'شوف المشروع ↗', live: 'مباشر ↗', code: 'الكود ↗', preview: 'معاينة', hide: 'إخفاء', shot: 'لقطة من' }
   : { title: 'Projects', lead: 'Everything I have built, newest first.', case: 'Case study →', view: 'View project ↗', live: 'Live ↗', code: 'Code ↗', preview: 'Preview', hide: 'Hide preview', shot: 'Screenshot of' };
 ---
 <Herb lang={lang} title={T.title} path="projects/">

@@ -12,7 +12,7 @@ export const profile = {
   role: { en: 'Data Engineer', ar: 'Data Engineer' } as T,
   intro: {
     en: 'I build reliable pipelines that turn raw data into decisions. I come from system integration, and today I work across the whole data lifecycle: ingestion, transformation, modeling and reporting.',
-    ar: 'أبني pipelines موثوقة تحوّل البيانات الخام إلى قرارات. خلفيتي في System Integration، واليوم أشتغل على دورة البيانات كاملة: Ingestion، Transformation، Modeling و Reporting.',
+    ar: 'أحب أشتغل على System Integration والبيانات، والعمل على دورتها كاملة من سحبها حتى عرضها.',
   } as T,
   workflow: {
     en: ['Ingest', 'Transform', 'Model', 'Report'],
@@ -153,7 +153,7 @@ export const certifications: { title: T; org: T; period: string }[] = [
 
 // ── PHILOSOPHY (the butterfly) ───────────────
 export const philosophy = {
-  title: { en: 'Why butterflies?', ar: 'ليش فراشات؟' } as T,
+  title: { en: 'Why a butterfly?', ar: 'ليش اخترت الفراشة؟' } as T,
   // Line-by-line version, used by the hidden/typed reveals
   lines: {
     en: [

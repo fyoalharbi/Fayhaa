@@ -66,7 +66,7 @@ export const ui = {
   en: {
     nav: { projects: 'Projects', skills: 'Skills', about: 'About', contact: 'Contact', blog: 'Blog' },
     blogTitle: 'Blog',
-    blogLead: 'Notes on data, building with AI agents, and things I learn along the way.',
+    blogLead: 'Notes on my journey.',
     noPosts: 'No posts yet.',
     readPost: 'Read post',
     backToBlog: '← All posts',
@@ -111,7 +111,7 @@ export const ui = {
   ar: {
     nav: { projects: 'المشاريع', skills: 'المهارات', about: 'عني', contact: 'تواصل', blog: 'المدونة' },
     blogTitle: 'المدونة',
-    blogLead: 'كتابات عن البيانات، والبناء مع AI agents، وأشياء أتعلمها بالطريق.',
+    blogLead: 'كتابات في رحلة تعلمي.',
     noPosts: 'ما فيه تدوينات للحين.',
     readPost: 'اقرأ التدوينة',
     backToBlog: '→ كل التدوينات',
@@ -143,7 +143,7 @@ export const ui = {
     contactLead: 'أسرع طريقة توصل لي هي الإيميل.',
     tldr: { problem: 'المشكلة', role: 'دوري', tools: 'الأدوات', result: 'النتيجة' },
     links: { live: 'مباشر', github: 'الكود', linkedin: 'منشور LinkedIn' },
-    back: '→ كل المشاريع',
+    back: 'كل مشاريعي',
     skillsUsed: 'المهارات في هذا المشروع',
     draftBanner: 'مسودة: تظهر في وضع التطوير فقط.',
     butterflyHints: {

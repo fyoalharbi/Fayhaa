@@ -6,7 +6,7 @@ tldr:
   problem: "People often look for poetry that puts their feelings into words. Competing sites do this through a chat with an LLM, but someone who can't put their feelings into words usually doesn't want to type them either."
   role: "Open-source contributor. I designed the feelings tree and shipped the feelings pages to Qafiyah (merged pull request #344)."
   tools: "TypeScript, Astro"
-  result: "Live on qafiyah.com/feelings — a clickable tree of emotions, each leading to matching verses with a copy button, listed for search engines and linked from the home page."
+  result: "Live on qafiyah.com/feelings. A clickable tree of emotions, each leading to matching verses with a copy button, listed for search engines and linked from the home page."
 skills: [typescript, astro]
 links:
   live: https://qafiyah.com/feelings

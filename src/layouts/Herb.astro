@@ -28,8 +28,8 @@ const other: Lang = AR ? 'en' : 'ar';
 const fullTitle = title ? `${title} · ${profile.name[lang]}` : `${profile.name[lang]} · ${profile.role[lang]}`;
 const canonical = new URL(Astro.url.pathname, Astro.site);
 const T = AR
-  ? { projects: 'المشاريع', writing: 'المدونة', other: 'English', skip: 'تخطَّ إلى المحتوى', tip: 'ليش فراشات؟ افتح الحديقة ←' }
-  : { projects: 'Projects', writing: 'Writing', other: 'العربية', skip: 'Skip to content', tip: 'Why butterflies? Open the garden →' };
+  ? { projects: 'مشاريعي', writing: 'كتاباتي', other: 'English', skip: 'تخطَّ إلى المحتوى', tip: 'ليش الفراشة؟' }
+  : { projects: 'Projects', writing: 'Writing', other: 'العربية', skip: 'Skip to content', tip: 'Why the butterfly?' };
 const here = Astro.url.pathname;
 const on = (p: string) => here.startsWith(langUrl(lang, p));
 ---
