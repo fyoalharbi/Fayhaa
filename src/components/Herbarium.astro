@@ -165,7 +165,7 @@ const lead = featured[0] ?? D.projects[0], camp = camps[0], post = D.posts[0];
           </article>
         ))}
       </div>
-      {collection.length > 0 && <p class="hb-explore"><button type="button" class="hb-more" aria-expanded="false" aria-controls="collection" data-open={T.explore} data-close={T.exploreX}><span>{T.explore}</span><b>{T.moreN(collection.length)}</b><i aria-hidden="true"></i></button></p>}
+      {collection.length > 0 && <p class="hb-explore is-coll"><button type="button" class="hb-more" aria-expanded="false" aria-controls="collection" data-open={T.explore} data-close={T.exploreX}><span>{T.explore}</span><b>{T.moreN(collection.length)}</b><i aria-hidden="true"></i></button></p>}
       {collection.length > 0 && (
         <div class="hb-coll hb-fold" id="collection"><div class="hb-fold-in">
           <h3 class="hb-sub-h" data-perch>{T.coll} <span>{T.collN(collection.length)}</span></h3>
@@ -429,6 +429,11 @@ const lead = featured[0] ?? D.projects[0], camp = camps[0], post = D.posts[0];
   .hb-shelf { margin: 0 0 40px; font: 500 12px var(--mono); letter-spacing: .16em; text-transform: uppercase; color: var(--red); }
   .hb-shelf span { color: var(--dim); letter-spacing: .1em; }
   .hb-explore { margin: 96px 0 0; display: flex; justify-content: flex-end; }
+  .hb-explore.is-coll { justify-content: center; }
+  /* Wide screens: after the last featured project the button gets a stop of its own, centred on screen */
+  @media (min-width: 861px) and (min-height: 620px) {
+    .hb-explore.is-coll { box-sizing: border-box; min-height: 70vh; min-height: 70svh; margin: 0; align-items: center; }
+  }
   .hb-more { all: unset; cursor: pointer; display: inline-flex; align-items: center; gap: 12px; padding: 13px 17px; font: 500 13px var(--mono); letter-spacing: .06em; color: var(--ink); border: 1px solid #ffffff22; background: #0b0c0e99; transition: color .2s, border-color .2s, box-shadow .2s; }
   .hb-more b { font-weight: 500; color: var(--red); }
   .hb-more i { position: relative; width: 11px; height: 11px; flex: none; }
@@ -572,7 +577,7 @@ const lead = featured[0] ?? D.projects[0], camp = camps[0], post = D.posts[0];
     .hb-row-main, .hb-row-meta, .hb-row-links { grid-column: 2; }
     .hb-row-meta { display: flex; flex-wrap: wrap; gap: 4px 14px; margin-top: 14px; }
     .hb-row-links { display: flex; flex-wrap: wrap; gap: 16px; margin-top: 12px; }
-    .hb-explore { justify-content: flex-start; margin-top: 64px; } .hb-more { padding: 11px 13px; }
+    .hb-explore { justify-content: flex-start; margin-top: 64px; } .hb-explore.is-coll { justify-content: center; } .hb-more { padding: 11px 13px; }
     .hb-toc a { flex-wrap: wrap; gap: 4px 14px; } .hb-toc .ld { display: none; } .hb-toc .dt { order: -1; flex-basis: 100%; }
 
     .hb-legend { margin-top: -14px; }

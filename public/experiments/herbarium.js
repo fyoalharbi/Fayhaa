@@ -45,7 +45,8 @@
 
   // ── Featured projects, one per screen: when scrolling stops between two of them, glide to the one
   //    the reader was heading for (a small nudge falls back). Outside the featured run, scrolling is free. ──
-  const feats = $$('.hb-feat'), oneUp = matchMedia('(min-width: 861px) and (min-height: 620px)');
+  // stops: the featured projects, then the "Explore the complete collection" button (centred on screen)
+  const more = $('.hb-explore.is-coll'), feats = [...$$('.hb-feat'), ...(more ? [more] : [])], oneUp = matchMedia('(min-width: 861px) and (min-height: 620px)');
   if (feats.length) {
     let settled = scrollY, busy = false, user = false, t = 0;
     // only the reader's own scrolling engages the lock; links and the rail land exactly where they point
@@ -56,15 +57,26 @@
       const mine = user; user = false;
       if (!mine || !oneUp.matches || !dir) return;
       // layout positions (the reveal animation's transform must not shift the target)
-      const H = innerHeight, box = feats.map((f) => { let y = 0, e = f; while (e) { y += e.offsetTop; e = e.offsetParent; } return { top: y - scrollY, bottom: y - scrollY + f.offsetHeight }; });
-      // the project coming into view in the scroll direction, and the one it is replacing
-      const i = dir > 0 ? box.findIndex((r) => r.top > 1 && r.top < H - 1) : box.findIndex((r) => r.bottom > 1 && r.bottom < H - 1);
-      if (i < 0) return;
+      // layout positions (the reveal animation's transform must not shift the target); rest = where each stop's
+      // top sits once settled: 0 for a project, centred for the button
+      const H = innerHeight, box = feats.map((f) => {
+        let y = 0, e = f; while (e) { y += e.offsetTop; e = e.offsetParent; }
+        const h = f.offsetHeight, rest = f === more ? (H - h) / 2 : 0;
+        return { top: y - scrollY, bottom: y - scrollY + h, rest, end: rest + h };
+      });
+      // the stop coming into view in the scroll direction (not yet at its resting place), and the one it replaces
+      const i = dir > 0 ? box.findIndex((r) => r.top > r.rest + 1 && r.top < H - 1) : box.findIndex((r) => r.bottom > 1 && r.bottom < r.end - 1);
+      if (i < 0) {
+        // a small nudge out past the first or last stop falls back onto it; a real scroll carries on freely
+        const e = dir > 0 ? box.length - 1 : 0, r = box[e], off = dir > 0 ? r.rest - r.top : r.top - r.rest;
+        if (off > 1 && off < H * 0.12) { busy = true; scrollTo({ top: r.top + scrollY - r.rest, behavior: REDUCED ? 'auto' : 'smooth' }); }
+        return;
+      }
       const j = i - dir, show = dir > 0 ? H - box[i].top : box[i].bottom;
-      // nudged only a little past a project that fills the screen: go back to it; otherwise go on
+      // nudged only a little: go back to where we were; otherwise go on
       let k = i;
       if (show < H * 0.12) { if (!feats[j]) return; k = j; }
-      const y = box[k].top + scrollY;
+      const y = box[k].top + scrollY - box[k].rest;
       if (Math.abs(y - scrollY) < 2) return;
       busy = true; scrollTo({ top: y, behavior: REDUCED ? 'auto' : 'smooth' });
     };
