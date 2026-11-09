@@ -16,10 +16,10 @@ const { lang } = Astro.props;
 const ar = lang === 'ar';
 const t = ar
   ? { title: 'الحديقة', kicker: '// GARDEN_3D', hint: 'اسحب للالتفاف · مرّر للتقريب', follow: 'تابع الفراشة', free: 'كاميرا حرة', back: 'رجوع للموقع',
-      tour: 'ليش؟', soundOn: 'الصوت: شغّال', soundOff: 'الصوت: مطفي', capture: 'التقط صورة', bloom: 'مشاريعي تزهر هنا · اضغط على زهرة', next: 'التالي', skip: 'تخطَّ', again: 'من جديد', blog: 'اقرأ المدونة', end: 'طارت. وأنت؟', sub: 'فلسفتي الحياتية',
+      tour: 'ليش؟', soundOn: 'الصوت: شغّال', soundOff: 'الصوت: مطفي', capture: 'التقط صورة', hide: 'إخفاء الواجهة', unhide: 'إظهار الواجهة', bloom: 'مشاريعي تزهر هنا · اضغط على زهرة', next: 'التالي', skip: 'تخطَّ', again: 'من جديد', blog: 'اقرأ المدونة', end: 'طارت. وأنت؟', sub: 'فلسفتي الحياتية',
       who: { butterfly: 'الفراشة', bee: 'النحلة', hive: 'الخلية', far: 'زهرة بعيدة', wide: 'الحديقة' } }
   : { title: 'The garden', kicker: '// GARDEN_3D', hint: 'drag to orbit · scroll to zoom', follow: 'Follow the butterfly', free: 'Free camera', back: 'Back to the site',
-      tour: 'Why?', soundOn: 'sound: on', soundOff: 'sound: off', capture: 'capture', bloom: 'my projects bloom here · pick a flower', next: 'Next', skip: 'Skip', again: 'Replay', blog: 'Read the blog', end: 'It flew away. Your turn.', sub: 'my philosophy.',
+      tour: 'Why?', soundOn: 'sound: on', soundOff: 'sound: off', capture: 'capture', hide: 'hide layout', unhide: 'show layout', bloom: 'my projects bloom here · pick a flower', next: 'Next', skip: 'Skip', again: 'Replay', blog: 'Read the blog', end: 'It flew away. Your turn.', sub: 'my philosophy.',
       who: { butterfly: 'the butterfly', bee: 'the bee', hive: 'the hive', far: 'a far flower', wide: 'the garden' } };
 const lines = philosophy.lines[lang];
 // Hover cards, old-game style: name, a "stat" line, a note
@@ -111,6 +111,7 @@ const projects = (await getProjects(lang)).slice(0, 6).map((p) => ({ title: p.da
     <div class="g3-tools">
       <button class="btn" id="g3-sound" type="button" aria-pressed="false">{t.soundOff}</button>
       <button class="btn" id="g3-cap" type="button">{t.capture}</button>
+      <button class="btn g3-clean" id="g3-clean" type="button" aria-pressed="false">{t.hide}</button>
     </div>
 
     <div class="g3-actions">
@@ -190,7 +191,12 @@ const projects = (await getProjects(lang)).slice(0, 6).map((p) => ({ title: p.da
       document.getElementById('g3-start').addEventListener('click', begin);
       nextBtn.addEventListener('click', () => { if (step >= steps.length) { if (g) g.slowSpin = false; setPhase('journey'); show(0); } else show(step + 1); });
       skipBtn.addEventListener('click', finish);
+      // Hide layout: only the garden stays, and one small button (or Esc) brings everything back
+      const cleanBtn = document.getElementById('g3-clean');
+      const setClean = (on) => { root.classList.toggle('is-clean', on); cleanBtn.setAttribute('aria-pressed', String(on)); cleanBtn.textContent = on ? t.unhide : t.hide; };
+      cleanBtn.addEventListener('click', () => setClean(!root.classList.contains('is-clean')));
       addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && root.classList.contains('is-clean')) { setClean(false); return; }
         if (root.dataset.phase === 'intro') { if (e.key === 'Enter') begin(); return; }
         if (box.dataset.state !== 'tour') return;
         if (e.key === 'ArrowRight' || e.key === 'Enter') { e.preventDefault(); nextBtn.click(); }
@@ -491,6 +497,12 @@ const projects = (await getProjects(lang)).slice(0, 6).map((p) => ({ title: p.da
   .g3-tools { position: absolute; right: 20px; bottom: 26px; z-index: 6; display: flex; gap: 14px; transition: opacity 1s; }
   .g3[data-phase='intro'] .g3-tools { opacity: 0; pointer-events: none; }
   .g3-tools .btn[aria-pressed='true'] { color: #ff8a8a; }
+  /* Hide layout: everything over the garden fades out but the button that brings it back */
+  .g3-ui, .g3-actions, .g3-box, .g3-pins, .g3-lines, .g3-fact, .g3-tools .btn { transition: opacity .5s; }
+  .g3.is-clean :is(.g3-ui, .g3-actions, .g3-box, .g3-pins, .g3-lines, .g3-tip, .g3-fact, .g3-tools .btn:not(.g3-clean)) { opacity: 0 !important; visibility: hidden; pointer-events: none; }
+  .g3.is-clean .g3-pin { visibility: hidden !important; pointer-events: none !important; }   /* the cards set their own visibility */
+  .g3.is-clean .g3-clean { opacity: .55; } .g3.is-clean .g3-clean:hover, .g3.is-clean .g3-clean:focus-visible { opacity: 1; }
+  :global(body:has(.g3.is-clean) .hb-top) { opacity: 0 !important; visibility: hidden; pointer-events: none; }   /* !important: its slide-in animation would hold it visible */
   @media (max-width: 760px) { .g3-tools { top: 150px; bottom: auto; right: 16px; } }
 
   /* Old-game hover card: neon double border, pixel corners, scanlines */
