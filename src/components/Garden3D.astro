@@ -8,6 +8,7 @@
 // tucked away; at the end the top bar returns and retro callout lines pin my
 // projects to flowers in the garden.
 import Herb from '../layouts/Herb.astro';
+import { secretFlower } from '../data/secretFlower';
 import { philosophy, type Lang } from '../data/profile';
 import { url, langUrl, getProjects, projectHref } from '../lib/site';
 
@@ -16,10 +17,10 @@ const { lang } = Astro.props;
 const ar = lang === 'ar';
 const t = ar
   ? { title: 'الحديقة', kicker: '// GARDEN_3D', hint: 'اسحب للالتفاف · مرّر للتقريب', follow: 'تابع الفراشة', free: 'كاميرا حرة', back: 'رجوع للموقع',
-      tour: 'ليش؟', soundOn: 'الصوت: شغّال', soundOff: 'الصوت: مطفي', capture: 'التقط صورة', hide: 'إخفاء الواجهة', unhide: 'إظهار الواجهة', bloom: 'مشاريعي تزهر هنا · اضغط على زهرة', next: 'التالي', skip: 'تخطَّ', again: 'من جديد', blog: 'اقرأ المدونة', end: 'طارت. وأنت؟', sub: 'فلسفتي الحياتية',
+      tour: 'ليش؟', soundOn: 'الصوت: شغّال', soundOff: 'الصوت: مطفي', capture: 'التقط صورة', close: 'إغلاق', hide: 'إخفاء الواجهة', unhide: 'إظهار الواجهة', bloom: 'مشاريعي تزهر هنا · اضغط على زهرة', next: 'التالي', skip: 'تخطَّ', again: 'من جديد', blog: 'اقرأ المدونة', end: 'طارت. وأنت؟', sub: 'فلسفتي الحياتية',
       who: { butterfly: 'الفراشة', bee: 'النحلة', hive: 'الخلية', far: 'زهرة بعيدة', wide: 'الحديقة' } }
   : { title: 'The garden', kicker: '// GARDEN_3D', hint: 'drag to orbit · scroll to zoom', follow: 'Follow the butterfly', free: 'Free camera', back: 'Back to the site',
-      tour: 'Why?', soundOn: 'sound: on', soundOff: 'sound: off', capture: 'capture', hide: 'hide layout', unhide: 'show layout', bloom: 'my projects bloom here · pick a flower', next: 'Next', skip: 'Skip', again: 'Replay', blog: 'Read the blog', end: 'It flew away. Your turn.', sub: 'my philosophy.',
+      tour: 'Why?', soundOn: 'sound: on', soundOff: 'sound: off', capture: 'capture', close: 'close', hide: 'hide layout', unhide: 'show layout', bloom: 'my projects bloom here · pick a flower', next: 'Next', skip: 'Skip', again: 'Replay', blog: 'Read the blog', end: 'It flew away. Your turn.', sub: 'my philosophy.',
       who: { butterfly: 'the butterfly', bee: 'the bee', hive: 'the hive', far: 'a far flower', wide: 'the garden' } };
 const lines = philosophy.lines[lang];
 // Hover cards, old-game style: name, a "stat" line, a note
@@ -93,6 +94,15 @@ const projects = (await getProjects(lang)).slice(0, 6).map((p) => ({ title: p.da
       <p class="g3-hint">{t.hint}</p>
     </div>
 
+    {secretFlower.lines.length > 0 && (
+      <div class="g3-secret" id="g3-secret" hidden>
+        <figure>
+          <button class="g3-secret-x" id="g3-secret-x" type="button" aria-label={t.close}>×</button>
+          <blockquote>{secretFlower.lines.map((l, i) => <p dir="auto" style={"--i:" + i}>{l}</p>)}</blockquote>
+          <figcaption style={"--i:" + secretFlower.lines.length}>{secretFlower.credit}</figcaption>
+        </figure>
+      </div>
+    )}
     <div class="g3-tip" id="g3-tip" role="tooltip" hidden><b id="g3-tip-t"></b><em id="g3-tip-s"></em><span id="g3-tip-n"></span></div>
 
     <section class="g3-box" id="g3-box" aria-live="polite" data-state="off">
@@ -372,6 +382,39 @@ const projects = (await getProjects(lang)).slice(0, 6).map((p) => ({ title: p.da
         });
         const btn = document.getElementById('g3-follow');
         btn.addEventListener('click', () => { btn.textContent = g.toggleFollow() ? btn.dataset.on : btn.dataset.off; });
+        // ── The secret flower: the one nearest the hive that carries no project card. A plain click on it
+        //    (not a drag) opens the lines over the garden; ×, Esc or a click outside closes them again. ──
+        const secret = document.getElementById('g3-secret');
+        if (secret) {
+          const cvs = document.getElementById('g3-canvas'), xBtn = document.getElementById('g3-secret-x');
+          const theFlower = () => g.heads.filter((h) => /daisy|tulip|cosmos/.test(h.type) && !anchors.includes(h))
+            .reduce((b, h) => (!b || Math.hypot(h.x - g.hive.x, h.z - g.hive.z) < Math.hypot(b.x - g.hive.x, b.z - g.hive.z) ? h : b), null);
+          let press = null, back = null;
+          const open = () => {
+            back = document.activeElement; secret.hidden = false;
+            requestAnimationFrame(() => requestAnimationFrame(() => secret.classList.add('is-open')));
+            setTimeout(() => xBtn.focus({ preventScroll: true }), 400);
+          };
+          const close = () => {
+            if (secret.hidden) return;
+            secret.classList.remove('is-open');
+            setTimeout(() => { secret.hidden = true; }, 900);
+            if (back && back.focus) back.focus({ preventScroll: true });
+          };
+          cvs.addEventListener('pointerdown', (e) => { press = { x: e.clientX, y: e.clientY, t: performance.now() }; });
+          cvs.addEventListener('pointerup', (e) => {
+            if (!press || root.classList.contains('is-pointing') || !secret.hidden) return;
+            const moved = Math.hypot(e.clientX - press.x, e.clientY - press.y), quick = performance.now() - press.t < 450;
+            press = null;
+            if (moved > 6 || !quick) return;                                  // a drag to orbit, not a click
+            const f = theFlower(), sc = f && g.toScreen([f.x, f.y, f.z]); if (!sc) return;
+            const r = cvs.getBoundingClientRect();
+            if (Math.hypot(e.clientX - r.left - sc[0], e.clientY - r.top - sc[1]) < Math.max(22, 70 / sc[2])) open();
+          });
+          xBtn.addEventListener('click', close);
+          secret.addEventListener('click', (e) => { if (e.target === secret) close(); });
+          addEventListener('keydown', (e) => { if (e.key === 'Escape' && !secret.hidden) { e.stopImmediatePropagation(); close(); } }, true);
+        }
         // Hover cards: point at something in the garden to read about it
         const cv = document.getElementById('g3-canvas'), tip = document.getElementById('g3-tip');
         const tT = document.getElementById('g3-tip-t'), tS = document.getElementById('g3-tip-s'), tN = document.getElementById('g3-tip-n');
@@ -497,6 +540,25 @@ const projects = (await getProjects(lang)).slice(0, 6).map((p) => ({ title: p.da
   .g3-tools { position: absolute; right: 20px; bottom: 26px; z-index: 6; display: flex; gap: 14px; transition: opacity 1s; }
   .g3[data-phase='intro'] .g3-tools { opacity: 0; pointer-events: none; }
   .g3-tools .btn[aria-pressed='true'] { color: #ff8a8a; }
+  /* The secret flower's lines: a soft veil, the garden still moving behind it */
+  .g3-secret { position: absolute; inset: 0; z-index: 9; display: grid; place-items: center; padding: 24px;
+    background: radial-gradient(ellipse at 50% 50%, rgba(8, 9, 11, .72) 0%, rgba(8, 9, 11, .38) 55%, rgba(8, 9, 11, .1) 100%);
+    opacity: 0; transition: opacity 1.4s ease; }
+  .g3-secret[hidden] { display: none; }   /* its own display: grid would otherwise keep it over the page */
+  .g3-secret.is-open { opacity: 1; }
+  .g3-secret figure { position: relative; margin: 0; max-width: min(520px, 86vw); text-align: center; }
+  .g3-secret blockquote { margin: 0; }
+  .g3-secret p, .g3-secret figcaption { opacity: 0; transform: translateY(6px); transition: opacity 1.1s ease, transform 1.1s ease; transition-delay: calc(.5s + var(--i) * .35s); }
+  .g3-secret.is-open p, .g3-secret.is-open figcaption { opacity: 1; transform: none; }
+  .g3-secret p { margin: 0; font: italic 400 clamp(16px, 1.7vw, 20px)/1.95 var(--serif); color: #e8e4d0; text-shadow: 0 0 18px rgba(8, 9, 11, .9); }
+  .g3[dir='rtl'] .g3-secret p { font-style: normal; }
+  .g3-secret figcaption { margin-top: 26px; font: .66rem/1 var(--font-mono); letter-spacing: .18em; text-transform: uppercase; color: #ff8a8a; opacity: 0; }
+  .g3-secret.is-open figcaption { opacity: .75; }
+  .g3-secret-x { position: absolute; top: -34px; inset-inline-end: -6px; padding: 4px 8px; border: 0; background: none; cursor: pointer; font: 400 18px/1 var(--font-mono); color: #55555c; transition: color .2s; }
+  .g3-secret-x:hover, .g3-secret-x:focus-visible { color: #cfcfcf; }
+  .g3-secret-x:focus-visible { outline: 1px dotted #ff8a8a; outline-offset: 3px; }
+  @media (prefers-reduced-motion: reduce) { .g3-secret, .g3-secret p, .g3-secret figcaption { transition-duration: .01s; transition-delay: 0s; } }
+
   /* Hide layout: everything over the garden fades out but the button that brings it back */
   .g3-ui, .g3-actions, .g3-box, .g3-pins, .g3-lines, .g3-fact, .g3-tools .btn { transition: opacity .5s; }
   .g3.is-clean :is(.g3-ui, .g3-actions, .g3-box, .g3-pins, .g3-lines, .g3-tip, .g3-fact, .g3-tools .btn:not(.g3-clean)) { opacity: 0 !important; visibility: hidden; pointer-events: none; }
