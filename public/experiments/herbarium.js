@@ -17,14 +17,16 @@
 
   // ── Scroll lock, section to section: when the reader's own scrolling stops between two stops, glide to the
   //    one they were heading for (a small nudge falls back). Stops, in page order: the landing, the Projects
-  //    heading, each featured project (one screen each), the collection link (centred), then each section.
+  //    heading with the first featured project, each further featured project (one screen each), the collection link
+  //    (centred), then each section.
   //    A section taller than the screen is entered at its top going down and at its bottom going up, and
   //    scrolls freely inside, so nothing is skipped. ──
   const more = $('.hb-explore.is-coll'), oneUp = matchMedia('(min-width: 861px) and (min-height: 620px)');
   const head = $('#work > .hb-head');
-  // the Projects title screen: the heading, centred
-  const headBlock = () => head.offsetHeight;
-  const stops = [$('.hb-hero'), head, ...$$('.hb-feat'), more, ...['about', 'tools', 'notes', 'contact'].map((id) => document.getElementById(id))].filter(Boolean);
+  // the Projects title screen: the heading and the first project, one stop together
+  const first = $('.hb-feat'), headBlock = () => head.offsetHeight + (first ? first.offsetHeight : 0);
+  if (head) new ResizeObserver(() => head.parentElement.style.setProperty('--hb-hh', head.offsetHeight + 'px')).observe(head);
+  const stops = [$('.hb-hero'), head, ...$$('.hb-feat').slice(1), more, ...['about', 'tools', 'notes', 'contact'].map((id) => document.getElementById(id))].filter(Boolean);
   if (stops.length) {
     let settled = scrollY, busy = false, user = false, t = 0;
     // only the reader's own scrolling engages the lock; links and the rail land exactly where they point
@@ -39,7 +41,7 @@
       // when settled (0, or centred for the collection link); a tall stop settles on its bottom coming from below
       const H = innerHeight, box = stops.map((f) => {
         let y = 0, e = f; while (e) { y += e.offsetTop; e = e.offsetParent; }
-        const h = f.offsetHeight, tall = h > H + 2, rest = f === more ? (H - h) / 2 : f === head ? (H - headBlock()) / 2 : 0;
+        const h = f === head ? headBlock() : f.offsetHeight, tall = h > H + 2, rest = f === more ? (H - h) / 2 : f === head ? (H - headBlock()) / 2 : 0;
         return { top: y - scrollY, bottom: y - scrollY + h, rest, end: tall ? H : rest + h, tall };
       });
       const at = (r, d) => scrollY + (d < 0 && r.tall ? r.bottom - H : r.top - r.rest);   // where to settle on r

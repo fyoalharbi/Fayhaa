@@ -168,7 +168,9 @@ html[lang='ar'] .hb-all span { font-weight: 700; font-size: clamp(26px, 2.5vw, 3
 @media (min-width: 861px) and (min-height: 620px) {
   .hb-explore.is-coll:not(.is-w) { box-sizing: border-box; min-height: 70vh; min-height: 70svh; margin: 0; align-items: center; }
   #work { padding-top: 50vh; padding-top: 50svh; }
-  #work > .hb-head { margin-bottom: 50vh; margin-bottom: 50svh; }   /* the Projects title screen: the first project starts just below it */
+  /* the Projects title and the first project share one screen; herbarium.js sets --hb-hh to the title's height */
+  #work > .hb-head { margin-bottom: 0; padding-top: 72px; }
+  #work .hb-feat:first-child { min-height: calc(100vh - var(--hb-hh, 0px)); min-height: calc(100svh - var(--hb-hh, 0px)); padding-top: 0; }
 }
 
 .hb a:focus-visible, .hb button:focus-visible { outline: 1px solid var(--red); outline-offset: 4px; }
