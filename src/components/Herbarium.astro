@@ -141,29 +141,26 @@ const lead = featured[0] ?? D.projects[0], camp = camps[0], post = D.posts[0];
       <p class="hb-shelf" id="featured">{T.feat} <span>{T.featN(featured.length, D.projects.length)}</span></p>
       <div class="hb-feats">
         {featured.map((p, i) => (
-          <article class={`hb-feat ${i % 2 ? 'is-flip' : ''}`}>
-            <div class="hb-plate">
-              <a class="hb-img" href={p.href} aria-label={p.title}>
-                <pre class="hb-art" aria-hidden="true" set:html={plate(p.slug).html}></pre>
-                {p.thumb && <img class="hb-shot" src={p.thumb} alt={`${T.shot} ${p.title}`} loading="lazy" />}
-                <i class="c tl"></i><i class="c tr"></i><i class="c bl"></i><i class="c br"></i>
-                <span class="hb-tape t1"></span><span class="hb-tape t2"></span>
-              </a>
-              <p class="hb-fig"><span><b>{T.fig} {pad(i + 1)}</b> {plate(p.slug).cap}</span>{p.thumb && <button type="button" class="hb-prev" aria-pressed="false" data-on={T.hide} data-off={T.preview}>{T.preview}</button>}</p>
-              <span class="hb-slip" aria-hidden="true"><b>{T.project} {pad(i + 1)}</b><span>{p.title}</span><span>{fam(p)} · {p.date}</span></span>
-            </div>
+          <article class="hb-feat">
             <div class="hb-label">
-              <p class="hb-n" aria-hidden="true">{pad(i + 1)}</p>
+              <p class="hb-n">{pad(i + 1)}</p>
               <h3><a href={p.href}>{p.title}</a></h3>
               {p.sub && <p class="hb-sub">{p.sub}</p>}
               <p class="hb-sum">{p.summary}</p>
-              <p class="hb-res"><b>{T.result}</b>{p.tldr.result}</p>
-              <p class="hb-stack">{stack(p)}</p>
+              {p.tldr.result && <p class="hb-sum">{p.tldr.result}</p>}
+              <p class="hb-stack">{p.skills.map((s) => s.label).join(' · ')}</p>
               <p class="hb-links">
                 <a href={p.href}>{T.case}</a>
                 {p.live && <a href={p.live}>{T.live}</a>}
                 {p.code && <a href={p.code}>{T.code}</a>}
               </p>
+            </div>
+            <div class="hb-plate">
+              <a class="hb-img" href={p.href} aria-label={p.title}>
+                <pre class="hb-art" aria-hidden="true" set:html={plate(p.slug).html}></pre>
+                {p.thumb && <img class="hb-shot" src={p.thumb} alt={`${T.shot} ${p.title}`} loading="lazy" />}
+              </a>
+              {p.thumb && <p class="hb-fig is-bare"><button type="button" class="hb-prev" aria-pressed="false" data-on={T.hide} data-off={T.preview}>{T.preview}</button></p>}
             </div>
           </article>
         ))}
@@ -285,7 +282,7 @@ const lead = featured[0] ?? D.projects[0], camp = camps[0], post = D.posts[0];
   html[lang='ar'] .hb-rail a { line-height: 1.5; gap: 4px; font-size: 13px; }
   html[lang='ar'] .hb-lead { font-size: 17.5px; line-height: 1.75; }
   html[lang='ar'] .hb-intro, html[lang='ar'] .hb-sum, html[lang='ar'] .hb-row-sum, html[lang='ar'] .hb-time p:not(.hb-uses) { font-size: 17.5px; }
-  html[lang='ar'] .hb-res, html[lang='ar'] .hb-sub, html[lang='ar'] .hb-time span { font-size: 16.5px; }
+  html[lang='ar'] .hb-sub, html[lang='ar'] .hb-time span { font-size: 16.5px; }
   html[lang='ar'] .hb-excerpt { font-size: 19px; } html[lang='ar'] .hb-time b { font-size: 20px; } html[lang='ar'] .hb-now-rows b { font-size: 17.5px; }
   html[lang='ar'] .hb *, html[lang='ar'] .hb-rail * { font-style: normal !important; letter-spacing: 0 !important; }
   .hb { --col: min(1120px, calc(100vw - 230px)); margin-inline-start: 180px; }
@@ -378,7 +375,8 @@ const lead = featured[0] ?? D.projects[0], camp = camps[0], post = D.posts[0];
   .hb-fig b { font-weight: 500; color: #8d8d96; margin-inline-end: 6px; }
   .hb-prev { all: unset; cursor: pointer; flex: none; font: 500 11px/1 var(--mono); letter-spacing: .08em; text-transform: uppercase; color: #8d8d96; padding: 5px 8px; border: 1px solid #ffffff1c; transition: color .2s, border-color .2s; }
   .hb-prev:hover, .hb-prev[aria-pressed='true'] { color: var(--ink); border-color: #7f95b0; }
-  .hb-plate { position: relative; }   /* the drawing, its caption + Preview right under it, and the slip below that */
+  .hb-plate { position: relative; }   /* the drawing, with Preview right under it */
+  .hb-fig.is-bare { justify-content: flex-end; margin-top: 14px; }
   .hb-img::after { content: ''; position: absolute; left: -6px; right: -6px; top: 0; height: 1px; background: var(--red); box-shadow: 0 0 10px 1px #ff8a8a; opacity: 0; pointer-events: none; z-index: 2; }
   .is-prev .hb-img::after { animation: hb-scan 1.2s cubic-bezier(.6, 0, .2, 1) both; }
   @keyframes hb-scan { 0% { top: 0; opacity: 1; } 92% { opacity: 1; } 100% { top: 100%; opacity: 0; } }
@@ -388,31 +386,26 @@ const lead = featured[0] ?? D.projects[0], camp = camps[0], post = D.posts[0];
   article:hover .hb-img .c { opacity: 1; }
   article:hover .hb-img .tl { transform: translate(5px, 5px); } article:hover .hb-img .tr { transform: translate(-5px, 5px); }
   article:hover .hb-img .bl { transform: translate(5px, -5px); } article:hover .hb-img .br { transform: translate(-5px, -5px); }
-  .hb-tape { position: absolute; width: 54px; height: 16px; background: #e8e4d01a; border: 1px solid #e8e4d014; z-index: 3; }
-  .hb-tape.t1 { top: -9px; left: 14%; transform: rotate(-4deg); } .hb-tape.t2 { bottom: -9px; right: 12%; transform: rotate(3deg); }
 
   .hb-feats { display: grid; gap: 130px; }
-  .hb-feat { position: relative; display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr); gap: 64px; align-items: center; }
+  .hb-feat { position: relative; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.35fr); gap: 72px; align-items: center; }
+  html[lang='ar'] .hb-feat { grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr); }
+  html[lang='ar'] .hb-feat .hb-plate { order: -1; }   /* text on the left, drawing on the right in both languages */
+  .hb-feat .hb-img { outline: 0; border: 1px solid #ffffff14; }
   /* Wide screens: each featured project fills one screen; herbarium.js settles the page on one at a time */
   @media (min-width: 861px) and (min-height: 620px) {
     .hb-feats { gap: 0 !important; }
     .hb-feat { box-sizing: border-box; min-height: 100vh; min-height: 100svh; padding: 48px 0 84px; align-content: center; }
   }
-  .hb-feat.is-flip .hb-plate { order: 2; } .hb-feat.is-flip .hb-label { order: 1; }
-  .hb-slip { position: absolute; z-index: 4; inset-inline-end: -10px; top: calc(100% + 16px); display: grid; gap: 1px; width: 200px; padding: 9px 11px; font: 11px/1.5 var(--mono); color: var(--dim); background: #101311; border: 1px solid #ffffff22; box-shadow: 0 10px 30px #0008; transform: rotate(-1.5deg); }
-  .hb-slip b { color: var(--red); font-weight: 500; letter-spacing: .1em; text-transform: uppercase; } .hb-slip span:nth-child(2) { color: var(--ink); font: italic 15px/1.3 var(--serif); }
-  .hb-feat.is-flip .hb-slip { inset-inline-end: auto; inset-inline-start: -10px; transform: rotate(1.5deg); }
-  .hb-n { margin: 0 0 -10px; font: italic 400 110px/1 var(--serif); color: transparent; -webkit-text-stroke: 1px #ffffff26; letter-spacing: -.04em; }
-  .hb-label h3 { margin: 0; font: 400 46px/1.04 var(--serif); font-style: italic; letter-spacing: -.01em; }
-  html[lang='ar'] .hb-label h3 { font-weight: 700; line-height: 1.3; font-size: 38px; }
+  .hb-n { margin: 0 0 14px; font: 500 12px var(--mono); letter-spacing: .2em; color: var(--dim); }
+  .hb-label h3 { margin: 0; font: 400 52px/1.04 var(--serif); font-style: italic; letter-spacing: -.01em; }
+  html[lang='ar'] .hb-label h3 { font-weight: 700; line-height: 1.3; font-size: 44px; }
   .hb-label h3 a { text-decoration: none; transition: color .2s; } .hb-label h3 a:hover { color: var(--red); }
   .hb-sub { margin: 10px 0 0; font-size: 15.5px; color: var(--leaf); }
-  .hb-sum { margin: 14px 0 0; font-size: 16px; line-height: 1.65; color: var(--ink-2); max-width: 48ch; }
-  html[lang='ar'] .hb-sum, html[lang='ar'] .hb-res, html[lang='ar'] .hb-intro { line-height: 1.9; }
+  .hb-sum { margin: 16px 0 0; font-size: 16px; line-height: 1.65; color: var(--ink-2); max-width: 48ch; }
+  html[lang='ar'] .hb-sum, html[lang='ar'] .hb-intro { line-height: 1.9; }
   html[lang='ar'] .hb-intro { margin-top: 18px; }   /* Amiri's tall name line already leaves the room */
-  .hb-res { margin: 16px 0 0; padding: 10px 0; padding-inline-start: 14px; border-inline-start: 1px solid var(--gold); font-size: 15px; line-height: 1.6; color: #a9a9b4; max-width: 48ch; }
-  .hb-res b { display: block; font: 500 11px var(--mono); letter-spacing: .16em; text-transform: uppercase; color: var(--gold); margin-bottom: 3px; }
-  .hb-stack { margin: 14px 0 0; font: 12.5px/1.6 var(--mono); color: #6f9f6fcc; }
+  .hb-stack { margin: 22px 0 0; font: 12.5px/1.7 var(--mono); color: #6f9f6fcc; max-width: 48ch; }
   .hb-links { display: flex; flex-wrap: wrap; gap: 20px; margin: 20px 0 0; font: 500 12.5px var(--mono); }
   .hb-links a { color: var(--ink); text-decoration: none; border-bottom: 1px solid #ff8a8a66; padding-bottom: 2px; transition: color .2s, border-color .2s; }
   .hb-links a:hover { color: var(--red); border-color: var(--red); }
@@ -541,7 +534,6 @@ const lead = featured[0] ?? D.projects[0], camp = camps[0], post = D.posts[0];
     .hb-row { grid-template-columns: 44px 64px minmax(0, 1fr); }
     .hb-row-meta, .hb-row-links { grid-column: 3; display: flex; flex-wrap: wrap; gap: 4px 16px; margin-top: 12px; }
     .hb-journal.n-3 { --n: 1 !important; gap: 60px; } .hb-journal.n-3 .hb-entry { padding-inline: 0; border: 0; }   /* three notes stack; two still sit side by side */
-    .hb-slip { display: none; }   /* it would sit on the drawing; the title and date are right below anyway */
     .hb-hero { grid-template-columns: 1fr; gap: 50px; padding-top: 90px; }
     .hb-now { grid-template-columns: 1fr 1fr; gap: 30px; align-items: start; }
   }
@@ -558,10 +550,8 @@ const lead = featured[0] ?? D.projects[0], camp = camps[0], post = D.posts[0];
     .hb-now { grid-template-columns: 1fr; }
     .hb-sec { padding-top: 96px; }
     .hb-head { grid-template-columns: 1fr; margin-bottom: 40px; } .hb-lead { justify-self: start; margin-top: 14px; }
-    .hb-feat, .hb-feat.is-flip { grid-template-columns: 1fr; gap: 40px; }
-    .hb-feat.is-flip .hb-plate { order: 0; }
-    .hb-slip, .hb-feat.is-flip .hb-slip { inset-inline-end: -4px; inset-inline-start: auto; bottom: -40px; width: 170px; }
-    .hb-feats { gap: 90px; } .hb-n { font-size: 72px; } .hb-label h3 { font-size: 36px; }
+    .hb-feat, html[lang='ar'] .hb-feat { grid-template-columns: 1fr; gap: 32px; } .hb-feat .hb-plate { order: -1; }
+    .hb-feats { gap: 90px; } .hb-label h3 { font-size: 38px; } html[lang='ar'] .hb-label h3 { font-size: 34px; }
     .hb-reg-h { display: none; } .hb-reg { border-top: 0; }
     .hb-row { grid-template-columns: 40px minmax(0, 1fr); gap: 0 14px; padding: 24px 0 26px; }
     .hb-row-art { display: none; }
