@@ -9,14 +9,14 @@ type T = Record<Lang, string>;
 export const profile = {
   name: { en: 'Fayhaa', ar: 'فيحاء' } as T,
   // Headline and About follow the LinkedIn profile
-  role: { en: 'Data Engineer', ar: 'مهندسة بيانات' } as T,
+  role: { en: 'Data Engineer', ar: 'Data Engineer' } as T,
   intro: {
     en: 'I build reliable pipelines that turn raw data into decisions. I come from system integration, and today I work across the whole data lifecycle: ingestion, transformation, modeling and reporting.',
-    ar: 'أبني خطوط بيانات موثوقة تحوّل البيانات الخام إلى قرارات. خلفيتي في تكامل الأنظمة، واليوم أشتغل على دورة البيانات كاملة: الاستخراج، التحويل، النمذجة والتقارير.',
+    ar: 'أبني pipelines موثوقة تحوّل البيانات الخام إلى قرارات. خلفيتي في System Integration، واليوم أشتغل على دورة البيانات كاملة: Ingestion، Transformation، Modeling و Reporting.',
   } as T,
   workflow: {
     en: ['Ingest', 'Transform', 'Model', 'Report'],
-    ar: ['استخراج', 'تحويل', 'نمذجة', 'تقارير'],
+    ar: ['Ingest', 'Transform', 'Model', 'Report'],
   },
   email: 'fayhaaralharbi@gmail.com',
   links: {
@@ -37,34 +37,34 @@ export const skills = [
   { key: 'dbt',              group: 'eng',      core: true,  label: { en: 'dbt',                ar: 'dbt' } },
   { key: 'etl',              group: 'eng',      core: false, label: { en: 'ETL / ELT',          ar: 'ETL / ELT' } },
   { key: 'snowflake',        group: 'eng',      core: false, label: { en: 'Snowflake',          ar: 'Snowflake' } },
-  { key: 'data-modeling',    group: 'eng',      core: false, label: { en: 'Data modeling',      ar: 'نمذجة البيانات' } },
+  { key: 'data-modeling',    group: 'eng',      core: false, label: { en: 'Data modeling',      ar: 'Data modeling' } },
   { key: 'aws',              group: 'eng',      core: false, label: { en: 'AWS',                ar: 'AWS' } },
   { key: 'azure',            group: 'eng',      core: false, label: { en: 'Azure',              ar: 'Azure' } },
   { key: 'docker',           group: 'eng',      core: false, label: { en: 'Docker',             ar: 'Docker' } },
   { key: 'ci-cd',            group: 'eng',      core: false, label: { en: 'CI/CD',              ar: 'CI/CD' } },
   { key: 'git',              group: 'eng',      core: false, label: { en: 'Git',                ar: 'Git' } },
-  { key: 'rest-apis',        group: 'eng',      core: false, label: { en: 'REST API integration', ar: 'تكامل REST API' } },
+  { key: 'rest-apis',        group: 'eng',      core: false, label: { en: 'REST API integration', ar: 'REST API integration' } },
   { key: 'power-bi',         group: 'bi',       core: true,  label: { en: 'Power BI',           ar: 'Power BI' } },
   { key: 'dax',              group: 'bi',       core: false, label: { en: 'DAX',                ar: 'DAX' } },
   { key: 'power-query',      group: 'bi',       core: false, label: { en: 'Power Query',        ar: 'Power Query' } },
-  { key: 'dashboard-design', group: 'bi',       core: false, label: { en: 'Dashboard design',   ar: 'تصميم اللوحات' } },
-  { key: 'data-cleaning',    group: 'bi',       core: false, label: { en: 'Data cleaning',      ar: 'تنظيف البيانات' } },
-  { key: 'web-scraping',     group: 'bi',       core: false, label: { en: 'Web scraping',       ar: 'استخراج بيانات الويب' } },
+  { key: 'dashboard-design', group: 'bi',       core: false, label: { en: 'Dashboard design',   ar: 'Dashboard design' } },
+  { key: 'data-cleaning',    group: 'bi',       core: false, label: { en: 'Data cleaning',      ar: 'Data cleaning' } },
+  { key: 'web-scraping',     group: 'bi',       core: false, label: { en: 'Web scraping',       ar: 'Web scraping' } },
   { key: 'streamlit',        group: 'bi',       core: false, label: { en: 'Streamlit',          ar: 'Streamlit' } },
-  { key: 'statistics',       group: 'bi',       core: false, label: { en: 'Statistics',         ar: 'الإحصاء' } },
+  { key: 'statistics',       group: 'bi',       core: false, label: { en: 'Statistics',         ar: 'Statistics' } },
   { key: 'typescript',       group: 'web',      core: false, label: { en: 'TypeScript',         ar: 'TypeScript' } },
   { key: 'javascript',       group: 'web',      core: false, label: { en: 'JavaScript',         ar: 'JavaScript' } },
   { key: 'astro',            group: 'web',      core: false, label: { en: 'Astro',              ar: 'Astro' } },
   { key: 'p5js',             group: 'web',      core: false, label: { en: 'p5.js',              ar: 'p5.js' } },
-  { key: 'generative-viz',   group: 'web',      core: false, label: { en: 'Generative visuals', ar: 'رسوميات توليدية' } },
+  { key: 'generative-viz',   group: 'web',      core: false, label: { en: 'Generative visuals', ar: 'Generative visuals' } },
 ] as const;
 
 export type SkillKey = (typeof skills)[number]['key'];
 export const skillKeys = skills.map((s) => s.key) as [SkillKey, ...SkillKey[]];
 
 export const skillGroups: Record<string, T> = {
-  eng: { en: 'Data engineering',        ar: 'هندسة البيانات' },
-  bi:  { en: 'Analytics & BI',          ar: 'التحليل وذكاء الأعمال' },
+  eng: { en: 'Data engineering',        ar: 'Data engineering' },
+  bi:  { en: 'Analytics & BI',          ar: 'Analytics & BI' },
   web: { en: 'Web & creative coding',   ar: 'الويب والبرمجة الإبداعية' },
 };
 
@@ -74,16 +74,16 @@ export const experience: {
   title: T; org: T; period: string; points: Record<Lang, string[]>;
 }[] = [
   {
-    title: { en: 'Data Analyst & BI Developer', ar: 'محللة بيانات ومطورة ذكاء أعمال' },
+    title: { en: 'Data Analyst & BI Developer', ar: 'Data Analyst & BI Developer' },
     org: { en: 'Freelance · Remote', ar: 'عمل حر · عن بعد' },
     period: 'Sep 2025 — Present',
     points: {
       en: ['Delivered 2 Power BI dashboards for 2 clients, turning their business questions into KPIs they could track.'],
-      ar: ['سلّمت لوحتي Power BI لعميلين، وحوّلت أسئلة أعمالهم إلى مؤشرات أداء يقدرون يتابعونها.'],
+      ar: ['سلّمت 2 Power BI dashboards لعميلين، وحوّلت أسئلة أعمالهم إلى KPIs يقدرون يتابعونها.'],
     },
   },
   {
-    title: { en: 'Software Developer (Integrations)', ar: 'مطورة برمجيات (تكامل الأنظمة)' },
+    title: { en: 'Software Developer (Integrations)', ar: 'Software Developer (Integrations)' },
     org: { en: 'Ejada · Buraydah', ar: 'إجادة · بريدة' },
     period: 'Feb 2025 — Jul 2025',
     points: {
@@ -92,13 +92,13 @@ export const experience: {
         'Tested integrations and fixed the issues found before releasing them from development to production.',
       ],
       ar: [
-        'بنيت وصنت تكاملات REST API واردة وصادرة للأنظمة المالية باستخدام IBM API Connect و OutSystems.',
-        'اختبرت التكاملات وعالجت المشاكل قبل إطلاقها من التطوير إلى الإنتاج.',
+        'بنيت وصنت REST API integrations (inbound و outbound) للأنظمة المالية باستخدام IBM API Connect و OutSystems.',
+        'اختبرت الـ integrations وعالجت المشاكل قبل إطلاقها من development إلى production.',
       ],
     },
   },
   {
-    title: { en: 'Data Analyst', ar: 'محللة بيانات' },
+    title: { en: 'Data Analyst', ar: 'Data Analyst' },
     org: { en: 'Hackathonat · Remote', ar: 'هاكاثونات · عن بعد' },
     period: 'Jul–Aug 2023 · Apr–May 2024',
     points: {
@@ -107,8 +107,8 @@ export const experience: {
         "Wrote a Python tool on X's engagement API that filters tweets, analyzes engagement metrics and generates charts and an insights report.",
       ],
       ar: [
-        'بنيت 3 لوحات بيانات من البداية للنهاية لأفكار الهاكاثونات: استخراج بيانات الويب، تنظيفها بـ Power Query، وعرضها في Power BI و Python.',
-        'كتبت أداة Python على واجهة تفاعل X تفلتر التغريدات وتحلل مقاييس التفاعل وتطلع رسوم وتقرير رؤى.',
+        'بنيت 3 dashboards من البداية للنهاية لأفكار الهاكاثونات: Web scraping، تنظيفها بـ Power Query، وعرضها في Power BI و Python.',
+        'كتبت أداة Python على X Engagement API تفلتر التغريدات وتحلل الـ engagement metrics وتطلع رسوم و insights report.',
       ],
     },
   },
@@ -125,7 +125,7 @@ export const experience: {
 
 export const education: { title: T; org: T; period: string; note?: T }[] = [
   {
-    title: { en: 'Data Engineering Bootcamp (7 weeks)', ar: 'معسكر هندسة البيانات (7 أسابيع)' },
+    title: { en: 'Data Engineering Bootcamp (7 weeks)', ar: 'Data Engineering Bootcamp (7 أسابيع)' },
     org: { en: 'Saudi Digital Academy', ar: 'الأكاديمية السعودية الرقمية' },
     period: 'Aug 2026 — Sep 2026',
   },
@@ -145,7 +145,7 @@ export const certifications: { title: T; org: T; period: string }[] = [
     period: 'Nov 2024',
   },
   {
-    title: { en: 'Google Data Analytics Professional Certificate', ar: 'شهادة Google المهنية لتحليل البيانات' },
+    title: { en: 'Google Data Analytics Professional Certificate', ar: 'Google Data Analytics Professional Certificate' },
     org: { en: 'Coursera', ar: 'Coursera' },
     period: 'Aug 2024',
   },

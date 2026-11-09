@@ -1,12 +1,12 @@
 ---
-title: "لوحة مساحات العمل المشتركة في السعودية"
+title: "Dashboard مساحات العمل المشتركة في السعودية"
 date: 2023-07
-summary: "لوحة Power BI لمساحات العمل المشتركة في المملكة: كم عددها، وش المجالات اللي تستهدفها، كم أسعار الحجز، وكيف تتواصل معها."
+summary: "Power BI dashboard لمساحات العمل المشتركة في المملكة: كم عددها، وش المجالات اللي تستهدفها، كم أسعار الحجز، وكيف تتواصل معها."
 tldr:
   problem: "مقارنة مساحات العمل المشتركة في المملكة بمكان واحد: مجالها وأسعارها وبيانات تواصلها."
-  role: "متدربة تحليل بيانات في هاكاثونات، مع طيف."
+  role: "Data Analyst Intern في هاكاثونات، مع طيف."
   tools: "Power BI و Power Query"
-  result: "لوحة منشورة تحط مجال كل مساحة وأسعارها وبيانات التواصل جنب بعض."
+  result: "Dashboard منشور يحط مجال كل مساحة وأسعارها وبيانات التواصل جنب بعض."
 skills: [data-cleaning, power-query, power-bi, dashboard-design]
 links:
   live: https://app.powerbi.com/view?r=eyJrIjoiOTViZDBiY2YtZDNiYi00N2NmLWJmNWMtNjlkMDU3OTdkMDczIiwidCI6IjIxZmZlMDhlLWVjNmUtNDRhMC1hZGYzLTZmYzZhZjdmNTJkOSIsImMiOjl9
