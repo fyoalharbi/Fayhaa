@@ -9,6 +9,5 @@ export const secretFlower = {
     'The mysterious you',
     'Who is so beautiful',
     'I’ll spread my wings and fly around your embrace',
-    'I wanna land on you and smell your scent',
   ] as string[],
 };
