@@ -11,7 +11,7 @@
   const hero = $('.hb-hero'), gwrap = $('.hb-gwrap'), gc = $('#hb-garden');
   const placeBand = () => { gwrap.style.top = (hero.getBoundingClientRect().bottom + scrollY - gwrap.offsetHeight) + 'px'; };
   placeBand();
-  const g = new Garden2D(gc, { plants: 38, font: 11, groundRows: 3, butterfly: false, moon: false, stars: 0.003, seed: 'herb', bushes: 8 });
+  const g = new Garden2D(gc, { plants: 44, depth: 34, font: 11, groundRows: 3, butterfly: false, moon: false, stars: 0.003, seed: 'herb', bushes: 10 });
   new IntersectionObserver(([e]) => { g.paused = !e.isIntersecting; }).observe(gc);
   addEventListener('resize', () => { placeBand(); g.resize(); });
 

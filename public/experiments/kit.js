@@ -123,6 +123,9 @@
         this.plants = Array.from({ length: n }, (_, i) => ({ x: (i + 0.2 + rnd() * 0.6) / n, h: 0.16 + rnd() * 0.34, R: 3 + ((rnd() * 5) | 0), petals: 5 + ((rnd() * 4) | 0), tone: tones[(rnd() * tones.length) | 0], open: 0.75 + rnd() * 0.25, ph: rnd() * 6.28 }));
         this.o.autoPlants = true;
       }
+      // depth: a back row of smaller, dimmer flowers standing a row behind the front ones
+      const nd = Math.round((this.o.depth || 0) * (this.W < 700 ? 0.55 : 1)), btn = ['red', 'gold', 'white', 'violet', 'blush', 'orange'];
+      this.back = Array.from({ length: nd }, (_, i) => ({ x: (i + 0.1 + rnd() * 0.8) / nd, h: 0.1 + rnd() * 0.22, R: 2 + ((rnd() * 3) | 0), petals: 5 + ((rnd() * 3) | 0), tone: btn[(rnd() * btn.length) | 0], ph: rnd() * 6.28 }));
       this.fly && this.fly.p[0] === 0 && (this.fly.p = [this.W * 0.3, this.H * 0.4]);
     }
     head(i) {           // px position of a plant's head (with sway)
@@ -193,6 +196,14 @@
           put(mx + dx, my + dy, lit ? (r > R - 0.9 ? (dx < 0 ? '(' : '@') : bitAt(dx * 13 + dy * 7 + 77) ? '0' : '@') : r > R - 0.9 ? '.' : ' ', lit ? 'moon' : 'star');
         }
       }
+      // the back row first, so everything in front overlaps it: dim stems, heads in their darker shade
+      this.back.forEach((p, i) => {
+        const px = Math.round(p.x * COLS), base = gy - 1, top = base - Math.max(2, Math.round(p.h * ROWS)), sw = Math.round(Math.sin(this.t * 0.6 + p.ph) * 0.6 + this.wind);
+        for (let cy = base - 1; cy > top; cy--) put(px + ((cy - top) < 2 ? sw : 0), cy, '|', 'g1');
+        for (const [dx, dy, s, tn] of flowerCells({ R: p.R, petals: p.petals, rot: this.t * 0.08 + p.ph, open: 0.85, seed: i + 200 })) {
+          put(px + sw + dx, top + dy, tn === 'p' ? (bitAt(i * 53 + dx * 7 + dy) ? '1' : '0') : s, tn === 'c' || tn === 'd' ? 'gold2' : tn === 'r' ? 'g2' : p.tone + '2');
+        }
+      });
       // back grass: blades of varying height that lean with the wind and part around the pointer
       const near = (cx) => this.ptr && Math.abs(this.ptr[0] - cx * cw) < 70 && this.ptr[1] > (gy - 8) * ch ? Math.sign(cx * cw - this.ptr[0]) : 0;
       for (let cx = 0; cx < COLS; cx++) {
