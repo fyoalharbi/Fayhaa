@@ -181,7 +181,7 @@ html[lang='ar'] .hb-all span { font-weight: 700; font-size: clamp(26px, 2.5vw, 3
 .hb-legend { display: flex; flex-wrap: wrap; gap: 8px 22px; margin: -26px 0 34px; font: 12px var(--mono); color: var(--dim); }
 .hb-legend span { display: inline-flex; gap: 7px; align-items: center; }
 .d { display: inline-block; width: 5px; height: 5px; border-radius: 50%; flex: none; }
-.d.w { background: var(--gold); opacity: .85; } .d.t { background: #7fbf7f; opacity: .85; }
+.d.p { background: var(--red); opacity: .85; } .d.w { background: var(--gold); opacity: .85; } .d.t { background: #7fbf7f; opacity: .85; }
 .hb-caps { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 48px 72px; }
 .hb-cap { padding-top: 18px; border-top: 1px solid #ffffff1a; }
 .hb-cap h3 { margin: 0; font: 400 34px/1.15 var(--serif); font-style: italic; letter-spacing: -.01em; color: var(--ink); }

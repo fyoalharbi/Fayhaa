@@ -22,13 +22,13 @@ const T = AR ? {
   intro: 'فضولية بطبعي، أستكشف التقاطع بين البيانات والبرمجيات والتقنية من خلال المشاريع والتجارب.',
   now: 'آخر مشروع', training: 'آخر تدريب', note: 'آخر تدوينة',
   secs: ['المشاريع', 'عني', 'الأدوات', 'المدونة', 'تواصل'],
-  tools: 'كل أداة استخدمتها، مرتبة حسب مجالها. النقطة توضح وين استخدمتها غير مشاريعي: في وظيفة أو في معسكر SDA.',
+  tools: 'كل أداة استخدمتها، مرتبة حسب مجالها. النقاط توضح وين استخدمتها: في مشاريعي، في وظيفة، أو في معسكر SDA.',
   contact: 'أسرع طريقة توصل لي هي الإيميل.',
   case: 'دراسة الحالة ←', live: 'العرض المباشر ↗', code: 'الكود ↗',
   preview: 'معاينة', hide: 'إخفاء', shot: 'لقطة من',
   explore: 'تصفّح المجموعة كاملة ←', allN: (n: number) => `كل المشاريع · ${n}`,
   exploreW: 'اقرأ كل الكتابات ←', allW: (n: number) => (n === 1 ? 'تدوينة واحدة' : `كل التدوينات · ${n}`),
-  lgWork: 'استخدمتها في وظيفة', lgTrain: 'استخدمتها في معسكر SDA',
+  lgProj: 'استخدمتها في مشاريعي', lgWork: 'استخدمتها في وظيفة', lgTrain: 'استخدمتها في معسكر SDA',
   caps: [['البيانات والتحليل', 'تحويل البيانات لتقارير وقرارات واضحة.'], ['تطوير البرمجيات', 'الكود والتكاملات والتطبيقات.'],
     ['هندسة البيانات', 'خطوط بيانات ونماذج ومستودعات يوثق فيها.'], ['السحابة والبنية التحتية', 'وين يشتغل كل هذا، وكيف ينشر.']],
   min: 'دقيقة قراءة', read: 'اقرأ ←',
@@ -37,13 +37,13 @@ const T = AR ? {
   intro: 'Curious by nature, I explore the intersection of data, software, and technology through projects and experiments.',
   now: 'Latest project', training: 'Latest training', note: 'Latest note',
   secs: ['Projects', 'About', 'Tools', 'Notes', 'Contact'],
-  tools: 'Every tool I have used, grouped by what it is for. A dot marks where I used it beyond my own projects: at a job or in the SDA bootcamp.',
+  tools: 'Every tool I have used, grouped by what it is for. The dots show where I used it: in my own projects, at a job, or in the SDA bootcamp.',
   contact: 'Email is the fastest way to reach me.',
   case: 'Case study →', live: 'Live demo ↗', code: 'Code ↗',
   preview: 'Preview', hide: 'Hide preview', shot: 'Screenshot of',
   explore: 'Explore the complete collection →', allN: (n: number) => `All ${n} projects`,
   exploreW: 'Read all the writing →', allW: (n: number) => (n === 1 ? 'One note' : `All ${n} notes`),
-  lgWork: 'used at a job', lgTrain: 'used in the SDA bootcamp',
+  lgProj: 'used in my projects', lgWork: 'used at a job', lgTrain: 'used in the SDA bootcamp',
   caps: [['Data & Analytics', 'Turning data into clear reports and decisions.'], ['Software Development', 'Code, integrations and the apps around them.'],
     ['Data Engineering', 'Pipelines, models and warehouses people can trust.'], ['Cloud & Infrastructure', 'Where it all runs, and how it ships.']],
   min: 'min read', read: 'Read →',
@@ -158,14 +158,14 @@ const lead = featured[0] ?? D.projects[0], camp = camps[0], post = D.posts[0];
     <section id="tools" class="hb-sec">
       <header class="hb-head"><h2 data-decode data-perch>{T.secs[2]}</h2><p class="hb-lead">{T.tools}</p></header>
       <div class="hb-tools">
-        <p class="hb-legend"><span><i class="d w"></i>{T.lgWork}</span><span><i class="d t"></i>{T.lgTrain}</span></p>
+        <p class="hb-legend"><span><i class="d p"></i>{T.lgProj}</span><span><i class="d w"></i>{T.lgWork}</span><span><i class="d t"></i>{T.lgTrain}</span></p>
         <div class="hb-caps">
           {groups.map((g) => (
             <div class="hb-cap">
               <h3>{g.name}</h3>
               <p class="hb-cap-d">{g.what}</p>
               <ul>{g.tools.map((t) => (
-                <li>{t.label}{(t.work.length > 0 || t.train.length > 0) && <span class="mk">{t.work.length > 0 && <i class="d w" role="img" aria-label={T.lgWork} title={T.lgWork}></i>}{t.train.length > 0 && <i class="d t" role="img" aria-label={T.lgTrain} title={T.lgTrain}></i>}</span>}</li>))}</ul>
+                <li>{t.label}<span class="mk">{t.used.length > 0 && <i class="d p" role="img" aria-label={T.lgProj} title={T.lgProj}></i>}{t.work.length > 0 && <i class="d w" role="img" aria-label={T.lgWork} title={T.lgWork}></i>}{t.train.length > 0 && <i class="d t" role="img" aria-label={T.lgTrain} title={T.lgTrain}></i>}</span></li>))}</ul>
             </div>
           ))}
         </div>
