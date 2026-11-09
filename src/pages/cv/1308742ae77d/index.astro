@@ -1,217 +1,139 @@
 ---
-// Unlisted CV page: shareable by direct link only. Nothing on the site links
-// here, and search engines are asked not to index it. To rotate the link,
-// rename this folder and public/cv/<folder> to a new random name.
-//
-// The page is laid out as an A4 sheet. The downloadable PDF is printed from
-// this page (see README → "Regenerate the CV PDF"), so links stay clickable.
-import Base from '../../../layouts/Base.astro';
-import { profile } from '../../../data/profile';
+// Unlisted CV page: shareable by direct link only. Nothing on the site links here, and search engines
+// are asked not to index it. To rotate the link, rename this folder and public/cv/<folder> to a new name.
+// The sheet below is the HTML the downloadable PDF is printed from (Fayhaa_Alharbi_DataEngineer_CV_ATS),
+// so the page and the PDF say the same thing: update both together.
 import { url } from '../../../lib/site';
-
 const folder = Astro.url.pathname.split('/').filter(Boolean).pop();
-const pdf = url(`cv/${folder}/Fayhaa-Alharbi-CV.pdf`);
-const site = 'https://fyoalharbi.github.io/Fayhaa';
-const caseStudy = (slug: string) => `${site}/projects/${slug}/`;
-const phone = '+966 54 715 3383';
+const pdf = url('cv/' + folder + '/Fayhaa-Alharbi-CV.pdf');
 ---
-<Base lang="en" title="CV" noindex>
-  <div class="cv-shell">
-    <div class="cv-toolbar wrap">
-      <p class="mono muted">Curriculum vitae · {profile.name.en}</p>
-      <div class="actions">
-        <a class="btn btn-primary" href={pdf} download="Fayhaa-Alharbi-CV.pdf">Download PDF</a>
-        <button class="btn" type="button" onclick="window.print()">Print</button>
-        <a class="btn" href={`mailto:${profile.email}`}>Email me</a>
-      </div>
-    </div>
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Fayhaa Alharbi - Data Engineer CV</title>
+<link rel="icon" href={url('favicon.svg')} type="image/svg+xml">
+<style is:global>
+  @page { size: A4; margin: 11mm 17mm 10mm 17mm; }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: "Times New Roman", "Liberation Serif", serif; font-size: 10pt; line-height: 1.13; color: #000; }
+  header { text-align: center; margin-bottom: 4pt; }
+  h1 { font-size: 20pt; font-weight: normal; margin: 0 0 1pt; }
+  header p { margin: 0; }
+  a { color: #1a3fb5; }
+  h2 { font-size: 11pt; color: #3a5bd9; margin: 6pt 0 3pt; padding-bottom: 1pt; border-bottom: 0.8pt solid #000; }
+  .row { display: flex; justify-content: space-between; gap: 12pt; }
+  .entry { margin-bottom: 4pt; }
+  .org { font-weight: bold; }
+  .role { font-style: italic; }
+  ul { margin: 1pt 0 0; padding-left: 14pt; }
+  li { margin-bottom: 1pt; }
+  p { margin: 0; }
+  table.skills { border-collapse: collapse; }
+  table.skills td { padding: 0 0 2.5pt; vertical-align: top; }
+  table.skills td:first-child { width: 117pt; }
 
-    <article class="cv-sheet">
-      <header class="cv-top">
-        <div>
-          <h1>Fayhaa Alharbi</h1>
-          <p class="cv-role">Data Engineer</p>
-        </div>
-        <ul class="cv-contact">
-          <li>Riyadh, Saudi Arabia</li>
-          <li><a href={`mailto:${profile.email}`}>{profile.email}</a></li>
-          <li><a href={`tel:${phone.replace(/\s/g, '')}`}>{phone}</a></li>
-          <li><a href={profile.links.linkedin}>linkedin.com/in/fayhaaralharbi</a></li>
-          <li><a href={profile.links.github}>github.com/fyoalharbi</a></li>
-          <li><a href={`${site}/`}>fyoalharbi.github.io/Fayhaa</a></li>
-        </ul>
-      </header>
-
-      <section>
-        <h2>Professional Summary</h2>
-        <p>
-          Data Engineer with hands-on experience building REST API integrations for finance systems with IBM API Connect.
-          Built a Snowflake, Airflow and dbt pipeline on AWS that loads 3 API sources and a 50,000-row ledger into a
-          Power BI DirectQuery dashboard. Certified Associate Data Engineer (DataCamp).
-        </p>
-      </section>
-
-      <section>
-        <h2>Skills</h2>
-        <dl class="cv-skills">
-          <dt>Programming</dt><dd>Python (Pandas, pytest), SQL</dd>
-          <dt>Data engineering</dt><dd>Apache Airflow, dbt, Snowflake, AWS (EC2), Azure Blob Storage, Docker, Git, GitHub Actions (CI/CD)</dd>
-          <dt>Integration</dt><dd>REST APIs, IBM API Connect, OutSystems</dd>
-          <dt>Analytics &amp; BI</dt><dd>Power BI (Power Query, DAX), Streamlit, web scraping, data cleaning</dd>
-        </dl>
-      </section>
-
-      <section>
-        <h2>Projects</h2>
-        <div class="cv-item">
-          <div class="cv-item-head">
-            <h3><a href={caseStudy('invasight')}>InvaSight, Investment Portfolio Insights Pipeline</a></h3>
-            <span class="cv-when">Sep 2026</span>
-          </div>
-          <p class="cv-sub">SDA capstone, team of 4 · <a href="https://github.com/fyoalharbi/invasight">Code</a></p>
-          <ul>
-            <li>Owned the end-to-end pipeline, from multi-source ingestion to a Power BI DirectQuery dashboard.</li>
-            <li>Loaded FX, metals and equities APIs plus a synthetic 50,000-row transactions ledger into a SAR-denominated star schema in Snowflake, staged through Azure Blob Storage.</li>
-            <li>Orchestrated with Airflow (a daily API-extract DAG and a 45-minute ledger DAG) with task dependencies so one failed step stops the steps that depend on it; added dbt tests, pytest, Docker and GitHub Actions CI/CD on AWS.</li>
-            <li>Restored the full dbt project from Snowflake query history one day before delivery, after 3 unauthorized logins on the EC2 server and deleted files.</li>
-          </ul>
-        </div>
-        <div class="cv-item">
-          <div class="cv-item-head">
-            <h3><a href={caseStudy('ewc-2024-dashboard')}>Esports World Cup 2024 Dashboard</a></h3>
-            <span class="cv-when">Power BI, Python</span>
-          </div>
-          <p class="cv-sub">
-            <a href="https://app.powerbi.com/view?r=eyJrIjoiY2Y1M2M2ZjUtYjg4OC00NTc5LThlZTUtMjVjMDI5OWE1YjU5IiwidCI6ImMyYjA0ZGE2LTg0ODctNDFjYy04ODAzLTkwMzIxMDQ4YTc3MiIsImMiOjl9">Live dashboard</a> ·
-            <a href="https://github.com/fyoalharbi/EWC_Dashboard">Code</a>
-          </p>
-          <ul>
-            <li>Scraped saved Liquipedia pages with Python and cleaned data on 1,500+ players, 200+ teams and 20+ games, then built the Power BI dashboard with Power Query and DAX measures; found and corrected counting errors in the source site's figures.</li>
-          </ul>
-        </div>
-      </section>
-
-      <section>
-        <h2>Professional Experience</h2>
-        <div class="cv-item">
-          <div class="cv-item-head"><h3>Software Developer (Integrations) · Ejada</h3><span class="cv-when">Feb 2025 – Jul 2025</span></div>
-          <p class="cv-sub">Buraydah, Saudi Arabia</p>
-          <ul>
-            <li>Built and maintained inbound and outbound REST API integrations for finance systems with IBM API Connect and OutSystems.</li>
-            <li>Tested integrations and fixed the issues found before releasing them from development to production.</li>
-          </ul>
-        </div>
-        <div class="cv-item">
-          <div class="cv-item-head"><h3>Data Analyst and BI Developer · Freelance</h3><span class="cv-when">Sep 2025 – Present</span></div>
-          <p class="cv-sub">Remote, Saudi Arabia</p>
-          <ul><li>Delivered 2 Power BI dashboards for 2 clients, turning their business questions into KPIs they could track.</li></ul>
-        </div>
-        <div class="cv-item">
-          <div class="cv-item-head"><h3>Data Analyst · Hackathonat</h3><span class="cv-when">Jul – Aug 2023, Apr – May 2024</span></div>
-          <p class="cv-sub">Remote, Saudi Arabia</p>
-          <ul>
-            <li>Built 3 dashboards end to end for hackathon ideas: web scraping, data cleaning with Power Query and visualization in Power BI and Python.</li>
-            <li>Wrote a Python tool on X's Engagement API that filters tweets, analyzes engagement metrics and generates charts and an insights report.</li>
-          </ul>
-        </div>
-        <div class="cv-item cv-compact">
-          <div class="cv-item-head"><h3>Co-Founder · TechVerse</h3><span class="cv-when">Aug 2022 – Present</span></div>
-          <p class="cv-sub">Tech community that runs tech talks and bootcamps</p>
-        </div>
-      </section>
-
-      <div class="cv-two">
-        <section>
-          <h2>Education</h2>
-          <div class="cv-item cv-compact">
-            <div class="cv-item-head"><h3>Bachelor of Computer Science · Qassim University</h3></div>
-            <p class="cv-sub">Al Qasim, Saudi Arabia · Sep 2019 – May 2024 · <b>GPA 4.5 / 5</b></p>
-            <p class="cv-sub">Coursework: Database Systems, Data Structures, Algorithms, Machine Learning, Artificial Intelligence</p>
-          </div>
-        </section>
-        <section>
-          <h2>Certifications</h2>
-          <ul class="cv-list">
-            <li>Data Engineering Bootcamp, Saudi Digital Academy (SDA), 7 weeks · Sep 2026</li>
-            <li>Associate Data Engineer, DataCamp · Aug 2024</li>
-            <li>Google Data Analytics, Google · Aug 2024</li>
-          </ul>
-        </section>
-      </div>
-
-      <section>
-        <h2>Languages and Personal Details</h2>
-        <p>Arabic (native), English (fluent, STEP 88) · Saudi National · No notice period</p>
-      </section>
-    </article>
-  </div>
-</Base>
-
-<style>
-  .cv-shell { padding-block: 24px 56px; background: var(--paper); }
-  .cv-toolbar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 24px; margin-bottom: 18px; }
-  .cv-toolbar p { margin: 0; }
-  .cv-toolbar .actions { margin: 0; }
-
-  /* The A4 sheet */
-  .cv-sheet {
-    --cv-accent: #b4141e;
-    width: min(210mm, calc(100% - 2 * var(--gutter)));
-    margin: 0 auto; padding: 11mm 14mm;
-    background: #fff; color: #1a1a1a;
-    box-shadow: 0 10px 40px rgba(0, 0, 0, .12); border: 1px solid var(--rule);
-    font-family: var(--font-sans); font-size: 9.3pt; line-height: 1.36;
+  /* On screen: the sheet as a page on a quiet desk, with a small bar to download or print it */
+  @media screen {
+    html { background: #e9e9e6; }
+    body { max-width: 210mm; margin: 0 auto 40px; padding: 11mm 17mm 10mm; background: #fff; box-shadow: 0 1px 3px rgba(0, 0, 0, .12), 0 8px 30px rgba(0, 0, 0, .08); }
+    .cv-bar { display: flex; justify-content: flex-end; gap: 8px; max-width: 210mm; margin: 24px auto 12px; font: 13px/1 system-ui, sans-serif; }
+    .cv-bar a, .cv-bar button { padding: 8px 12px; border: 1px solid #c8c8c4; background: #fff; color: #111; text-decoration: none; cursor: pointer; font: inherit; }
+    .cv-bar a:first-child { background: #111; color: #fff; border-color: #111; }
   }
-  .cv-sheet a { color: inherit; text-decoration: none; border-bottom: 1px solid color-mix(in srgb, var(--cv-accent) 45%, transparent); }
-  .cv-sheet a:hover { color: var(--cv-accent); border-bottom-color: var(--cv-accent); }
-
-  .cv-top {
-    display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-end; gap: 8px 24px;
-    padding-bottom: 10px; margin-bottom: 4px; border-bottom: 2px solid #1a1a1a;
-  }
-  .cv-top h1 { font-size: 22pt; letter-spacing: -0.02em; margin: 0; line-height: 1.05; }
-  .cv-role { margin: 4px 0 0; font-family: var(--font-mono); font-size: 9pt; letter-spacing: 0.08em; text-transform: uppercase; color: var(--cv-accent); }
-  .cv-contact {
-    list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: auto auto; gap: 1px 18px;
-    font-size: 8.6pt; color: #444; text-align: end;
-  }
-
-  .cv-sheet section { margin-top: 8px; }
-  .cv-sheet h2 {
-    display: flex; align-items: center; gap: 8px;
-    font-family: var(--font-mono); font-size: 8.5pt; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase;
-    color: var(--cv-accent); margin: 0 0 5px;
-  }
-  .cv-sheet h2::after { content: ''; flex: 1; height: 1px; background: #e2e2e2; }
-  .cv-sheet p { margin: 0; }
-
-  .cv-skills { display: grid; grid-template-columns: 30mm 1fr; gap: 2px 10px; margin: 0; }
-  .cv-skills dt { font-weight: 600; }
-  .cv-skills dd { margin: 0; }
-
-  .cv-item + .cv-item { margin-top: 5px; }
-  .cv-item-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
-  .cv-item h3 { font-size: 9.6pt; margin: 0; font-weight: 600; }
-  .cv-when { font-family: var(--font-mono); font-size: 8.2pt; color: #666; white-space: nowrap; }
-  .cv-sub { font-size: 8.4pt; color: #555; }
-  .cv-item ul, .cv-list { margin: 3px 0 0; padding-inline-start: 1.1em; }
-  .cv-item li + li, .cv-list li + li { margin-top: 1px; }
-  .cv-compact .cv-sub { margin-top: 0; }
-  .cv-two { display: grid; grid-template-columns: 1.1fr 1fr; gap: 0 18px; }
-
-  @media (max-width: 719px) {
-    .cv-sheet { padding: 18px 16px; font-size: 10pt; line-height: 1.45; }
-    .cv-contact { grid-template-columns: 1fr; text-align: start; }
-    .cv-skills, .cv-two { grid-template-columns: 1fr; }
-    .cv-item-head { flex-direction: column; gap: 0; }
-  }
-
-  /* Printing (and the generated PDF): just the sheet, edge to edge on A4 */
-  @page { size: A4; margin: 0; }
-  @media print {
-    :global(.site-header), :global(.site-footer), :global(.skip), .cv-toolbar { display: none !important; }
-    :global(body) { background: #fff !important; }
-    .cv-shell { padding: 0; background: #fff; }
-    .cv-sheet { width: 210mm; min-height: 297mm; margin: 0; border: 0; box-shadow: none; }
-  }
+  @media screen and (max-width: 820px) { body { padding: 8mm 6mm; } .cv-bar { padding: 0 8px; } .row { flex-wrap: wrap; gap: 0 12pt; } table.skills td:first-child { width: 96pt; } }
+  @media print { .cv-bar { display: none; } }
 </style>
+</head>
+<body>
+<nav class="cv-bar"><a href={pdf} download="Fayhaa-Alharbi-CV.pdf">Download PDF</a><button type="button" onclick="window.print()">Print</button></nav>
+<header>
+  <h1>Fayhaa Alharbi</h1>
+  <p>Data Engineer · Riyadh, Saudi Arabia</p>
+  <p>Fayhaaralharbi@gmail.com | (+966) 547153383</p>
+  <p><a href="https://github.com/fyoalharbi">https://github.com/fyoalharbi</a> | <a href="https://linkedin.com/in/fayhaaralharbi">https://linkedin.com/in/fayhaaralharbi</a></p>
+</header>
+
+<h2>Summary</h2>
+<p>Data engineer with production API-integration experience on finance systems. I build ETL/ELT data pipelines from source to cloud data warehouse with Python, SQL, Airflow, dbt and Snowflake on AWS, and turn the results into Power BI dashboards that answer real business questions.</p>
+
+<h2>Experience</h2>
+<div class="entry">
+  <div class="row"><span class="org">Freelance</span><span>Sep 2025 – Present</span></div>
+  <div class="role">Data Analyst &amp; BI Developer · Remote</div>
+  <ul>
+    <li>Delivered data analysis and Power BI dashboards for 2 clients, turning their business questions into KPIs they could track.</li>
+  </ul>
+</div>
+<div class="entry">
+  <div class="row"><span class="org">Ejada</span><span>Feb 2025 – Jul 2025</span></div>
+  <div class="role">Software Developer (Integrations) · Buraydah</div>
+  <ul>
+    <li>Built and maintained inbound and outbound REST API integrations for finance systems using IBM API Connect.</li>
+    <li>Developed applications on the OutSystems low-code platform.</li>
+    <li>Tested and deployed integrations from development through to production.</li>
+  </ul>
+</div>
+<div class="entry">
+  <div class="row"><span class="org">Hackathonat</span></div>
+  <div class="row"><span class="role">Data Analyst (Part-time) · Remote</span><span>Apr 2024 – May 2024</span></div>
+  <div class="row"><span class="role">Data Analyst Intern · Remote</span><span>Jul 2023 – Aug 2023</span></div>
+  <ul>
+    <li>Built dashboards end to end: web scraping, data cleaning and data visualization.</li>
+    <li>Wrote a Python tool on X’s Engagement API that filters tweets, analyzes engagement metrics and generates charts and an insights report.</li>
+    <li>Analyzed monthly data to report progress against monthly goals.</li>
+  </ul>
+</div>
+
+<h2>Projects</h2>
+<div class="entry">
+  <div class="row"><span class="org">InvaSight – Investment Portfolio Insights Pipeline | SDA capstone</span><span>Sep 2026</span></div>
+  <ul>
+    <li>Owned the end-to-end data pipeline, from multi-source ingestion to a Power BI DirectQuery dashboard.</li>
+    <li>Ingested foreign exchange (FX), metals and equities APIs plus an internal transactions ledger into a SAR-denominated star schema (dimensional data model) in the Snowflake data warehouse.</li>
+    <li>Orchestrated with Apache Airflow (a daily API-extract DAG and a separate 45-minute ledger DAG); dbt for transformations and data quality tests; Python extraction tested with pytest; containerized with Docker on AWS EC2.</li>
+    <li>Recovered the full dbt project from Snowflake query history after the project’s EC2 server was compromised.</li>
+  </ul>
+</div>
+<div class="entry">
+  <div class="row"><span class="org">Bank Statements Analysis | personal project</span></div>
+  <ul>
+    <li>Built a Streamlit and Python app that ingests raw bank statements, cleans and categorizes transactions, and shows interactive insights.</li>
+  </ul>
+</div>
+
+<h2>Education</h2>
+<div class="entry">
+  <div class="row"><span class="org">Bachelor of Computer Science – Qassim University</span><span>Sep 2019 – May 2024</span></div>
+  <ul>
+    <li>GPA 4.5 / 5. Coursework: Database Systems, Data Structures, Algorithms, Machine Learning, Artificial Intelligence.</li>
+  </ul>
+</div>
+
+<h2>Certifications</h2>
+<div class="row"><span>Data Engineering Bootcamp – Saudi Digital Academy (SDA), 7 weeks</span><span>Sep 2026</span></div>
+<div class="row"><span>Associate Data Engineer – DataCamp</span><span>Aug 2024</span></div>
+<div class="row"><span>Google Data Analytics – Google</span><span>Aug 2024</span></div>
+
+<h2>Technical Skills</h2>
+<table class="skills">
+  <tr><td>Programming</td><td>Python (Pandas, pytest), SQL, JavaScript</td></tr>
+  <tr><td>Data engineering</td><td>ETL/ELT, data modeling (star schema), data warehousing, data quality testing, orchestration</td></tr>
+  <tr><td>Tools</td><td>Apache Airflow, dbt, Snowflake, Azure Data Factory, Docker, Git, CI/CD</td></tr>
+  <tr><td>Cloud</td><td>AWS (S3, EC2, IAM), Azure</td></tr>
+  <tr><td>Integration</td><td>REST APIs, IBM API Connect, OutSystems</td></tr>
+  <tr><td>Analytics &amp; BI</td><td>Power BI, Excel, Streamlit, web scraping, data cleaning</td></tr>
+  <tr><td>Languages</td><td>Arabic (native), English (fluent; STEP English proficiency test score 88)</td></tr>
+</table>
+
+<h2>Leadership &amp; Community</h2>
+<div class="entry">
+  <div class="row"><span class="org">TechVerse – Co-Founder</span><span>Aug 2022 – Present</span></div>
+  <ul>
+    <li>Co-run a tech community that hosts talks and bootcamps; also tutored Data Structures and Statistics to Qassim University students (2021–2025).</li>
+  </ul>
+</div>
+</body>
+</html>
