@@ -16,10 +16,10 @@ const { lang } = Astro.props;
 const ar = lang === 'ar';
 const t = ar
   ? { title: 'الحديقة', kicker: '// GARDEN_3D', hint: 'اسحب للالتفاف · مرّر للتقريب', follow: 'تابع الفراشة', free: 'كاميرا حرة', back: 'رجوع للموقع',
-      tour: 'ابدأ رحلة «ليش فراشات؟»', soundOn: 'الصوت: شغّال', soundOff: 'الصوت: مطفي', capture: 'التقط صورة', bloom: 'مشاريعي تزهر هنا · اضغط على زهرة', next: 'التالي', skip: 'تخطَّ', again: 'من جديد', blog: 'اقرأ المدونة', end: 'طارت. وأنت؟', ask: 'هذي الحديقة هي طريقتي بالشغل. تبي جولة؟', sub: 'فلسفتي بالشغل، تحكيها حديقة',
+      tour: 'ابدأ رحلة «ليش فراشات؟»', soundOn: 'الصوت: شغّال', soundOff: 'الصوت: مطفي', capture: 'التقط صورة', bloom: 'مشاريعي تزهر هنا · اضغط على زهرة', next: 'التالي', skip: 'تخطَّ', again: 'من جديد', blog: 'اقرأ المدونة', end: 'طارت. وأنت؟', sub: 'فلسفتي بالشغل، تحكيها حديقة',
       who: { butterfly: 'الفراشة', bee: 'النحلة', hive: 'الخلية', far: 'زهرة بعيدة', wide: 'الحديقة' } }
   : { title: 'The garden', kicker: '// GARDEN_3D', hint: 'drag to orbit · scroll to zoom', follow: 'Follow the butterfly', free: 'Free camera', back: 'Back to the site',
-      tour: 'Start the “Why butterflies?” journey', soundOn: 'sound: on', soundOff: 'sound: off', capture: 'capture', bloom: 'my projects bloom here · pick a flower', next: 'Next', skip: 'Skip', again: 'Replay', blog: 'Read the blog', end: 'It flew away. Your turn.', ask: 'This garden is how I work. Want the tour?', sub: 'my work philosophy, told by a garden',
+      tour: 'Start the “Why butterflies?” journey', soundOn: 'sound: on', soundOff: 'sound: off', capture: 'capture', bloom: 'my projects bloom here · pick a flower', next: 'Next', skip: 'Skip', again: 'Replay', blog: 'Read the blog', end: 'It flew away. Your turn.', sub: 'my work philosophy, told by a garden',
       who: { butterfly: 'the butterfly', bee: 'the bee', hive: 'the hive', far: 'a far flower', wide: 'the garden' } };
 const lines = philosophy.lines[lang];
 // Hover cards, old-game style: name, a "stat" line, a note
