@@ -570,7 +570,7 @@
       const want = st ? st[0] : this.follow ? this.flyers[0].p : [0, 0.7, 0];
       for (let k = 0; k < 3; k++) this.tgt[k] += (want[k] - this.tgt[k]) * Math.min(1, dt * (st ? 1.6 : 2.5));
       if (st) this.dist += (st[1] - this.dist) * Math.min(1, dt * 1.4);      // smooth dolly in / out
-      const dist = this.follow ? Math.min(this.dist, 2.6) : this.dist;
+      const dist = this.follow ? Math.min(this.dist, this.W < 700 ? 1.7 : 2.6) : this.dist;   // closer on a narrow screen, so the butterfly is not a speck
       const cp = Math.cos(this.pitch);
       const cam = [this.tgt[0] + dist * Math.sin(this.yaw) * cp, this.tgt[1] + dist * Math.sin(this.pitch), this.tgt[2] + dist * Math.cos(this.yaw) * cp];
       const f = norm([this.tgt[0] - cam[0], this.tgt[1] - cam[1], this.tgt[2] - cam[2]]);
