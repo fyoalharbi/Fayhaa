@@ -37,7 +37,7 @@
   // ── Static scene: a list of points (x y z nx ny nz colour glyph swayAmp phase fogless ao) ──
   const F = 12;
   const PHONE = typeof matchMedia !== 'undefined' && matchMedia('(max-width: 700px), (pointer: coarse)').matches;
-  const KEEP = PHONE ? 0.12 : 0.3;         // share of points kept: the surfaces are far denser than the glyph grid
+  const KEEP = PHONE ? 0.14 : 0.36;        // share of points kept: the surfaces are far denser than the glyph grid
   function Cloud() { this.d = []; }
   Cloud.prototype.add = function (x, y, z, nx, ny, nz, col, ch, sway = 0, ph = 0, fogless = 0, ao = 1) {
     if (!fogless && Math.random() > KEEP) return;
@@ -88,9 +88,9 @@
       s.add(r * Math.cos(a), 0, r * Math.sin(a), 0, 1, 0, Math.random() < 0.35 ? C.grass2 : C.ground, GRASS[(Math.random() * GRASS.length) | 0], 0, 0, 0, rand(0.42, 0.68));
     }
     // Grass blades: a few leaning segments each
-    for (let i = 0; i < 1800; i++) {
+    for (let i = 0; i < 2600; i++) {
       const r = 5.4 * Math.sqrt(Math.random()), a = Math.random() * Math.PI * 2, x = r * Math.cos(a), z = r * Math.sin(a);
-      const h = rand(0.06, 0.24), lean = rand(-0.05, 0.05), seg = 4;
+      const h = rand(0.06, 0.28), lean = rand(-0.05, 0.05), seg = 4;
       for (let k = 1; k <= seg; k++) {
         const t = k / seg;
         s.add(x + lean * t * t, h * t, z + lean * t * t * 0.6, 0.3, 0.6, 0.3, Math.random() < 0.5 ? C.stem : C.leaf, K[k === seg ? "'" : '|'], h * t, a, 0, 0.75 * aoAt(h * t * 3));
@@ -126,10 +126,10 @@
     const PETALS = [C.pink, C.blue, C.violet, C.gold, C.mint, C.orange, C.blush, C.white];
     const placed = [[hive.x, hive.z]];
     let tries = 0;
-    while (placed.length < 25 && tries++ < 800) {
-      const r = 4.3 * Math.sqrt(Math.random()), a = Math.random() * Math.PI * 2;
+    while (placed.length < 32 && tries++ < 1200) {
+      const r = 4.5 * Math.sqrt(Math.random()), a = Math.random() * Math.PI * 2;
       const x = r * Math.cos(a), z = r * Math.sin(a);
-      if (placed.some((p) => Math.hypot(p[0] - x, p[1] - z) < 0.72)) continue;
+      if (placed.some((p) => Math.hypot(p[0] - x, p[1] - z) < 0.66)) continue;
       placed.push([x, z]);
       const h = rand(0.65, 1.45), ph = Math.random() * 6.28, col = PETALS[placed.length % PETALS.length];
       const kind = placed.length % 3;
@@ -161,7 +161,7 @@
     }
     // Rounded bushes between the flowers and around the edge of the plot
     const BLOOM = [C.blue, C.violet, C.pink, C.blush, C.white, -1, -1];
-    for (let b = 0, tries = 0; b < 14 && tries < 600; tries++) {
+    for (let b = 0, tries = 0; b < 18 && tries < 800; tries++) {
       const r = 1.2 + 3.6 * Math.sqrt(Math.random()), a = Math.random() * Math.PI * 2;
       const x = r * Math.cos(a), z = r * Math.sin(a), rad = rand(0.32, 0.6), hgt = rad * rand(0.75, 1.05);
       if (placed.some((p) => Math.hypot(p[0] - x, p[1] - z) < rad + 0.3)) continue;
@@ -180,6 +180,23 @@
         }
       }
       heads.push({ x, y: hgt * 0.6, z, ph, col: bloom >= 0 ? bloom : C.stem, type: bloom >= 0 ? 'flowering bush' : 'bush' });
+    }
+    // Depth: a dim ring of low shrubs and tall grass round the edge of the plot, a backdrop behind everything
+    for (let b = 0; b < (PHONE ? 26 : 44); b++) {
+      const a = (b / (PHONE ? 26 : 44)) * Math.PI * 2 + rand(-0.06, 0.06), r = rand(4.9, 5.7);
+      const x = r * Math.cos(a), z = r * Math.sin(a), rad = rand(0.22, 0.42), hgt = rad * rand(0.8, 1.3), ph = Math.random() * 6.28;
+      const step = 0.05 * Math.sqrt(KEEP);
+      for (let e = 0; e <= Math.PI / 2 + 0.05; e += step / rad) {
+        const ring = Math.cos(e) * rad;
+        for (let q = 0; q < Math.PI * 2; q += step / Math.max(ring, 0.04)) {
+          const nx = Math.cos(q) * Math.cos(e), ny = Math.sin(e), nz = Math.sin(q) * Math.cos(e), hh = Math.random();
+          s.add(x + nx * rad, ny * hgt, z + nz * rad, nx, ny, nz, hh < 0.55 ? C.ground : C.grass2, hh < 0.5 ? K['%'] : K['&'], ny * hgt * 0.3, ph, 0, aoAt(ny * hgt) * 0.8);
+        }
+      }
+      for (let k = 0; k < 5; k++) {            // a few tall blades poking out of each one
+        const gx = x + rand(-rad, rad), gz = z + rand(-rad, rad), h = rand(0.35, 0.7);
+        for (let t = 0.1; t <= 1; t += 0.1) s.add(gx, h * t, gz, 0.3, 0.6, 0.3, C.grass2, K[t > 0.9 ? "'" : '|'], h * t, ph + k, 0, 0.7);
+      }
     }
     return { pts: new Float32Array(s.d), heads, hive: { x: hive.x, y: 0.66, z: hive.z } };
   }
