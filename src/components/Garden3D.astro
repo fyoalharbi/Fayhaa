@@ -98,8 +98,7 @@ const projects = (await getProjects(lang)).slice(0, 6).map((p) => ({ title: p.da
       <div class="g3-secret" id="g3-secret" hidden>
         <figure>
           <button class="g3-secret-x" id="g3-secret-x" type="button" aria-label={t.close}>×</button>
-          <blockquote>{secretFlower.lines.map((l, i) => <p dir="auto" style={"--i:" + i}>{l}</p>)}</blockquote>
-          <figcaption style={"--i:" + secretFlower.lines.length}>{secretFlower.credit}</figcaption>
+          <blockquote>{secretFlower.lines.map((l, i) => <p dir="auto" style={"--i:" + i}>{l}</p>)}</blockquote>
         </figure>
       </div>
     )}
